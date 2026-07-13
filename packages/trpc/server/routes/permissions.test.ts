@@ -72,6 +72,28 @@ const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   caller.familyMember.remove({ familyMemberId: "x" }),
   caller.vehicle.add({ number: "X-1", type: "CAR" }),
   caller.vehicle.remove({ vehicleId: "x" }),
+  caller.visitor.approve({ visitorId: "x" }),
+  caller.visitor.deny({ visitorId: "x" }),
+  caller.visitor.listPending(),
+  caller.guestPreApproval.create({
+    guestName: "X",
+    guestPhone: "+910000000000",
+    validFrom: new Date().toISOString(),
+    validTo: new Date(Date.now() + 3600_000).toISOString(),
+  }),
+  caller.guestPreApproval.cancel({ preApprovalId: "x" }),
+];
+
+const guardOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
+  caller.visitor.register({
+    name: "X",
+    phone: "+910000000000",
+    purpose: "GUEST",
+    flatId: "x",
+  }),
+  caller.visitor.markEntry({ visitorId: "x" }),
+  caller.visitor.markExit({ visitorId: "x" }),
+  caller.guestPreApproval.verify({ qrCode: "x" }),
 ];
 
 describe("admin-only procedures", () => {
@@ -114,6 +136,27 @@ describe("resident-only procedures", () => {
   it("reject anonymous callers with UNAUTHORIZED", async () => {
     const caller = callerFor(null);
     await expectTRPCError(caller.vehicle.add({ number: "X", type: "CAR" }), "UNAUTHORIZED");
+  });
+});
+
+describe("guard-only procedures", () => {
+  it("reject RESIDENT callers with FORBIDDEN", async () => {
+    const caller = callerFor(fakeUser("RESIDENT"));
+    for (const call of guardOnlyCalls(caller)) {
+      await expectTRPCError(call, "FORBIDDEN");
+    }
+  });
+
+  it("reject ADMIN callers with FORBIDDEN", async () => {
+    const caller = callerFor(fakeUser("ADMIN"));
+    for (const call of guardOnlyCalls(caller)) {
+      await expectTRPCError(call, "FORBIDDEN");
+    }
+  });
+
+  it("reject anonymous callers with UNAUTHORIZED", async () => {
+    const caller = callerFor(null);
+    await expectTRPCError(caller.visitor.markEntry({ visitorId: "x" }), "UNAUTHORIZED");
   });
 });
 

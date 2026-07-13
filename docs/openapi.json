@@ -4724,6 +4724,2452 @@
           }
         }
       }
+    },
+    "/v1/visitors/register": {
+      "post": {
+        "operationId": "visitor-register",
+        "summary": "Register a new visitor at the gate",
+        "description": "Used by a security guard to log a new visitor (guest, delivery, cab, or service staff) heading to a flat; the request starts PENDING and the flat's resident is asked to approve it. State machine: a visitor starts PENDING; the flat's resident moves it to APPROVED or DENIED; PENDING requests older than the server's timeout (default 15 min) are flipped to EXPIRED automatically. Only APPROVED visitors can be marked as entered, and only entered visitors as exited. Errors: 403 if not a guard, 404 if the flat is not in the guard's society.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Visitor's full name"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Visitor phone number, with country code"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "GUEST",
+                      "DELIVERY",
+                      "CAB",
+                      "SERVICE_STAFF",
+                      "OTHER"
+                    ],
+                    "description": "Reason for the visit"
+                  },
+                  "flatId": {
+                    "type": "string",
+                    "description": "Target flat the visitor is heading to"
+                  },
+                  "photoUrl": {
+                    "description": "Photo URL of the visitor (Cloudinary, Phase 9)",
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "vehicleNumber": {
+                    "description": "Vehicle registration number, if applicable",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "phone",
+                  "purpose",
+                  "flatId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Visitor id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Visitor's full name"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Visitor phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL taken at the gate, if any"
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "GUEST",
+                        "DELIVERY",
+                        "CAB",
+                        "SERVICE_STAFF",
+                        "OTHER"
+                      ],
+                      "description": "Reason for the visit"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Vehicle registration number, if any"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Id of the flat being visited"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Number of the flat being visited"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower of the flat being visited"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "APPROVED",
+                        "DENIED",
+                        "EXPIRED"
+                      ],
+                      "description": "Approval status of the visitor request"
+                    },
+                    "registeredByGuard": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Guard who registered the visitor"
+                    },
+                    "actionedByResident": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                    },
+                    "entryTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor entered, if marked"
+                    },
+                    "exitTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor exited, if marked"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the request was registered"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "photoUrl",
+                    "purpose",
+                    "vehicleNumber",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "status",
+                    "registeredByGuard",
+                    "actionedByResident",
+                    "entryTime",
+                    "exitTime",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A visitor request at the gate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitors/{visitorId}/approve": {
+      "post": {
+        "operationId": "visitor-approve",
+        "summary": "Approve a pending visitor",
+        "description": "Resident approves a PENDING visitor heading to their flat. State machine: a visitor starts PENDING; the flat's resident moves it to APPROVED or DENIED; PENDING requests older than the server's timeout (default 15 min) are flipped to EXPIRED automatically. Only APPROVED visitors can be marked as entered, and only entered visitors as exited. Errors: 403 if not a resident, 404 if the visitor is not for the caller's flat, 409 if the request is no longer PENDING (already actioned or expired).",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visitorId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the visitor request"
+            },
+            "required": true,
+            "description": "Id of the visitor request"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Visitor id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Visitor's full name"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Visitor phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL taken at the gate, if any"
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "GUEST",
+                        "DELIVERY",
+                        "CAB",
+                        "SERVICE_STAFF",
+                        "OTHER"
+                      ],
+                      "description": "Reason for the visit"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Vehicle registration number, if any"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Id of the flat being visited"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Number of the flat being visited"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower of the flat being visited"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "APPROVED",
+                        "DENIED",
+                        "EXPIRED"
+                      ],
+                      "description": "Approval status of the visitor request"
+                    },
+                    "registeredByGuard": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Guard who registered the visitor"
+                    },
+                    "actionedByResident": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                    },
+                    "entryTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor entered, if marked"
+                    },
+                    "exitTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor exited, if marked"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the request was registered"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "photoUrl",
+                    "purpose",
+                    "vehicleNumber",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "status",
+                    "registeredByGuard",
+                    "actionedByResident",
+                    "entryTime",
+                    "exitTime",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A visitor request at the gate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitors/{visitorId}/deny": {
+      "post": {
+        "operationId": "visitor-deny",
+        "summary": "Deny a pending visitor",
+        "description": "Resident denies a PENDING visitor heading to their flat. State machine: a visitor starts PENDING; the flat's resident moves it to APPROVED or DENIED; PENDING requests older than the server's timeout (default 15 min) are flipped to EXPIRED automatically. Only APPROVED visitors can be marked as entered, and only entered visitors as exited. Errors: 403 if not a resident, 404 if the visitor is not for the caller's flat, 409 if the request is no longer PENDING (already actioned or expired).",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visitorId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the visitor request"
+            },
+            "required": true,
+            "description": "Id of the visitor request"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Visitor id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Visitor's full name"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Visitor phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL taken at the gate, if any"
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "GUEST",
+                        "DELIVERY",
+                        "CAB",
+                        "SERVICE_STAFF",
+                        "OTHER"
+                      ],
+                      "description": "Reason for the visit"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Vehicle registration number, if any"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Id of the flat being visited"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Number of the flat being visited"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower of the flat being visited"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "APPROVED",
+                        "DENIED",
+                        "EXPIRED"
+                      ],
+                      "description": "Approval status of the visitor request"
+                    },
+                    "registeredByGuard": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Guard who registered the visitor"
+                    },
+                    "actionedByResident": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                    },
+                    "entryTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor entered, if marked"
+                    },
+                    "exitTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor exited, if marked"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the request was registered"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "photoUrl",
+                    "purpose",
+                    "vehicleNumber",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "status",
+                    "registeredByGuard",
+                    "actionedByResident",
+                    "entryTime",
+                    "exitTime",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A visitor request at the gate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitors/{visitorId}/entry": {
+      "post": {
+        "operationId": "visitor-markEntry",
+        "summary": "Mark a visitor's physical entry",
+        "description": "Guard records that an APPROVED visitor physically entered. State machine: a visitor starts PENDING; the flat's resident moves it to APPROVED or DENIED; PENDING requests older than the server's timeout (default 15 min) are flipped to EXPIRED automatically. Only APPROVED visitors can be marked as entered, and only entered visitors as exited. Errors: 403 if not a guard, 404 if the visitor is not in the guard's society, 409 if the visitor is not APPROVED or entry is already marked.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visitorId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the visitor request"
+            },
+            "required": true,
+            "description": "Id of the visitor request"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Visitor id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Visitor's full name"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Visitor phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL taken at the gate, if any"
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "GUEST",
+                        "DELIVERY",
+                        "CAB",
+                        "SERVICE_STAFF",
+                        "OTHER"
+                      ],
+                      "description": "Reason for the visit"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Vehicle registration number, if any"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Id of the flat being visited"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Number of the flat being visited"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower of the flat being visited"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "APPROVED",
+                        "DENIED",
+                        "EXPIRED"
+                      ],
+                      "description": "Approval status of the visitor request"
+                    },
+                    "registeredByGuard": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Guard who registered the visitor"
+                    },
+                    "actionedByResident": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                    },
+                    "entryTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor entered, if marked"
+                    },
+                    "exitTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor exited, if marked"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the request was registered"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "photoUrl",
+                    "purpose",
+                    "vehicleNumber",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "status",
+                    "registeredByGuard",
+                    "actionedByResident",
+                    "entryTime",
+                    "exitTime",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A visitor request at the gate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitors/{visitorId}/exit": {
+      "post": {
+        "operationId": "visitor-markExit",
+        "summary": "Mark a visitor's exit",
+        "description": "Guard records that a visitor left the premises. State machine: a visitor starts PENDING; the flat's resident moves it to APPROVED or DENIED; PENDING requests older than the server's timeout (default 15 min) are flipped to EXPIRED automatically. Only APPROVED visitors can be marked as entered, and only entered visitors as exited. Errors: 403 if not a guard, 404 if the visitor is not in the guard's society, 409 if entry was never marked or exit is already marked.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visitorId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the visitor request"
+            },
+            "required": true,
+            "description": "Id of the visitor request"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Visitor id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Visitor's full name"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Visitor phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL taken at the gate, if any"
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "GUEST",
+                        "DELIVERY",
+                        "CAB",
+                        "SERVICE_STAFF",
+                        "OTHER"
+                      ],
+                      "description": "Reason for the visit"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Vehicle registration number, if any"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Id of the flat being visited"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Number of the flat being visited"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower of the flat being visited"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "APPROVED",
+                        "DENIED",
+                        "EXPIRED"
+                      ],
+                      "description": "Approval status of the visitor request"
+                    },
+                    "registeredByGuard": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Guard who registered the visitor"
+                    },
+                    "actionedByResident": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                    },
+                    "entryTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor entered, if marked"
+                    },
+                    "exitTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor exited, if marked"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the request was registered"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "photoUrl",
+                    "purpose",
+                    "vehicleNumber",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "status",
+                    "registeredByGuard",
+                    "actionedByResident",
+                    "entryTime",
+                    "exitTime",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A visitor request at the gate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitors/pending": {
+      "get": {
+        "operationId": "visitor-listPending",
+        "summary": "List the caller's pending visitor approvals",
+        "description": "The resident's live approval queue: every PENDING visitor heading to their flat, newest first. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Visitor id"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Visitor's full name"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "Visitor phone number"
+                      },
+                      "photoUrl": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Photo URL taken at the gate, if any"
+                      },
+                      "purpose": {
+                        "type": "string",
+                        "enum": [
+                          "GUEST",
+                          "DELIVERY",
+                          "CAB",
+                          "SERVICE_STAFF",
+                          "OTHER"
+                        ],
+                        "description": "Reason for the visit"
+                      },
+                      "vehicleNumber": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Vehicle registration number, if any"
+                      },
+                      "flatId": {
+                        "type": "string",
+                        "description": "Id of the flat being visited"
+                      },
+                      "flatNumber": {
+                        "type": "string",
+                        "description": "Number of the flat being visited"
+                      },
+                      "towerName": {
+                        "type": "string",
+                        "description": "Tower of the flat being visited"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "PENDING",
+                          "APPROVED",
+                          "DENIED",
+                          "EXPIRED"
+                        ],
+                        "description": "Approval status of the visitor request"
+                      },
+                      "registeredByGuard": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "User id"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Full name"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Guard who registered the visitor"
+                      },
+                      "actionedByResident": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "User id"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Full name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                      },
+                      "entryTime": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "ISO time the visitor entered, if marked"
+                      },
+                      "exitTime": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "ISO time the visitor exited, if marked"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "description": "ISO time the request was registered"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "phone",
+                      "photoUrl",
+                      "purpose",
+                      "vehicleNumber",
+                      "flatId",
+                      "flatNumber",
+                      "towerName",
+                      "status",
+                      "registeredByGuard",
+                      "actionedByResident",
+                      "entryTime",
+                      "exitTime",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A visitor request at the gate"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitors": {
+      "get": {
+        "operationId": "visitor-history",
+        "summary": "Visitor history (role-aware scope)",
+        "description": "Cursor-paginated visitor history filterable by period and status. Residents see their own flat only; guards and admins see their whole society and may filter by flat. Errors: 401 if not authenticated, 412 if the account is not linked to a society/flat.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "schema": {
+              "default": "ALL",
+              "description": "Time window: today, last 7 days, last 30 days, or everything",
+              "type": "string",
+              "enum": [
+                "TODAY",
+                "WEEK",
+                "MONTH",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "DENIED",
+                "EXPIRED"
+              ],
+              "description": "Approval status of the visitor request"
+            }
+          },
+          {
+            "in": "query",
+            "name": "flatId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Visitor id"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Visitor's full name"
+                          },
+                          "phone": {
+                            "type": "string",
+                            "description": "Visitor phone number"
+                          },
+                          "photoUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Photo URL taken at the gate, if any"
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "GUEST",
+                              "DELIVERY",
+                              "CAB",
+                              "SERVICE_STAFF",
+                              "OTHER"
+                            ],
+                            "description": "Reason for the visit"
+                          },
+                          "vehicleNumber": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Vehicle registration number, if any"
+                          },
+                          "flatId": {
+                            "type": "string",
+                            "description": "Id of the flat being visited"
+                          },
+                          "flatNumber": {
+                            "type": "string",
+                            "description": "Number of the flat being visited"
+                          },
+                          "towerName": {
+                            "type": "string",
+                            "description": "Tower of the flat being visited"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "APPROVED",
+                              "DENIED",
+                              "EXPIRED"
+                            ],
+                            "description": "Approval status of the visitor request"
+                          },
+                          "registeredByGuard": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "User id"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Full name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Guard who registered the visitor"
+                          },
+                          "actionedByResident": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "description": "User id"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Full name"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                          },
+                          "entryTime": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO time the visitor entered, if marked"
+                          },
+                          "exitTime": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO time the visitor exited, if marked"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO time the request was registered"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "phone",
+                          "photoUrl",
+                          "purpose",
+                          "vehicleNumber",
+                          "flatId",
+                          "flatNumber",
+                          "towerName",
+                          "status",
+                          "registeredByGuard",
+                          "actionedByResident",
+                          "entryTime",
+                          "exitTime",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A visitor request at the gate"
+                      },
+                      "description": "Visitor requests on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pre-approvals": {
+      "post": {
+        "operationId": "guestPreApproval-create",
+        "summary": "Pre-approve an expected guest",
+        "description": "Resident opens a validity window for an expected guest and receives a QR token to share with them; when the guard verifies it at the gate an already-APPROVED visitor is created. Errors: 400 if the window is invalid or entirely in the past, 403 if not a resident, 412 if the account has no resident profile.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "guestName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Expected guest's full name"
+                  },
+                  "guestPhone": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Expected guest's phone, with country code"
+                  },
+                  "validFrom": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "description": "ISO start of the validity window"
+                  },
+                  "validTo": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "description": "ISO end of the validity window"
+                  },
+                  "vehicleNumber": {
+                    "description": "Expected vehicle number, if known",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "guestName",
+                  "guestPhone",
+                  "validFrom",
+                  "validTo"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Pre-approval id"
+                    },
+                    "guestName": {
+                      "type": "string",
+                      "description": "Expected guest's name"
+                    },
+                    "guestPhone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Expected guest's phone"
+                    },
+                    "validFrom": {
+                      "type": "string",
+                      "description": "ISO start of the validity window"
+                    },
+                    "validTo": {
+                      "type": "string",
+                      "description": "ISO end of the validity window"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Expected vehicle number, if any"
+                    },
+                    "qrCode": {
+                      "type": "string",
+                      "description": "Opaque token the guest presents (rendered as a QR on mobile)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "USED",
+                        "EXPIRED",
+                        "CANCELLED"
+                      ],
+                      "description": "Lifecycle status of the pre-approval"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Flat the guest is pre-approved for"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the pre-approval was created"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "guestName",
+                    "guestPhone",
+                    "validFrom",
+                    "validTo",
+                    "vehicleNumber",
+                    "qrCode",
+                    "status",
+                    "flatId",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A resident-issued guest pre-approval"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pre-approvals/verify": {
+      "post": {
+        "operationId": "guestPreApproval-verify",
+        "summary": "Verify a guest's pre-approval QR at the gate",
+        "description": "Guard verifies the presented QR token. If it is ACTIVE and inside its validity window, the pre-approval is marked USED and an already-APPROVED visitor (purpose GUEST) is created — mark entry/exit on that visitor as usual. Errors: 403 if not a guard, 404 if the token is unknown or belongs to another society, 409 if the pre-approval is USED/CANCELLED/EXPIRED or outside its window.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "qrCode": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "QR token presented by the guest at the gate"
+                  }
+                },
+                "required": [
+                  "qrCode"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "preApproval": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Pre-approval id"
+                        },
+                        "guestName": {
+                          "type": "string",
+                          "description": "Expected guest's name"
+                        },
+                        "guestPhone": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Expected guest's phone"
+                        },
+                        "validFrom": {
+                          "type": "string",
+                          "description": "ISO start of the validity window"
+                        },
+                        "validTo": {
+                          "type": "string",
+                          "description": "ISO end of the validity window"
+                        },
+                        "vehicleNumber": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Expected vehicle number, if any"
+                        },
+                        "qrCode": {
+                          "type": "string",
+                          "description": "Opaque token the guest presents (rendered as a QR on mobile)"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "ACTIVE",
+                            "USED",
+                            "EXPIRED",
+                            "CANCELLED"
+                          ],
+                          "description": "Lifecycle status of the pre-approval"
+                        },
+                        "flatId": {
+                          "type": "string",
+                          "description": "Flat the guest is pre-approved for"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "description": "ISO time the pre-approval was created"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "guestName",
+                        "guestPhone",
+                        "validFrom",
+                        "validTo",
+                        "vehicleNumber",
+                        "qrCode",
+                        "status",
+                        "flatId",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A resident-issued guest pre-approval"
+                    },
+                    "visitor": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Visitor id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Visitor's full name"
+                        },
+                        "phone": {
+                          "type": "string",
+                          "description": "Visitor phone number"
+                        },
+                        "photoUrl": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Photo URL taken at the gate, if any"
+                        },
+                        "purpose": {
+                          "type": "string",
+                          "enum": [
+                            "GUEST",
+                            "DELIVERY",
+                            "CAB",
+                            "SERVICE_STAFF",
+                            "OTHER"
+                          ],
+                          "description": "Reason for the visit"
+                        },
+                        "vehicleNumber": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Vehicle registration number, if any"
+                        },
+                        "flatId": {
+                          "type": "string",
+                          "description": "Id of the flat being visited"
+                        },
+                        "flatNumber": {
+                          "type": "string",
+                          "description": "Number of the flat being visited"
+                        },
+                        "towerName": {
+                          "type": "string",
+                          "description": "Tower of the flat being visited"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "PENDING",
+                            "APPROVED",
+                            "DENIED",
+                            "EXPIRED"
+                          ],
+                          "description": "Approval status of the visitor request"
+                        },
+                        "registeredByGuard": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Guard who registered the visitor"
+                        },
+                        "actionedByResident": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "User id"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Full name"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                        },
+                        "entryTime": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "ISO time the visitor entered, if marked"
+                        },
+                        "exitTime": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "ISO time the visitor exited, if marked"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "description": "ISO time the request was registered"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "phone",
+                        "photoUrl",
+                        "purpose",
+                        "vehicleNumber",
+                        "flatId",
+                        "flatNumber",
+                        "towerName",
+                        "status",
+                        "registeredByGuard",
+                        "actionedByResident",
+                        "entryTime",
+                        "exitTime",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false,
+                      "description": "The auto-created, already-APPROVED visitor"
+                    }
+                  },
+                  "required": [
+                    "preApproval",
+                    "visitor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/pre-approvals/{preApprovalId}/cancel": {
+      "post": {
+        "operationId": "guestPreApproval-cancel",
+        "summary": "Cancel an upcoming pre-approval",
+        "description": "Resident cancels one of their own ACTIVE pre-approvals; the QR token stops working. Errors: 403 if not a resident, 404 if the pre-approval does not belong to the caller, 409 if it is not ACTIVE (already used, expired, or cancelled).",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "preApprovalId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the pre-approval"
+            },
+            "required": true,
+            "description": "Id of the pre-approval"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Pre-approval id"
+                    },
+                    "guestName": {
+                      "type": "string",
+                      "description": "Expected guest's name"
+                    },
+                    "guestPhone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Expected guest's phone"
+                    },
+                    "validFrom": {
+                      "type": "string",
+                      "description": "ISO start of the validity window"
+                    },
+                    "validTo": {
+                      "type": "string",
+                      "description": "ISO end of the validity window"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Expected vehicle number, if any"
+                    },
+                    "qrCode": {
+                      "type": "string",
+                      "description": "Opaque token the guest presents (rendered as a QR on mobile)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ACTIVE",
+                        "USED",
+                        "EXPIRED",
+                        "CANCELLED"
+                      ],
+                      "description": "Lifecycle status of the pre-approval"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Flat the guest is pre-approved for"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the pre-approval was created"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "guestName",
+                    "guestPhone",
+                    "validFrom",
+                    "validTo",
+                    "vehicleNumber",
+                    "qrCode",
+                    "status",
+                    "flatId",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A resident-issued guest pre-approval"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

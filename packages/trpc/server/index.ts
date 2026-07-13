@@ -6,6 +6,7 @@ import { societyRouter, towerRouter, flatRouter } from "./routes/society/route";
 import { residentRouter } from "./routes/resident/route";
 import { staffRouter } from "./routes/staff/route";
 import { profileRouter, familyMemberRouter, vehicleRouter } from "./routes/profile/route";
+import { visitorRouter, guestPreApprovalRouter } from "./routes/visitor/route";
 
 export const serverRouter = router({
   health: healthRouter,
@@ -18,6 +19,8 @@ export const serverRouter = router({
   profile: profileRouter,
   familyMember: familyMemberRouter,
   vehicle: vehicleRouter,
+  visitor: visitorRouter,
+  guestPreApproval: guestPreApprovalRouter,
 });
 
 export { createContext } from "./context";

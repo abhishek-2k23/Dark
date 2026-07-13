@@ -16,6 +16,13 @@ The same tRPC router is exposed twice by `apps/api`:
 Interactive docs: **`/docs`** (Scalar). Raw spec: **`/openapi.json`**, or
 regenerate the committed copy at `docs/openapi.json` with `pnpm openapi:generate`.
 
+### REST quirk: Content-Type on mutations
+
+Every REST `POST`/`PATCH`/`DELETE` **requires `Content-Type: application/json`**,
+even when all input travels in the path (e.g. `POST /v1/visitors/{id}/approve`)
+— send an empty JSON body `{}`. Without it, trpc-to-openapi responds 415.
+tRPC clients are unaffected.
+
 ## Versioning
 
 Every REST path is namespaced under `/api/v1/...`. Router files build paths
