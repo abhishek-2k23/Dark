@@ -92,6 +92,8 @@ erDiagram
         Role role
         string societyId FK
         boolean isActive
+        string emergencyContactName "nullable"
+        string emergencyContactPhone "nullable"
     }
 
     ResidentProfile {

@@ -100,9 +100,11 @@ List endpoints use cursor pagination:
    path with `generatePath("v1/<domain>")`.
 2. **`meta.openapi` on every procedure** — `method`, `path`, `tags`,
    `summary`, `description`, and `protect: true` when bearer auth is required.
-   - One **tag per domain router**, matching: `Auth`, `Society`, `Visitors`,
-     `Helpdesk`, `Notices`, `Polls`, `Amenities`, `Dues`, `Directory`,
-     `Notifications`.
+   - One **tag per domain router**, matching: `Auth`, `Society`, `Profile`,
+     `Visitors`, `Helpdesk`, `Notices`, `Polls`, `Amenities`, `Dues`,
+     `Directory`, `Notifications`. (`Society` covers society/tower/flat/
+     resident/staff admin; `Profile` covers self-service profile, family
+     members, and vehicles.)
    - The `description` of every **mutation documents its error cases**
      (e.g. "Errors: 404 if the flat does not exist, 403 if the guard belongs
      to another society").

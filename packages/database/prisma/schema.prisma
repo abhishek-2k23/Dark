@@ -211,6 +211,9 @@ model User {
   societyId    String?
   society      Society?     @relation(fields: [societyId], references: [id])
   isActive     Boolean      @default(true)
+
+  emergencyContactName  String?
+  emergencyContactPhone String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 

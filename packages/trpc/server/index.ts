@@ -2,10 +2,22 @@ import { router } from "./trpc";
 
 import { healthRouter } from "./routes/health/route";
 import { authRouter } from "./routes/auth/route";
+import { societyRouter, towerRouter, flatRouter } from "./routes/society/route";
+import { residentRouter } from "./routes/resident/route";
+import { staffRouter } from "./routes/staff/route";
+import { profileRouter, familyMemberRouter, vehicleRouter } from "./routes/profile/route";
 
 export const serverRouter = router({
   health: healthRouter,
   auth: authRouter,
+  society: societyRouter,
+  tower: towerRouter,
+  flat: flatRouter,
+  resident: residentRouter,
+  staff: staffRouter,
+  profile: profileRouter,
+  familyMember: familyMemberRouter,
+  vehicle: vehicleRouter,
 });
 
 export { createContext } from "./context";

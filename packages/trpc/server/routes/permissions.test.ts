@@ -1,0 +1,126 @@
+import { describe, expect, it } from "vitest";
+import { TRPCError } from "@trpc/server";
+import { prisma, type User, type Role } from "@repo/database";
+
+import { serverRouter } from "../index";
+import { tRPCContext } from "../trpc";
+
+/**
+ * Role-gating checks at the router level: every admin-only procedure must
+ * reject non-admin callers, and resident-only procedures must reject staff.
+ * The middleware rejects before any service/DB code runs, so these tests
+ * need no database fixtures.
+ */
+
+const createCaller = tRPCContext.createCallerFactory(serverRouter);
+
+function fakeUser(role: Role): User {
+  return {
+    id: `fake-${role.toLowerCase()}`,
+    name: `Fake ${role}`,
+    email: `fake-${role.toLowerCase()}@test.local`,
+    phone: null,
+    passwordHash: null,
+    authProvider: "LOCAL",
+    googleId: null,
+    avatarUrl: null,
+    role,
+    societyId: "fake-society",
+    isActive: true,
+    emergencyContactName: null,
+    emergencyContactPhone: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+function callerFor(user: User | null) {
+  return createCaller({ prisma, user });
+}
+
+async function expectTRPCError(promise: Promise<unknown>, code: string) {
+  try {
+    await promise;
+    expect.unreachable(`expected TRPCError ${code}`);
+  } catch (err) {
+    expect(err).toBeInstanceOf(TRPCError);
+    expect((err as TRPCError).code).toBe(code);
+  }
+}
+
+// One representative mutation and query per admin-only router.
+const adminOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
+  caller.society.get(),
+  caller.society.update({ name: "X" }),
+  caller.tower.create({ name: "X" }),
+  caller.tower.list(),
+  caller.flat.create({ towerId: "x", flatNumber: "1", floor: 1, type: "OTHER" }),
+  caller.flat.list({ limit: 20 }),
+  caller.resident.invite({ flatId: "x", email: "x@test.local" }),
+  caller.resident.list({ status: "ALL", limit: 20 }),
+  caller.resident.deactivate({ userId: "x" }),
+  caller.staff.create({
+    name: "X",
+    email: "x@test.local",
+    temporaryPassword: "temp-pass-123",
+    role: "GUARD",
+  }),
+];
+
+const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
+  caller.familyMember.add({ name: "X", relation: "spouse" }),
+  caller.familyMember.remove({ familyMemberId: "x" }),
+  caller.vehicle.add({ number: "X-1", type: "CAR" }),
+  caller.vehicle.remove({ vehicleId: "x" }),
+];
+
+describe("admin-only procedures", () => {
+  it("reject RESIDENT callers with FORBIDDEN", async () => {
+    const caller = callerFor(fakeUser("RESIDENT"));
+    for (const call of adminOnlyCalls(caller)) {
+      await expectTRPCError(call, "FORBIDDEN");
+    }
+  });
+
+  it("reject GUARD callers with FORBIDDEN", async () => {
+    const caller = callerFor(fakeUser("GUARD"));
+    for (const call of adminOnlyCalls(caller)) {
+      await expectTRPCError(call, "FORBIDDEN");
+    }
+  });
+
+  it("reject anonymous callers with UNAUTHORIZED", async () => {
+    const caller = callerFor(null);
+    await expectTRPCError(caller.society.get(), "UNAUTHORIZED");
+    await expectTRPCError(caller.resident.list({ status: "ALL", limit: 20 }), "UNAUTHORIZED");
+  });
+});
+
+describe("resident-only procedures", () => {
+  it("reject GUARD callers with FORBIDDEN", async () => {
+    const caller = callerFor(fakeUser("GUARD"));
+    for (const call of residentOnlyCalls(caller)) {
+      await expectTRPCError(call, "FORBIDDEN");
+    }
+  });
+
+  it("reject ADMIN callers with FORBIDDEN", async () => {
+    const caller = callerFor(fakeUser("ADMIN"));
+    for (const call of residentOnlyCalls(caller)) {
+      await expectTRPCError(call, "FORBIDDEN");
+    }
+  });
+
+  it("reject anonymous callers with UNAUTHORIZED", async () => {
+    const caller = callerFor(null);
+    await expectTRPCError(caller.vehicle.add({ number: "X", type: "CAR" }), "UNAUTHORIZED");
+  });
+});
+
+describe("profile procedures (any authenticated role)", () => {
+  it("reject anonymous callers with UNAUTHORIZED", async () => {
+    const caller = callerFor(null);
+    await expectTRPCError(caller.profile.me(), "UNAUTHORIZED");
+    await expectTRPCError(caller.profile.update({ name: "X" }), "UNAUTHORIZED");
+  });
+});

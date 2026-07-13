@@ -1275,6 +1275,3455 @@
           }
         }
       }
+    },
+    "/v1/society": {
+      "get": {
+        "operationId": "society-get",
+        "summary": "Get the admin's society",
+        "description": "Returns the calling admin's society details. Errors: 401 if not authenticated, 403 if not an admin, 412 if the account is not linked to a society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Society id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Society name"
+                    },
+                    "address": {
+                      "type": "string",
+                      "description": "Street address"
+                    },
+                    "city": {
+                      "type": "string",
+                      "description": "City"
+                    },
+                    "state": {
+                      "type": "string",
+                      "description": "State"
+                    },
+                    "pincode": {
+                      "type": "string",
+                      "description": "Postal code"
+                    },
+                    "towerCount": {
+                      "type": "number",
+                      "description": "Number of towers in the society"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address",
+                    "city",
+                    "state",
+                    "pincode",
+                    "towerCount"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A housing society"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "society-update",
+        "summary": "Update the admin's society details",
+        "description": "Partially updates the calling admin's society (name, address, city, state, pincode). Societies are created via seeding for MVP — there is no create endpoint. Errors: 401 if not authenticated, 403 if not an admin.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "New society name",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "address": {
+                    "description": "New street address",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "city": {
+                    "description": "New city",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "state": {
+                    "description": "New state",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "pincode": {
+                    "description": "New postal code",
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Society id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Society name"
+                    },
+                    "address": {
+                      "type": "string",
+                      "description": "Street address"
+                    },
+                    "city": {
+                      "type": "string",
+                      "description": "City"
+                    },
+                    "state": {
+                      "type": "string",
+                      "description": "State"
+                    },
+                    "pincode": {
+                      "type": "string",
+                      "description": "Postal code"
+                    },
+                    "towerCount": {
+                      "type": "number",
+                      "description": "Number of towers in the society"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address",
+                    "city",
+                    "state",
+                    "pincode",
+                    "towerCount"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A housing society"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/towers": {
+      "post": {
+        "operationId": "tower-create",
+        "summary": "Create a tower",
+        "description": "Creates a tower in the calling admin's society. Errors: 403 if not an admin, 409 if a tower with the same name already exists in the society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Tower name/number, unique within the society"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Tower id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Tower name/number, unique within the society"
+                    },
+                    "flatCount": {
+                      "type": "number",
+                      "description": "Number of flats in the tower"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "flatCount"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A tower within the society"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "tower-list",
+        "summary": "List the society's towers",
+        "description": "Lists every tower in the calling admin's society with flat counts, sorted by name. Errors: 403 if not an admin.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Tower id"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Tower name/number, unique within the society"
+                      },
+                      "flatCount": {
+                        "type": "number",
+                        "description": "Number of flats in the tower"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "flatCount"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A tower within the society"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/towers/{towerId}": {
+      "patch": {
+        "operationId": "tower-update",
+        "summary": "Rename a tower",
+        "description": "Renames a tower in the calling admin's society. Errors: 403 if not an admin, 404 if the tower does not exist in the admin's society, 409 if the new name is taken.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "towerId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the tower to rename"
+            },
+            "required": true,
+            "description": "Id of the tower to rename"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "New tower name, unique within the society"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Tower id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Tower name/number, unique within the society"
+                    },
+                    "flatCount": {
+                      "type": "number",
+                      "description": "Number of flats in the tower"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "flatCount"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A tower within the society"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/flats": {
+      "post": {
+        "operationId": "flat-create",
+        "summary": "Create a flat",
+        "description": "Creates a flat in a tower of the calling admin's society. Errors: 403 if not an admin, 404 if the tower does not exist in the admin's society, 409 if the flat number is taken in that tower.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "towerId": {
+                    "type": "string",
+                    "description": "Tower the flat belongs to"
+                  },
+                  "flatNumber": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Flat number, unique within the tower"
+                  },
+                  "floor": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991,
+                    "description": "Floor the flat is on"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "ONE_RK",
+                      "ONE_BHK",
+                      "TWO_BHK",
+                      "THREE_BHK",
+                      "FOUR_BHK",
+                      "OTHER"
+                    ],
+                    "description": "Flat configuration"
+                  }
+                },
+                "required": [
+                  "towerId",
+                  "flatNumber",
+                  "floor",
+                  "type"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Flat id"
+                    },
+                    "towerId": {
+                      "type": "string",
+                      "description": "Id of the tower the flat is in"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Name of the tower the flat is in"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Flat number, unique within the tower"
+                    },
+                    "floor": {
+                      "type": "number",
+                      "description": "Floor the flat is on"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "ONE_RK",
+                        "ONE_BHK",
+                        "TWO_BHK",
+                        "THREE_BHK",
+                        "FOUR_BHK",
+                        "OTHER"
+                      ],
+                      "description": "Flat configuration"
+                    },
+                    "residentCount": {
+                      "type": "number",
+                      "description": "Number of residents linked to the flat"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "towerId",
+                    "towerName",
+                    "flatNumber",
+                    "floor",
+                    "type",
+                    "residentCount"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A flat within a tower"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "flat-list",
+        "summary": "List the society's flats",
+        "description": "Cursor-paginated list of flats in the calling admin's society, optionally filtered by tower, sorted by tower then flat number. Errors: 403 if not an admin, 404 if the towerId filter does not exist in the admin's society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "towerId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Flat id"
+                          },
+                          "towerId": {
+                            "type": "string",
+                            "description": "Id of the tower the flat is in"
+                          },
+                          "towerName": {
+                            "type": "string",
+                            "description": "Name of the tower the flat is in"
+                          },
+                          "flatNumber": {
+                            "type": "string",
+                            "description": "Flat number, unique within the tower"
+                          },
+                          "floor": {
+                            "type": "number",
+                            "description": "Floor the flat is on"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "ONE_RK",
+                              "ONE_BHK",
+                              "TWO_BHK",
+                              "THREE_BHK",
+                              "FOUR_BHK",
+                              "OTHER"
+                            ],
+                            "description": "Flat configuration"
+                          },
+                          "residentCount": {
+                            "type": "number",
+                            "description": "Number of residents linked to the flat"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "towerId",
+                          "towerName",
+                          "flatNumber",
+                          "floor",
+                          "type",
+                          "residentCount"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A flat within a tower"
+                      },
+                      "description": "Flats on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/flats/{flatId}": {
+      "patch": {
+        "operationId": "flat-update",
+        "summary": "Update a flat",
+        "description": "Partially updates a flat (number, floor, type) in the calling admin's society. Errors: 403 if not an admin, 404 if the flat does not exist in the admin's society, 409 if the new flat number is taken in its tower.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "flatId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the flat to update"
+            },
+            "required": true,
+            "description": "Id of the flat to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "flatNumber": {
+                    "description": "New flat number, unique within the tower",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "floor": {
+                    "description": "New floor",
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "ONE_RK",
+                      "ONE_BHK",
+                      "TWO_BHK",
+                      "THREE_BHK",
+                      "FOUR_BHK",
+                      "OTHER"
+                    ],
+                    "description": "Flat configuration"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Flat id"
+                    },
+                    "towerId": {
+                      "type": "string",
+                      "description": "Id of the tower the flat is in"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Name of the tower the flat is in"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Flat number, unique within the tower"
+                    },
+                    "floor": {
+                      "type": "number",
+                      "description": "Floor the flat is on"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "ONE_RK",
+                        "ONE_BHK",
+                        "TWO_BHK",
+                        "THREE_BHK",
+                        "FOUR_BHK",
+                        "OTHER"
+                      ],
+                      "description": "Flat configuration"
+                    },
+                    "residentCount": {
+                      "type": "number",
+                      "description": "Number of residents linked to the flat"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "towerId",
+                    "towerName",
+                    "flatNumber",
+                    "floor",
+                    "type",
+                    "residentCount"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A flat within a tower"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/residents/invite": {
+      "post": {
+        "operationId": "resident-invite",
+        "summary": "Invite a resident to a flat",
+        "description": "Creates a PendingResidentInvite; when someone signs up (password or Google) with a matching email/phone they are auto-linked to the flat as a RESIDENT and the invite is claimed. Errors: 400 if neither email nor phone is given, 403 if not an admin, 404 if the flat is not in the admin's society, 409 if an account or pending invite already exists for the email/phone.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "flatId": {
+                    "type": "string",
+                    "description": "Flat to link the future resident to"
+                  },
+                  "email": {
+                    "description": "Invitee email (this or phone required)",
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "phone": {
+                    "description": "Invitee phone (this or email required)",
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "flatId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Invite id"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Flat the invitee will be linked to"
+                    },
+                    "email": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Invited email, if any"
+                    },
+                    "phone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Invited phone, if any"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "CLAIMED"
+                      ],
+                      "description": "Invite status"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO timestamp the invite was created"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "flatId",
+                    "email",
+                    "phone",
+                    "status",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A pending resident invite"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/residents": {
+      "get": {
+        "operationId": "resident-list",
+        "summary": "List the society's residents",
+        "description": "Cursor-paginated list of residents in the calling admin's society, filterable by tower, flat, and account status, and searchable by name/email/phone. Errors: 403 if not an admin.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "towerId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "flatId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "default": "ALL",
+              "description": "Filter by account status",
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "User id"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Full name"
+                          },
+                          "email": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Email, if set"
+                          },
+                          "phone": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Phone, if set"
+                          },
+                          "avatarUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Profile photo URL, if set"
+                          },
+                          "isActive": {
+                            "type": "boolean",
+                            "description": "Whether the account is active"
+                          },
+                          "flatId": {
+                            "type": "string",
+                            "description": "Id of the resident's flat"
+                          },
+                          "flatNumber": {
+                            "type": "string",
+                            "description": "Flat number"
+                          },
+                          "towerId": {
+                            "type": "string",
+                            "description": "Id of the flat's tower"
+                          },
+                          "towerName": {
+                            "type": "string",
+                            "description": "Name of the flat's tower"
+                          },
+                          "isPrimaryResident": {
+                            "type": "boolean",
+                            "description": "Whether this is the flat's primary resident"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO timestamp the account was created"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "email",
+                          "phone",
+                          "avatarUrl",
+                          "isActive",
+                          "flatId",
+                          "flatNumber",
+                          "towerId",
+                          "towerName",
+                          "isPrimaryResident",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A resident of the society"
+                      },
+                      "description": "Residents on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/residents/{userId}/deactivate": {
+      "post": {
+        "operationId": "resident-deactivate",
+        "summary": "Deactivate a resident",
+        "description": "Deactivates the resident's account and revokes all their sessions — they can no longer log in or refresh. Errors: 403 if not an admin, 404 if the user is not a resident of the admin's society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string",
+              "description": "User id of the resident"
+            },
+            "required": true,
+            "description": "User id of the resident"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User id"
+                    },
+                    "isActive": {
+                      "type": "boolean",
+                      "description": "Account active state after the change"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "isActive"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/residents/{userId}/reactivate": {
+      "post": {
+        "operationId": "resident-reactivate",
+        "summary": "Reactivate a resident",
+        "description": "Reactivates a previously deactivated resident account; they can log in again. Errors: 403 if not an admin, 404 if the user is not a resident of the admin's society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string",
+              "description": "User id of the resident"
+            },
+            "required": true,
+            "description": "User id of the resident"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User id"
+                    },
+                    "isActive": {
+                      "type": "boolean",
+                      "description": "Account active state after the change"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "isActive"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff": {
+      "post": {
+        "operationId": "staff-create",
+        "summary": "Create a guard or admin account",
+        "description": "Creates a staff account (GUARD or ADMIN) in the calling admin's society with a temporary password — staff never self-signup. Errors: 400 if neither email nor phone is given, 403 if not an admin, 409 if an account already exists with the email/phone.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Full name of the staff member"
+                  },
+                  "email": {
+                    "description": "Email (this or phone required)",
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "phone": {
+                    "description": "Phone with country code (this or email required)",
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "temporaryPassword": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Temporary password (min 8 chars); the staff member should change it after first login"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "GUARD",
+                      "ADMIN"
+                    ],
+                    "description": "Staff role for the new account"
+                  },
+                  "gateAssigned": {
+                    "description": "Assigned gate (GUARD role only)",
+                    "type": "string"
+                  },
+                  "shiftStart": {
+                    "description": "Shift start 'HH:mm' 24h (GUARD role only)",
+                    "type": "string"
+                  },
+                  "shiftEnd": {
+                    "description": "Shift end 'HH:mm' 24h (GUARD role only)",
+                    "type": "string"
+                  },
+                  "designation": {
+                    "description": "Designation, e.g. 'Secretary' (ADMIN role only)",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "temporaryPassword",
+                  "role"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User id of the new staff account"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Full name"
+                    },
+                    "email": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Email, if set"
+                    },
+                    "phone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Phone, if set"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "GUARD",
+                        "ADMIN"
+                      ],
+                      "description": "Staff role for the new account"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "phone",
+                    "role"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A newly created staff account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/profile/me": {
+      "get": {
+        "operationId": "profile-me",
+        "summary": "Get the caller's full profile",
+        "description": "Returns the calling user's profile with the sub-profile matching their role (resident: flat + family + vehicles; guard: gate + shift; admin: designation). Errors: 401 if not authenticated.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Full name"
+                    },
+                    "email": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Email, if set"
+                    },
+                    "phone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Phone, if set"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "RESIDENT",
+                        "GUARD",
+                        "ADMIN"
+                      ],
+                      "description": "Account role"
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Profile photo URL, if set"
+                    },
+                    "emergencyContactName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Emergency contact name, if set"
+                    },
+                    "emergencyContactPhone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Emergency contact phone, if set"
+                    },
+                    "society": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "Society id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Society name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The user's society, if linked"
+                    },
+                    "residentProfile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "flatId": {
+                              "type": "string",
+                              "description": "Id of the resident's flat"
+                            },
+                            "flatNumber": {
+                              "type": "string",
+                              "description": "Flat number"
+                            },
+                            "towerName": {
+                              "type": "string",
+                              "description": "Tower name"
+                            },
+                            "isPrimaryResident": {
+                              "type": "boolean",
+                              "description": "Whether this is the flat's primary resident"
+                            },
+                            "moveInDate": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "ISO move-in date, if set"
+                            },
+                            "familyMembers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "description": "Family member id"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Full name"
+                                  },
+                                  "relation": {
+                                    "type": "string",
+                                    "description": "Relation to the resident, e.g. 'spouse'"
+                                  },
+                                  "age": {
+                                    "anyOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Age in years, if given"
+                                  },
+                                  "photoUrl": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Photo URL, if set"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "relation",
+                                  "age",
+                                  "photoUrl"
+                                ],
+                                "additionalProperties": false,
+                                "description": "A family member of a resident"
+                              },
+                              "description": "Registered family members"
+                            },
+                            "vehicles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "description": "Vehicle id"
+                                  },
+                                  "number": {
+                                    "type": "string",
+                                    "description": "Vehicle registration number"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "CAR",
+                                      "BIKE",
+                                      "OTHER"
+                                    ],
+                                    "description": "Vehicle type"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number",
+                                  "type"
+                                ],
+                                "additionalProperties": false,
+                                "description": "A resident's vehicle"
+                              },
+                              "description": "Registered vehicles"
+                            }
+                          },
+                          "required": [
+                            "flatId",
+                            "flatNumber",
+                            "towerName",
+                            "isPrimaryResident",
+                            "moveInDate",
+                            "familyMembers",
+                            "vehicles"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident details — null unless role is RESIDENT"
+                    },
+                    "guardProfile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "gateAssigned": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Assigned gate, if set"
+                            },
+                            "shiftStart": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Shift start 'HH:mm', if set"
+                            },
+                            "shiftEnd": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Shift end 'HH:mm', if set"
+                            }
+                          },
+                          "required": [
+                            "gateAssigned",
+                            "shiftStart",
+                            "shiftEnd"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Guard details — null unless role is GUARD"
+                    },
+                    "adminProfile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "designation": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Designation, e.g. 'Secretary', if set"
+                            }
+                          },
+                          "required": [
+                            "designation"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Admin details — null unless role is ADMIN"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "phone",
+                    "role",
+                    "avatarUrl",
+                    "emergencyContactName",
+                    "emergencyContactPhone",
+                    "society",
+                    "residentProfile",
+                    "guardProfile",
+                    "adminProfile"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Role-aware profile of the calling user"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "profile-update",
+        "summary": "Update the caller's profile",
+        "description": "Partially updates name, avatar URL, and emergency contact of the calling user (any role). Errors: 401 if not authenticated.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "New display name",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "avatarUrl": {
+                    "description": "New profile photo URL (Cloudinary, Phase 9)",
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "emergencyContactName": {
+                    "description": "Emergency contact name",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "emergencyContactPhone": {
+                    "description": "Emergency contact phone",
+                    "type": "string",
+                    "minLength": 8
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "User id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Full name"
+                    },
+                    "email": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Email, if set"
+                    },
+                    "phone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Phone, if set"
+                    },
+                    "role": {
+                      "type": "string",
+                      "enum": [
+                        "RESIDENT",
+                        "GUARD",
+                        "ADMIN"
+                      ],
+                      "description": "Account role"
+                    },
+                    "avatarUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Profile photo URL, if set"
+                    },
+                    "emergencyContactName": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Emergency contact name, if set"
+                    },
+                    "emergencyContactPhone": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Emergency contact phone, if set"
+                    },
+                    "society": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "Society id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Society name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "The user's society, if linked"
+                    },
+                    "residentProfile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "flatId": {
+                              "type": "string",
+                              "description": "Id of the resident's flat"
+                            },
+                            "flatNumber": {
+                              "type": "string",
+                              "description": "Flat number"
+                            },
+                            "towerName": {
+                              "type": "string",
+                              "description": "Tower name"
+                            },
+                            "isPrimaryResident": {
+                              "type": "boolean",
+                              "description": "Whether this is the flat's primary resident"
+                            },
+                            "moveInDate": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "ISO move-in date, if set"
+                            },
+                            "familyMembers": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "description": "Family member id"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Full name"
+                                  },
+                                  "relation": {
+                                    "type": "string",
+                                    "description": "Relation to the resident, e.g. 'spouse'"
+                                  },
+                                  "age": {
+                                    "anyOf": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Age in years, if given"
+                                  },
+                                  "photoUrl": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ],
+                                    "description": "Photo URL, if set"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name",
+                                  "relation",
+                                  "age",
+                                  "photoUrl"
+                                ],
+                                "additionalProperties": false,
+                                "description": "A family member of a resident"
+                              },
+                              "description": "Registered family members"
+                            },
+                            "vehicles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "description": "Vehicle id"
+                                  },
+                                  "number": {
+                                    "type": "string",
+                                    "description": "Vehicle registration number"
+                                  },
+                                  "type": {
+                                    "type": "string",
+                                    "enum": [
+                                      "CAR",
+                                      "BIKE",
+                                      "OTHER"
+                                    ],
+                                    "description": "Vehicle type"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "number",
+                                  "type"
+                                ],
+                                "additionalProperties": false,
+                                "description": "A resident's vehicle"
+                              },
+                              "description": "Registered vehicles"
+                            }
+                          },
+                          "required": [
+                            "flatId",
+                            "flatNumber",
+                            "towerName",
+                            "isPrimaryResident",
+                            "moveInDate",
+                            "familyMembers",
+                            "vehicles"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident details — null unless role is RESIDENT"
+                    },
+                    "guardProfile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "gateAssigned": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Assigned gate, if set"
+                            },
+                            "shiftStart": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Shift start 'HH:mm', if set"
+                            },
+                            "shiftEnd": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Shift end 'HH:mm', if set"
+                            }
+                          },
+                          "required": [
+                            "gateAssigned",
+                            "shiftStart",
+                            "shiftEnd"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Guard details — null unless role is GUARD"
+                    },
+                    "adminProfile": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "designation": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "description": "Designation, e.g. 'Secretary', if set"
+                            }
+                          },
+                          "required": [
+                            "designation"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Admin details — null unless role is ADMIN"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "phone",
+                    "role",
+                    "avatarUrl",
+                    "emergencyContactName",
+                    "emergencyContactPhone",
+                    "society",
+                    "residentProfile",
+                    "guardProfile",
+                    "adminProfile"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Role-aware profile of the calling user"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/family-members": {
+      "post": {
+        "operationId": "familyMember-add",
+        "summary": "Add a family member",
+        "description": "Adds a family member to the calling resident's profile. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Full name"
+                  },
+                  "relation": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Relation to the resident, e.g. 'spouse'"
+                  },
+                  "age": {
+                    "description": "Age in years",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 130
+                  },
+                  "photoUrl": {
+                    "description": "Photo URL",
+                    "type": "string",
+                    "format": "uri"
+                  }
+                },
+                "required": [
+                  "name",
+                  "relation"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Family member id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Full name"
+                    },
+                    "relation": {
+                      "type": "string",
+                      "description": "Relation to the resident, e.g. 'spouse'"
+                    },
+                    "age": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Age in years, if given"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL, if set"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "relation",
+                    "age",
+                    "photoUrl"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A family member of a resident"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/family-members/{familyMemberId}": {
+      "patch": {
+        "operationId": "familyMember-update",
+        "summary": "Update a family member",
+        "description": "Partially updates one of the calling resident's family members. Errors: 403 if not a resident, 404 if the family member does not belong to the caller.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "familyMemberId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the family member to update"
+            },
+            "required": true,
+            "description": "Id of the family member to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "New name",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "relation": {
+                    "description": "New relation",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "age": {
+                    "description": "New age",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 130
+                  },
+                  "photoUrl": {
+                    "description": "New photo URL",
+                    "type": "string",
+                    "format": "uri"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Family member id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Full name"
+                    },
+                    "relation": {
+                      "type": "string",
+                      "description": "Relation to the resident, e.g. 'spouse'"
+                    },
+                    "age": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Age in years, if given"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL, if set"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "relation",
+                    "age",
+                    "photoUrl"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A family member of a resident"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "familyMember-remove",
+        "summary": "Remove a family member",
+        "description": "Removes one of the calling resident's family members. Errors: 403 if not a resident, 404 if the family member does not belong to the caller.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "familyMemberId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the family member to remove"
+            },
+            "required": true,
+            "description": "Id of the family member to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vehicles": {
+      "post": {
+        "operationId": "vehicle-add",
+        "summary": "Register a vehicle",
+        "description": "Registers a vehicle on the calling resident's profile. Errors: 403 if not a resident, 409 if the number is already registered on this profile.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Vehicle registration number"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "CAR",
+                      "BIKE",
+                      "OTHER"
+                    ],
+                    "description": "Vehicle type"
+                  }
+                },
+                "required": [
+                  "number",
+                  "type"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Vehicle id"
+                    },
+                    "number": {
+                      "type": "string",
+                      "description": "Vehicle registration number"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "CAR",
+                        "BIKE",
+                        "OTHER"
+                      ],
+                      "description": "Vehicle type"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "number",
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A resident's vehicle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/vehicles/{vehicleId}": {
+      "patch": {
+        "operationId": "vehicle-update",
+        "summary": "Update a vehicle",
+        "description": "Partially updates one of the calling resident's vehicles. Errors: 403 if not a resident, 404 if the vehicle does not belong to the caller, 409 if the new number is already registered.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicleId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the vehicle to update"
+            },
+            "required": true,
+            "description": "Id of the vehicle to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "number": {
+                    "description": "New registration number",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "CAR",
+                      "BIKE",
+                      "OTHER"
+                    ],
+                    "description": "Vehicle type"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Vehicle id"
+                    },
+                    "number": {
+                      "type": "string",
+                      "description": "Vehicle registration number"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "CAR",
+                        "BIKE",
+                        "OTHER"
+                      ],
+                      "description": "Vehicle type"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "number",
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A resident's vehicle"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "vehicle-remove",
+        "summary": "Remove a vehicle",
+        "description": "Removes one of the calling resident's vehicles. Errors: 403 if not a resident, 404 if the vehicle does not belong to the caller.",
+        "tags": [
+          "Profile"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicleId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the vehicle to remove"
+            },
+            "required": true,
+            "description": "Id of the vehicle to remove"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1452,6 +4901,50 @@
         "example": {
           "code": "BAD_REQUEST",
           "message": "Invalid input data",
+          "issues": []
+        }
+      },
+      "error.NOT_FOUND": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The error message",
+            "example": "Not found"
+          },
+          "code": {
+            "type": "string",
+            "description": "The error code",
+            "example": "NOT_FOUND"
+          },
+          "issues": {
+            "description": "An array of issues that were responsible for the error",
+            "example": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "message",
+          "code"
+        ],
+        "additionalProperties": false,
+        "title": "Not found error (404)",
+        "description": "The error information",
+        "example": {
+          "code": "NOT_FOUND",
+          "message": "Not found",
           "issues": []
         }
       }
