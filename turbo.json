@@ -19,6 +19,9 @@
     },
     "db:generate": {},
     "db:migrate": {},
+    "openapi:generate": {
+      "cache": false
+    },
     "test": {}
   }
 }

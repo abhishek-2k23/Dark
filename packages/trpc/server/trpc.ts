@@ -1,5 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { OpenApiMeta } from "trpc-to-openapi";
+import superjson from "superjson";
+import { ZodError } from "zod";
 import { hasMinPermission } from "@repo/auth";
 import type { Role } from "@repo/database";
 
@@ -8,7 +10,32 @@ import { createContext } from "./context";
 export const tRPCContext = initTRPC
   .meta<OpenApiMeta>()
   .context<typeof createContext>()
-  .create({});
+  .create({
+    transformer: superjson,
+    /**
+     * Adds `data.fieldErrors: { field, message }[]` whenever the error came
+     * from Zod input validation, so both tRPC clients and OpenAPI/REST
+     * consumers get one consistent validation-error shape
+     * (see docs/api-conventions.md).
+     */
+    errorFormatter({ shape, error }) {
+      const fieldErrors =
+        error.cause instanceof ZodError
+          ? error.cause.issues.map((issue) => ({
+              field: issue.path.map(String).join("."),
+              message: issue.message,
+            }))
+          : null;
+      // Never expose stack traces to clients (tRPC's default only strips
+      // them when NODE_ENV === "production", but this repo uses "prod");
+      // 5xx causes are logged server-side instead.
+      const { stack: _stack, ...data } = shape.data;
+      return {
+        ...shape,
+        data: { ...data, fieldErrors },
+      };
+    },
+  });
 
 export const router = tRPCContext.router;
 

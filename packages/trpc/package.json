@@ -17,6 +17,7 @@
     "@repo/services": "workspace:*",
     "@trpc/client": "^11.8.1",
     "@trpc/server": "^11.8.1",
+    "superjson": "^2.2.6",
     "trpc-to-openapi": "^3.1.0",
     "zod": "^4.3.5"
   }

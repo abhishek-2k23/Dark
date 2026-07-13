@@ -48,6 +48,23 @@ cd apps/portal
 pnpm start   # or: pnpm android / pnpm ios / pnpm web
 ```
 
+## API docs
+
+Interactive docs (Scalar) are served at `http://localhost:8000/docs`, backed by
+the raw spec at `/openapi.json`.
+
+**Regenerate the committed spec** (`docs/openapi.json`) after changing any route:
+
+```sh
+pnpm openapi:generate
+```
+
+**Adding a new documented endpoint:** follow the checklist in
+[`docs/api-conventions.md`](docs/api-conventions.md) — in short, every
+procedure needs `meta.openapi` (method, path, tags, summary, description,
+`protect`), named Zod schemas with `.describe()` on each field, and mutation
+descriptions listing their error cases.
+
 ## Database
 
 PostgreSQL runs in the `portal-postgres` container (see `docker-compose.yml`), database name `portal`.
