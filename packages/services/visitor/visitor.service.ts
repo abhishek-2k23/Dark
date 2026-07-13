@@ -7,6 +7,8 @@ import {
   type VisitorStatus,
 } from "@repo/database";
 
+import { assertCloudinaryUrl } from "@repo/cloudinary";
+
 import { notifyUser, notifyUsers, flatResidentUserIds } from "../notification/notification.service";
 
 /**
@@ -101,6 +103,7 @@ export async function registerVisitor(
     vehicleNumber?: string;
   },
 ): Promise<VisitorInfo> {
+  assertCloudinaryUrl(input.photoUrl);
   const societyId = actorSocietyId(actor);
   const flat = await prisma.flat.findFirst({
     where: { id: input.flatId, tower: { societyId } },

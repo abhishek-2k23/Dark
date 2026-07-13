@@ -195,5 +195,6 @@ describe("profile procedures (any authenticated role)", () => {
     );
     await expectTRPCError(caller.notification.list({ limit: 20 }), "UNAUTHORIZED");
     await expectTRPCError(caller.notification.markAllRead({}), "UNAUTHORIZED");
+    await expectTRPCError(caller.upload.getSignature({ kind: "AVATAR" }), "UNAUTHORIZED");
   });
 });

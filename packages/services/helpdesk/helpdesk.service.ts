@@ -8,6 +8,8 @@ import {
   type TicketStatus,
 } from "@repo/database";
 
+import { assertCloudinaryUrls } from "@repo/cloudinary";
+
 import { notifyUser } from "../notification/notification.service";
 
 /**
@@ -94,6 +96,7 @@ export async function createTicket(
     priority?: TicketPriority;
   },
 ): Promise<TicketInfo> {
+  assertCloudinaryUrls(input.photoUrls);
   const profile = await actorResidentProfile(actor);
   const ticket = await prisma.helpdeskTicket.create({
     data: {

@@ -13342,6 +13342,140 @@
           }
         }
       }
+    },
+    "/v1/uploads/signature": {
+      "post": {
+        "operationId": "upload-getSignature",
+        "summary": "Get a signature for a direct Cloudinary upload",
+        "description": "Two-step upload flow: (1) call this endpoint to get a short-lived signature; (2) POST the image as multipart form-data to uploadUrl with fields file, api_key, timestamp, folder, transformation, and signature — exactly as returned here. Cloudinary responds with a secure_url; send that URL to whichever mutation stores it (profile.update, visitor.register, ticket.create, …). The backend rejects media URLs that are not from this app's Cloudinary cloud. Errors: 401 if not authenticated, 412 if uploads are not configured on the server.",
+        "tags": [
+          "Uploads"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "AVATAR",
+                      "VISITOR",
+                      "TICKET",
+                      "NOTICE"
+                    ],
+                    "description": "What the image is for — picks the Cloudinary folder and transformation: AVATAR (square face-crop), VISITOR (fixed aspect), TICKET (size-capped original), NOTICE (banner aspect)"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cloudName": {
+                      "type": "string",
+                      "description": "Cloudinary cloud name"
+                    },
+                    "apiKey": {
+                      "type": "string",
+                      "description": "Cloudinary API key (public; include as 'api_key')"
+                    },
+                    "timestamp": {
+                      "type": "number",
+                      "description": "Unix seconds the signature was made; include as 'timestamp' — valid ~1 hour"
+                    },
+                    "folder": {
+                      "type": "string",
+                      "description": "Include verbatim as 'folder'"
+                    },
+                    "transformation": {
+                      "type": "string",
+                      "description": "Include verbatim as 'transformation'"
+                    },
+                    "signature": {
+                      "type": "string",
+                      "description": "Include as 'signature'"
+                    },
+                    "uploadUrl": {
+                      "type": "string",
+                      "description": "POST the multipart form to this URL"
+                    }
+                  },
+                  "required": [
+                    "cloudName",
+                    "apiKey",
+                    "timestamp",
+                    "folder",
+                    "transformation",
+                    "signature",
+                    "uploadUrl"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Everything the client needs for one signed direct upload"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

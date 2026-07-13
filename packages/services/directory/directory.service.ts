@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type User, type ServiceCategory } from "@repo/database";
+import { assertCloudinaryUrl } from "@repo/cloudinary";
 
 /**
  * Staff/service directory: maids, electricians, plumbers, drivers, etc.
@@ -54,6 +55,7 @@ export async function createServiceProvider(
     isVerified?: boolean;
   },
 ): Promise<ServiceProviderInfo> {
+  assertCloudinaryUrl(input.photoUrl);
   const societyId = actorSocietyId(actor);
   const provider = await prisma.serviceProvider.create({
     data: {
@@ -90,6 +92,7 @@ export async function updateServiceProvider(
     isVerified?: boolean;
   },
 ): Promise<ServiceProviderInfo> {
+  assertCloudinaryUrl(input.photoUrl);
   const provider = await requireOwnSocietyProvider(actor, input.serviceProviderId);
   const updated = await prisma.serviceProvider.update({
     where: { id: provider.id },

@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type Prisma, type User, type BookingStatus } from "@repo/database";
+import { assertCloudinaryUrls } from "@repo/cloudinary";
 
 /**
  * Amenities and slot bookings. Admins manage amenities; residents book
@@ -59,6 +60,7 @@ export async function createAmenity(
     isActive?: boolean;
   },
 ): Promise<AmenityInfo> {
+  assertCloudinaryUrls(input.photoUrls);
   const societyId = actorSocietyId(actor);
   const amenity = await prisma.amenity.create({
     data: {
@@ -86,6 +88,7 @@ export async function updateAmenity(
     isActive?: boolean;
   },
 ): Promise<AmenityInfo> {
+  assertCloudinaryUrls(input.photoUrls);
   const amenity = await prisma.amenity.findFirst({
     where: { id: input.amenityId, societyId: actorSocietyId(actor) },
   });

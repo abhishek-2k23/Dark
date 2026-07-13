@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type User, type VehicleType } from "@repo/database";
+import { assertCloudinaryUrl } from "@repo/cloudinary";
 
 /**
  * Self-service profile management for the calling user (any role), plus the
@@ -121,6 +122,7 @@ export async function updateMyProfile(
     emergencyContactPhone?: string;
   },
 ): Promise<MyProfile> {
+  assertCloudinaryUrl(input.avatarUrl);
   await prisma.user.update({ where: { id: actor.id }, data: input });
   return getMyProfile(actor);
 }
@@ -148,6 +150,7 @@ export async function addFamilyMember(
   actor: User,
   input: { name: string; relation: string; age?: number; photoUrl?: string },
 ): Promise<FamilyMemberInfo> {
+  assertCloudinaryUrl(input.photoUrl);
   const residentProfileId = await actorResidentProfileId(actor);
   const member = await prisma.familyMember.create({
     data: { residentProfileId, ...input },
@@ -182,6 +185,7 @@ export async function updateFamilyMember(
     photoUrl?: string;
   },
 ): Promise<FamilyMemberInfo> {
+  assertCloudinaryUrl(input.photoUrl);
   const member = await requireOwnFamilyMember(actor, input.familyMemberId);
   const updated = await prisma.familyMember.update({
     where: { id: member.id },

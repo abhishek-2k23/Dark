@@ -14,6 +14,7 @@ import { amenityRouter, amenityBookingRouter } from "./routes/amenity/route";
 import { dueRouter, paymentRouter } from "./routes/dues/route";
 import { serviceProviderRouter } from "./routes/directory/route";
 import { pushTokenRouter, notificationRouter } from "./routes/notification/route";
+import { uploadRouter } from "./routes/upload/route";
 
 export const serverRouter = router({
   health: healthRouter,
@@ -38,6 +39,7 @@ export const serverRouter = router({
   serviceProvider: serviceProviderRouter,
   pushToken: pushTokenRouter,
   notification: notificationRouter,
+  upload: uploadRouter,
 });
 
 export { createContext } from "./context";

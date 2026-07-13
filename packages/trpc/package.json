@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@repo/auth": "workspace:*",
+    "@repo/cloudinary": "workspace:^",
     "@repo/database": "workspace:*",
     "@repo/services": "workspace:*",
     "@trpc/client": "^11.8.1",
