@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "Portl Society",
+    "tagline": "Where the Gate Meets the Community",
+    "brandline": "SECURE • CONNECTED • SMART"
+  },
+  "common": {
+    "approve": "Approve",
+    "deny": "Deny",
+    "cancel": "Cancel",
+    "save": "Save",
+    "continue": "Continue",
+    "viewAll": "View All",
+    "seeMore": "See more",
+    "retry": "Retry",
+    "loading": "Loading…",
+    "optional": "Optional",
+    "live": "Live",
+    "primary": "Primary",
+    "voteNow": "Vote Now",
+    "enterDashboard": "Enter Dashboard"
+  },
+  "settings": {
+    "appearance": "Appearance",
+    "language": "Language",
+    "themeSystem": "Auto",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "english": "English",
+    "hindi": "हिन्दी"
+  },
+  "status": {
+    "approved": "Approved",
+    "denied": "Denied",
+    "pending": "Pending",
+    "active": "Active",
+    "scheduled": "Scheduled"
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "mobilePrompt": "Please enter your registered mobile number to continue.",
+    "mobileNumber": "Mobile Number",
+    "phonePlaceholder": "98765 43210",
+    "sendOtp": "Send OTP",
+    "agreePrefix": "By continuing, you agree to our",
+    "terms": "Terms of Service",
+    "and": "and",
+    "privacy": "Privacy Policy",
+    "orLoginWith": "OR LOGIN WITH"
+  },
+  "dashboard": {
+    "greeting": "Good morning, {{name}}!",
+    "quickActions": "Quick Actions",
+    "preApproveGuest": "Pre-approve Guest",
+    "raiseTicket": "Raise Ticket",
+    "bookAmenity": "Book Amenity",
+    "payDues": "Pay Dues",
+    "noticesUpdates": "Notices & Updates",
+    "activePoll": "Active Poll"
+  },
+  "showcase": {
+    "title": "Design System",
+    "subtitle": "Common UI, theming & localization for Portl Society.",
+    "typography": "Typography",
+    "buttons": "Buttons",
+    "cards": "Cards",
+    "inputs": "Inputs",
+    "badges": "Badges & Status",
+    "icons": "Icons & Avatars",
+    "links": "Links",
+    "sampleCardTitle": "Visitor Approval",
+    "sampleCardBody": "A delivery partner is at the Main Gate waiting for your approval.",
+    "learnMore": "Learn more"
+  }
+}

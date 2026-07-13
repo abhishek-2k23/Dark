@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Semantic design tokens.
+ *
+ * Values are space-separated RGB channels so Tailwind's `<alpha-value>`
+ * opacity modifier keeps working (see tailwind.config.js).
+ *
+ * NativeWind drives `prefers-color-scheme` from its own runtime colorScheme,
+ * so `colorScheme.set("dark" | "light" | "system")` flips these variables —
+ * that's what powers the app's auto / light / dark modes.
+ */
+@layer base {
+  :root {
+    --color-background: 245 246 250; /* #F5F6FA app canvas */
+    --color-surface: 255 255 255; /* cards */
+    --color-surface-muted: 240 241 248; /* inputs, subtle fills */
+    --color-surface-elevated: 255 255 255;
+
+    --color-border: 226 228 240; /* #E2E4F0 hairlines */
+    --color-border-strong: 209 213 225;
+
+    --color-content: 26 29 46; /* #1A1D2E primary text */
+    --color-content-secondary: 107 114 128; /* #6B7280 muted */
+    --color-content-tertiary: 156 163 175; /* #9CA3AF placeholder */
+    --color-content-inverse: 255 255 255;
+
+    --color-primary: 30 58 138; /* #1E3A8A brand navy */
+    --color-primary-strong: 15 42 107; /* #0F2A6B deep navy (CTAs) */
+    --color-primary-soft: 232 234 251; /* #E8EAFB lavender surfaces/icons */
+    --color-on-primary: 255 255 255;
+
+    --color-success: 15 122 77; /* #0F7A4D approve/green */
+    --color-success-soft: 207 245 228; /* #CFF5E4 */
+    --color-on-success: 255 255 255;
+
+    --color-accent: 52 211 153; /* #34D399 mint */
+    --color-accent-strong: 5 95 70; /* #065F46 mint text */
+
+    --color-warning: 217 119 6; /* #D97706 */
+    --color-warning-soft: 254 243 214; /* #FEF3D6 */
+
+    --color-danger: 220 38 38; /* #DC2626 deny */
+    --color-danger-soft: 252 233 233; /* #FCE9E9 */
+
+    --color-info: 37 52 140;
+    --color-peach-soft: 252 231 206; /* #FCE7CE */
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background: 14 17 23; /* #0E1117 */
+      --color-surface: 23 28 41; /* #171C29 */
+      --color-surface-muted: 32 38 54; /* #202636 */
+      --color-surface-elevated: 30 36 52;
+
+      --color-border: 44 50 66; /* #2C3242 */
+      --color-border-strong: 60 68 88;
+
+      --color-content: 243 244 246; /* #F3F4F6 */
+      --color-content-secondary: 154 163 178; /* #9AA3B2 */
+      --color-content-tertiary: 107 114 128;
+      --color-content-inverse: 15 18 25;
+
+      --color-primary: 120 148 240; /* #7894F0 brighter navy for contrast */
+      --color-primary-strong: 84 116 220; /* #5474DC */
+      --color-primary-soft: 30 40 70; /* #1E2846 */
+      --color-on-primary: 255 255 255;
+
+      --color-success: 52 197 138; /* #34C58A */
+      --color-success-soft: 18 46 36; /* #122E24 */
+      --color-on-success: 255 255 255;
+
+      --color-accent: 52 211 153;
+      --color-accent-strong: 110 231 183; /* #6EE7B7 */
+
+      --color-warning: 245 176 66; /* #F5B042 */
+      --color-warning-soft: 58 44 20;
+
+      --color-danger: 248 113 113; /* #F87171 */
+      --color-danger-soft: 60 30 30;
+
+      --color-info: 120 148 240;
+      --color-peach-soft: 58 44 28;
+    }
+  }
+}

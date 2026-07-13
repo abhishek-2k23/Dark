@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "पोर्टल सोसाइटी",
+    "tagline": "जहाँ गेट समुदाय से मिलता है",
+    "brandline": "सुरक्षित • जुड़ा हुआ • स्मार्ट"
+  },
+  "common": {
+    "approve": "स्वीकृत करें",
+    "deny": "अस्वीकार करें",
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "continue": "जारी रखें",
+    "viewAll": "सभी देखें",
+    "seeMore": "और देखें",
+    "retry": "पुनः प्रयास करें",
+    "loading": "लोड हो रहा है…",
+    "optional": "वैकल्पिक",
+    "live": "लाइव",
+    "primary": "प्राथमिक",
+    "voteNow": "अभी वोट करें",
+    "enterDashboard": "डैशबोर्ड खोलें"
+  },
+  "settings": {
+    "appearance": "रूप-रंग",
+    "language": "भाषा",
+    "themeSystem": "स्वतः",
+    "themeLight": "हल्का",
+    "themeDark": "गहरा",
+    "english": "English",
+    "hindi": "हिन्दी"
+  },
+  "status": {
+    "approved": "स्वीकृत",
+    "denied": "अस्वीकृत",
+    "pending": "लंबित",
+    "active": "सक्रिय",
+    "scheduled": "निर्धारित"
+  },
+  "auth": {
+    "welcomeBack": "वापसी पर स्वागत है",
+    "mobilePrompt": "जारी रखने के लिए कृपया अपना पंजीकृत मोबाइल नंबर दर्ज करें।",
+    "mobileNumber": "मोबाइल नंबर",
+    "phonePlaceholder": "98765 43210",
+    "sendOtp": "OTP भेजें",
+    "agreePrefix": "जारी रखते हुए, आप हमारी",
+    "terms": "सेवा शर्तें",
+    "and": "और",
+    "privacy": "गोपनीयता नीति",
+    "orLoginWith": "या इससे लॉगिन करें"
+  },
+  "dashboard": {
+    "greeting": "सुप्रभात, {{name}}!",
+    "quickActions": "त्वरित क्रियाएँ",
+    "preApproveGuest": "अतिथि को पूर्व-स्वीकृति दें",
+    "raiseTicket": "शिकायत दर्ज करें",
+    "bookAmenity": "सुविधा बुक करें",
+    "payDues": "बकाया भुगतान करें",
+    "noticesUpdates": "सूचनाएँ और अपडेट",
+    "activePoll": "सक्रिय मतदान"
+  },
+  "showcase": {
+    "title": "डिज़ाइन सिस्टम",
+    "subtitle": "पोर्टल सोसाइटी के लिए साझा UI, थीम और स्थानीयकरण।",
+    "typography": "टाइपोग्राफी",
+    "buttons": "बटन",
+    "cards": "कार्ड",
+    "inputs": "इनपुट",
+    "badges": "बैज और स्थिति",
+    "icons": "आइकन और अवतार",
+    "links": "लिंक",
+    "sampleCardTitle": "आगंतुक स्वीकृति",
+    "sampleCardBody": "एक डिलीवरी पार्टनर मुख्य गेट पर आपकी स्वीकृति की प्रतीक्षा कर रहा है।",
+    "learnMore": "और जानें"
+  }
+}
