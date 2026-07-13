@@ -46,7 +46,28 @@
     "terms": "Terms of Service",
     "and": "and",
     "privacy": "Privacy Policy",
-    "orLoginWith": "OR LOGIN WITH"
+    "orLoginWith": "OR LOGIN WITH",
+    "identifier": "Email or phone",
+    "identifierPlaceholder": "you@email.com or +91…",
+    "password": "Password",
+    "passwordPlaceholder": "Your password",
+    "logIn": "Log in",
+    "orContinueWith": "OR CONTINUE WITH",
+    "continueWithGoogle": "Continue with Google",
+    "googleUnavailable": "Google sign-in isn't configured yet.",
+    "welcomeToast": "Welcome back!",
+    "otpSentToast": "We sent a code to {{email}}",
+    "missingFields": "Enter your email/phone and password."
+  },
+  "otp": {
+    "title": "Verify your email",
+    "subtitle": "Enter the 6-digit code we sent to {{email}}.",
+    "codeLabel": "Verification code",
+    "verify": "Verify & continue",
+    "resend": "Resend code",
+    "resent": "A new code is on its way.",
+    "back": "Back to login",
+    "missingCode": "Enter the 6-digit code."
   },
   "dashboard": {
     "greeting": "Good morning, {{name}}!",

@@ -19,7 +19,11 @@ import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ToastHost } from "@/components/ToastHost";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
+import { TRPCProvider } from "@/providers/TRPCProvider";
+import { useAuthStore } from "@/stores/authStore";
 import { ThemeProvider, useTheme } from "@/theme";
 // Side-effect: initialise i18next before any component calls useTranslation.
 import "@/i18n";
@@ -43,6 +47,11 @@ export default function RootLayout() {
     Nunito_700Bold,
   });
 
+  // Restore any persisted session as soon as the app starts.
+  useEffect(() => {
+    void useAuthStore.getState().hydrate();
+  }, []);
+
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
@@ -57,12 +66,17 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <LanguageProvider>
-            <ThemedStatusBar />
-            <Stack screenOptions={{ headerShown: false }} />
-          </LanguageProvider>
-        </ThemeProvider>
+        <TRPCProvider>
+          <ThemeProvider>
+            <LanguageProvider>
+              <ThemedStatusBar />
+              <ErrorBoundary>
+                <Stack screenOptions={{ headerShown: false }} />
+              </ErrorBoundary>
+              <ToastHost />
+            </LanguageProvider>
+          </ThemeProvider>
+        </TRPCProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

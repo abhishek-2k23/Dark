@@ -82,6 +82,32 @@ persisted. Add a language by dropping a new locale JSON and extending
 import { Screen, Card, Button, Text } from "@/components/ui";
 ```
 
+## Data, auth & navigation
+
+- **API URL** — `app.config.ts` reads `EXPO_PUBLIC_API_URL` (defaults to
+  `http://localhost:8000`; Android emulator rewrites `localhost`→`10.0.2.2` in
+  `src/lib/env.ts`). Real staging/prod URLs are wired later. On a physical
+  device set `EXPO_PUBLIC_API_URL` to your machine's LAN IP.
+- **tRPC** — `src/lib/trpc.ts` exposes `trpc` (react-query hooks) and `api`
+  (vanilla client). `auth.*` calls are **not batched** (the server rate-limiter
+  matches exact paths); a 401 transparently refreshes the token once and
+  retries. Provider is `TRPCProvider` at the app root.
+- **Auth** — `useAuthStore` (Zustand) owns the session: the refresh token is
+  persisted in `expo-secure-store`, the access token stays in memory, and
+  `hydrate()` restores the session on launch. Login supports **email or phone +
+  password**; an **unverified email** returns `OTP_REQUIRED` and routes to the
+  OTP screen (`auth.verifyEmailOtp`). "Continue with Google" is wired but no-ops
+  until `EXPO_PUBLIC_GOOGLE_CLIENT_ID` (and the server's `GOOGLE_CLIENT_ID`) are
+  set.
+- **Routing** — role-aware groups under `src/app/`: `(auth)` (login + OTP),
+  `(resident)`/`(guard)`/`(admin)` (guarded by `RoleStack`), and `(dev)` (the
+  component showcase). `app/index.tsx` is the launch gate.
+- **Dev seed logins** (all password `password123`): `+919800000003` /
+  `ravi@example.test` is a resident with an **unverified email** (exercises the
+  OTP flow); log in by phone to skip it. `admin@greenmeadows.test`,
+  `guard@greenmeadows.test` are verified. Needs the API + Postgres running
+  (`docker compose up -d`, then `pnpm dev` at the repo root).
+
 ### Responsiveness & accessibility
 
 - Layouts use flex + `flex-wrap`; avoid fixed widths/heights so content reflows.

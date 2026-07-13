@@ -2,12 +2,18 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "skipLibCheck": true,
     "paths": {
       "@/*": [
         "./src/*"
       ],
       "@/assets/*": [
         "./assets/*"
+      ],
+      // See src/types/expo-modules-core-shim.d.ts — resolves this SDK-source-only
+      // package to a stub for typecheck (Metro still bundles the real source).
+      "expo-modules-core": [
+        "./src/types/expo-modules-core-shim.d.ts"
       ]
     }
   },
