@@ -1,0 +1,597 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------------
+
+enum Role {
+  RESIDENT
+  GUARD
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum FlatType {
+  ONE_RK    @map("1RK")
+  ONE_BHK   @map("1BHK")
+  TWO_BHK   @map("2BHK")
+  THREE_BHK @map("3BHK")
+  FOUR_BHK  @map("4BHK")
+  OTHER
+}
+
+enum VehicleType {
+  CAR
+  BIKE
+  OTHER
+}
+
+enum InviteStatus {
+  PENDING
+  CLAIMED
+}
+
+enum VisitorPurpose {
+  GUEST
+  DELIVERY
+  CAB
+  SERVICE_STAFF
+  OTHER
+}
+
+enum VisitorStatus {
+  PENDING
+  APPROVED
+  DENIED
+  EXPIRED
+}
+
+enum PreApprovalStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  CANCELLED
+}
+
+enum TicketCategory {
+  PLUMBING
+  ELECTRICAL
+  HOUSEKEEPING
+  SECURITY
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum NoticeCategory {
+  MAINTENANCE
+  EVENT
+  EMERGENCY
+  GENERAL
+}
+
+enum BookingStatus {
+  BOOKED
+  CANCELLED
+  COMPLETED
+}
+
+enum DueStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum PaymentMethod {
+  UPI
+  CARD
+  NETBANKING
+}
+
+enum PaymentStatus {
+  INITIATED
+  SUCCESS
+  FAILED
+}
+
+enum ServiceCategory {
+  MAID
+  ELECTRICIAN
+  PLUMBER
+  DRIVER
+  OTHER
+}
+
+enum DeviceType {
+  IOS
+  ANDROID
+}
+
+enum NotificationType {
+  VISITOR_PENDING
+  VISITOR_APPROVED
+  VISITOR_DENIED
+  TICKET_STATUS_CHANGED
+  TICKET_COMMENT
+  NOTICE_PUBLISHED
+  POLL_CREATED
+  DUE_GENERATED
+  BOOKING_CONFIRMED
+  GENERAL
+}
+
+// ---------------------------------------------------------------------------
+// CORE IDENTITY & SOCIETY HIERARCHY
+// ---------------------------------------------------------------------------
+
+model Society {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  city      String
+  state     String
+  pincode   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  towers           Tower[]
+  users            User[]
+  guardProfiles    GuardProfile[]
+  adminProfiles    AdminProfile[]
+  invites          PendingResidentInvite[]
+  notices          Notice[]
+  polls            Poll[]
+  amenities        Amenity[]
+  serviceProviders ServiceProvider[]
+}
+
+model Tower {
+  id        String   @id @default(cuid())
+  societyId String
+  society   Society  @relation(fields: [societyId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
+
+  flats Flat[]
+
+  @@unique([societyId, name])
+}
+
+model Flat {
+  id         String   @id @default(cuid())
+  towerId    String
+  tower      Tower    @relation(fields: [towerId], references: [id])
+  flatNumber String
+  floor      Int
+  type       FlatType
+  createdAt  DateTime @default(now())
+
+  residents    ResidentProfile[]
+  invites      PendingResidentInvite[]
+  visitors     Visitor[]
+  preApprovals GuestPreApproval[]
+  tickets      HelpdeskTicket[]
+  dues         MaintenanceDue[]
+
+  @@unique([towerId, flatNumber])
+}
+
+model User {
+  id           String       @id @default(cuid())
+  name         String
+  email        String?      @unique
+  phone        String?      @unique
+  passwordHash String? // null when authProvider = GOOGLE and no password set
+  authProvider AuthProvider @default(LOCAL)
+  googleId     String?      @unique
+  avatarUrl    String?
+  role         Role
+  societyId    String?
+  society      Society?     @relation(fields: [societyId], references: [id])
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  residentProfile ResidentProfile?
+  guardProfile    GuardProfile?
+  adminProfile    AdminProfile?
+  pushTokens      PushToken[]
+  refreshTokens   RefreshToken[]
+
+  registeredVisitors    Visitor[]               @relation("VisitorRegisteredByGuard")
+  approvedVisitors      Visitor[]               @relation("VisitorApprovedByResident")
+  assignedTickets       HelpdeskTicket[]        @relation("TicketAssignee")
+  ticketComments        TicketComment[]
+  publishedNotices      Notice[]
+  createdPolls          Poll[]
+  sentInvites           PendingResidentInvite[]
+  addedServiceProviders ServiceProvider[]
+  notifications         Notification[]
+}
+
+// ---------------------------------------------------------------------------
+// ROLE-SPECIFIC PROFILES
+// ---------------------------------------------------------------------------
+
+model ResidentProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id])
+  flatId            String
+  flat              Flat      @relation(fields: [flatId], references: [id])
+  isPrimaryResident Boolean   @default(false)
+  moveInDate        DateTime?
+
+  familyMembers FamilyMember[]
+  vehicles      Vehicle[]
+  preApprovals  GuestPreApproval[]
+  tickets       HelpdeskTicket[]
+  pollVotes     PollVote[]
+  bookings      AmenityBooking[]
+  payments      Payment[]
+
+  @@index([flatId])
+}
+
+model FamilyMember {
+  id                String          @id @default(cuid())
+  residentProfileId String
+  residentProfile   ResidentProfile @relation(fields: [residentProfileId], references: [id])
+  name              String
+  relation          String
+  age               Int?
+  photoUrl          String?
+}
+
+model Vehicle {
+  id                String          @id @default(cuid())
+  residentProfileId String
+  residentProfile   ResidentProfile @relation(fields: [residentProfileId], references: [id])
+  number            String
+  type              VehicleType
+
+  @@unique([residentProfileId, number])
+}
+
+model GuardProfile {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id])
+  societyId    String
+  society      Society @relation(fields: [societyId], references: [id])
+  gateAssigned String?
+  shiftStart   String? // "HH:mm", 24h
+  shiftEnd     String? // "HH:mm", 24h
+}
+
+model AdminProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id])
+  societyId   String
+  society     Society @relation(fields: [societyId], references: [id])
+  designation String?
+}
+
+// ---------------------------------------------------------------------------
+// AUTH-SUPPORTING TABLES
+// ---------------------------------------------------------------------------
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([userId])
+}
+
+model PendingResidentInvite {
+  id               String       @id @default(cuid())
+  societyId        String
+  society          Society      @relation(fields: [societyId], references: [id])
+  flatId           String
+  flat             Flat         @relation(fields: [flatId], references: [id])
+  email            String? // at least one of email/phone required — enforced in service layer
+  phone            String?
+  invitedByAdminId String
+  invitedByAdmin   User         @relation(fields: [invitedByAdminId], references: [id])
+  status           InviteStatus @default(PENDING)
+  claimedAt        DateTime?
+  createdAt        DateTime     @default(now())
+
+  @@index([email])
+  @@index([phone])
+  @@index([societyId, status])
+}
+
+// ---------------------------------------------------------------------------
+// VISITOR MANAGEMENT
+// ---------------------------------------------------------------------------
+
+model Visitor {
+  id                   String         @id @default(cuid())
+  name                 String
+  phone                String
+  photoUrl             String?
+  purpose              VisitorPurpose
+  vehicleNumber        String?
+  flatId               String
+  flat                 Flat           @relation(fields: [flatId], references: [id])
+  registeredByGuardId  String
+  registeredByGuard    User           @relation("VisitorRegisteredByGuard", fields: [registeredByGuardId], references: [id])
+  status               VisitorStatus  @default(PENDING)
+  approvedByResidentId String?
+  approvedByResident   User?          @relation("VisitorApprovedByResident", fields: [approvedByResidentId], references: [id])
+  entryTime            DateTime?
+  exitTime             DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  @@index([flatId])
+  @@index([status])
+  @@index([registeredByGuardId])
+}
+
+model GuestPreApproval {
+  id            String            @id @default(cuid())
+  residentId    String
+  resident      ResidentProfile   @relation(fields: [residentId], references: [id])
+  flatId        String
+  flat          Flat              @relation(fields: [flatId], references: [id])
+  guestName     String
+  guestPhone    String?
+  validFrom     DateTime
+  validTo       DateTime
+  vehicleNumber String?
+  qrCode        String            @unique
+  status        PreApprovalStatus @default(ACTIVE)
+  createdAt     DateTime          @default(now())
+
+  @@index([flatId, status])
+  @@index([residentId])
+}
+
+// ---------------------------------------------------------------------------
+// COMMUNITY MODULES
+// ---------------------------------------------------------------------------
+
+model HelpdeskTicket {
+  id           String          @id @default(cuid())
+  residentId   String
+  resident     ResidentProfile @relation(fields: [residentId], references: [id])
+  flatId       String
+  flat         Flat            @relation(fields: [flatId], references: [id])
+  category     TicketCategory
+  title        String
+  description  String
+  photoUrls    String[]
+  priority     TicketPriority  @default(MEDIUM)
+  status       TicketStatus    @default(OPEN)
+  assignedToId String?
+  assignedTo   User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  comments TicketComment[]
+
+  @@index([status])
+  @@index([residentId])
+  @@index([flatId])
+}
+
+model TicketComment {
+  id        String         @id @default(cuid())
+  ticketId  String
+  ticket    HelpdeskTicket @relation(fields: [ticketId], references: [id])
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id])
+  message   String
+  createdAt DateTime       @default(now())
+
+  @@index([ticketId])
+}
+
+model Notice {
+  id                 String         @id @default(cuid())
+  societyId          String
+  society            Society        @relation(fields: [societyId], references: [id])
+  title              String
+  body               String
+  category           NoticeCategory
+  isPinned           Boolean        @default(false)
+  publishedByAdminId String
+  publishedByAdmin   User           @relation(fields: [publishedByAdminId], references: [id])
+  scheduledAt        DateTime?
+  createdAt          DateTime       @default(now())
+
+  @@index([societyId])
+}
+
+model Poll {
+  id               String   @id @default(cuid())
+  societyId        String
+  society          Society  @relation(fields: [societyId], references: [id])
+  question         String
+  allowMultiple    Boolean  @default(false)
+  deadline         DateTime
+  createdByAdminId String
+  createdByAdmin   User     @relation(fields: [createdByAdminId], references: [id])
+  createdAt        DateTime @default(now())
+
+  options PollOption[]
+  votes   PollVote[]
+
+  @@index([societyId])
+}
+
+model PollOption {
+  id     String @id @default(cuid())
+  pollId String
+  poll   Poll   @relation(fields: [pollId], references: [id])
+  text   String
+
+  votes PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  id         String          @id @default(cuid())
+  pollId     String
+  poll       Poll            @relation(fields: [pollId], references: [id])
+  optionId   String
+  option     PollOption      @relation(fields: [optionId], references: [id])
+  residentId String
+  resident   ResidentProfile @relation(fields: [residentId], references: [id])
+  createdAt  DateTime        @default(now())
+
+  // Single-vote-per-poll (allowMultiple = false) is enforced in the service
+  // layer; this constraint prevents duplicate votes on the same option.
+  @@unique([pollId, optionId, residentId])
+  @@index([pollId])
+}
+
+model Amenity {
+  id           String   @id @default(cuid())
+  societyId    String
+  society      Society  @relation(fields: [societyId], references: [id])
+  name         String
+  description  String?
+  photoUrls    String[]
+  rules        String?
+  pricePerSlot Decimal? @db.Decimal(10, 2)
+  isActive     Boolean  @default(true)
+
+  bookings AmenityBooking[]
+
+  @@index([societyId])
+}
+
+model AmenityBooking {
+  id         String          @id @default(cuid())
+  amenityId  String
+  amenity    Amenity         @relation(fields: [amenityId], references: [id])
+  residentId String
+  resident   ResidentProfile @relation(fields: [residentId], references: [id])
+  date       DateTime        @db.Date
+  startTime  String // "HH:mm", 24h
+  endTime    String // "HH:mm", 24h
+  status     BookingStatus   @default(BOOKED)
+  createdAt  DateTime        @default(now())
+
+  @@index([amenityId, date])
+  @@index([residentId])
+}
+
+// ---------------------------------------------------------------------------
+// DUES & PAYMENTS
+// ---------------------------------------------------------------------------
+
+model MaintenanceDue {
+  id      String    @id @default(cuid())
+  flatId  String
+  flat    Flat      @relation(fields: [flatId], references: [id])
+  month   Int // 1-12
+  year    Int
+  amount  Decimal   @db.Decimal(10, 2)
+  dueDate DateTime
+  status  DueStatus @default(PENDING)
+
+  payments Payment[]
+
+  @@unique([flatId, month, year])
+  @@index([flatId])
+  @@index([status])
+}
+
+model Payment {
+  id            String          @id @default(cuid())
+  dueId         String
+  due           MaintenanceDue  @relation(fields: [dueId], references: [id])
+  residentId    String
+  resident      ResidentProfile @relation(fields: [residentId], references: [id])
+  amount        Decimal         @db.Decimal(10, 2)
+  method        PaymentMethod
+  transactionId String?         @unique
+  status        PaymentStatus   @default(INITIATED)
+  paidAt        DateTime?
+  createdAt     DateTime        @default(now())
+
+  @@index([dueId])
+  @@index([residentId])
+}
+
+// ---------------------------------------------------------------------------
+// STAFF & SERVICE DIRECTORY
+// ---------------------------------------------------------------------------
+
+model ServiceProvider {
+  id             String          @id @default(cuid())
+  societyId      String
+  society        Society         @relation(fields: [societyId], references: [id])
+  name           String
+  category       ServiceCategory
+  phone          String
+  photoUrl       String?
+  isVerified     Boolean         @default(false)
+  addedByAdminId String
+  addedByAdmin   User            @relation(fields: [addedByAdminId], references: [id])
+
+  @@index([societyId, category])
+}
+
+// ---------------------------------------------------------------------------
+// NOTIFICATIONS
+// ---------------------------------------------------------------------------
+
+model PushToken {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id])
+  token      String
+  deviceType DeviceType
+  createdAt  DateTime   @default(now())
+
+  @@unique([userId, token])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  title     String
+  body      String
+  type      NotificationType
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}

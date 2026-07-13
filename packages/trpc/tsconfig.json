@@ -1,4 +1,10 @@
 {
   "extends": ["@repo/typescript-config/node.json"],
+  "compilerOptions": {
+    // This package is consumed as TypeScript source; declaration emit is never
+    // used and tripping TS2742 on pnpm-resolved Prisma types helps no one.
+    "declaration": false,
+    "declarationMap": false
+  },
   "include": ["server/", "client/"]
 }

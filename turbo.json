@@ -18,6 +18,7 @@
       "persistent": true
     },
     "db:generate": {},
-    "db:migrate": {}
+    "db:migrate": {},
+    "test": {}
   }
 }

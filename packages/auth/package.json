@@ -1,23 +1,23 @@
 {
-  "name": "@repo/trpc",
+  "name": "@repo/auth",
   "version": "1.0.0",
   "private": true,
+  "main": "index.ts",
+  "types": "index.ts",
   "scripts": {
+    "test": "vitest run",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "dotenv-cli": "^11.0.0",
-    "typescript": "^5.9.3"
+    "@types/jsonwebtoken": "^9.0.10",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@repo/auth": "workspace:*",
     "@repo/database": "workspace:*",
-    "@repo/services": "workspace:*",
-    "@trpc/client": "^11.8.1",
-    "@trpc/server": "^11.8.1",
-    "trpc-to-openapi": "^3.1.0",
-    "zod": "^4.3.5"
+    "argon2": "^0.44.0",
+    "jsonwebtoken": "^9.0.2"
   }
 }
