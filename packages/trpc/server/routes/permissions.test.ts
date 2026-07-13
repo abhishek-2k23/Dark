@@ -75,6 +75,7 @@ const adminOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   }),
   caller.amenity.create({ name: "X" }),
   caller.amenityBooking.calendar({ amenityId: "x" }),
+  caller.due.generateMonthly({ month: 1, year: 2030, amount: 100 }),
 ];
 
 const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
@@ -101,6 +102,8 @@ const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
     endTime: "11:00",
   }),
   caller.amenityBooking.cancel({ bookingId: "x" }),
+  caller.payment.initiate({ dueId: "x", method: "UPI" }),
+  caller.payment.history({ limit: 20 }),
 ];
 
 const guardOnlyCalls = (caller: ReturnType<typeof callerFor>) => [

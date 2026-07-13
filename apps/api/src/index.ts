@@ -1,6 +1,6 @@
 import http from "node:http";
 import { logger } from "@repo/logger";
-import { visitorService, preApprovalService } from "@repo/services";
+import { visitorService, preApprovalService, dueService } from "@repo/services";
 import { app as expressApplication } from "./server";
 
 import { env } from "./env";
@@ -10,7 +10,8 @@ const EXPIRY_SWEEP_INTERVAL_MS = 60 * 1000;
 /**
  * Periodic sweep: PENDING visitor requests older than
  * VISITOR_PENDING_TTL_MIN become EXPIRED (guards shouldn't wait forever),
- * and ACTIVE pre-approvals whose window lapsed become EXPIRED.
+ * ACTIVE pre-approvals whose window lapsed become EXPIRED, and PENDING
+ * maintenance dues past their dueDate become OVERDUE.
  */
 function startExpirySweep() {
   const sweep = async () => {
@@ -19,8 +20,9 @@ function startExpirySweep() {
         env.VISITOR_PENDING_TTL_MIN,
       );
       const lapsedPreApprovals = await preApprovalService.expireLapsedPreApprovals();
-      if (staleVisitors || lapsedPreApprovals) {
-        logger.info("Expiry sweep", { staleVisitors, lapsedPreApprovals });
+      const overdueDues = await dueService.markOverdueDues();
+      if (staleVisitors || lapsedPreApprovals || overdueDues) {
+        logger.info("Expiry sweep", { staleVisitors, lapsedPreApprovals, overdueDues });
       }
     } catch (err) {
       logger.error("Expiry sweep failed", { err });

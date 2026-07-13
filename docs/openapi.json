@@ -11353,6 +11353,892 @@
           }
         }
       }
+    },
+    "/v1/dues/generate": {
+      "post": {
+        "operationId": "due-generateMonthly",
+        "summary": "Generate the month's dues for every flat",
+        "description": "Creates one PENDING due per flat of the admin's society for the given month/year. Idempotent: flats that already have a due for that month are skipped, so re-running is safe. Errors: 403 if not an admin.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "month": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 12,
+                    "description": "Billing month, 1–12"
+                  },
+                  "year": {
+                    "type": "integer",
+                    "minimum": 2020,
+                    "maximum": 2100,
+                    "description": "Billing year"
+                  },
+                  "amount": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "description": "Amount to bill each flat"
+                  },
+                  "dueDate": {
+                    "description": "ISO payment deadline; defaults to the 10th of the billing month",
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  }
+                },
+                "required": [
+                  "month",
+                  "year",
+                  "amount"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "created": {
+                      "type": "number",
+                      "description": "Dues created by this run"
+                    },
+                    "skipped": {
+                      "type": "number",
+                      "description": "Flats skipped because their due already existed"
+                    }
+                  },
+                  "required": [
+                    "created",
+                    "skipped"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dues": {
+      "get": {
+        "operationId": "due-list",
+        "summary": "List dues (role-aware scope)",
+        "description": "Cursor-paginated dues filterable by status/month/year. Residents see their own flat's dues; admins see the whole society's and may filter by flat. Errors: 401 if not authenticated, 403 for guards.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "PAID",
+                "OVERDUE"
+              ],
+              "description": "Due status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "month",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            }
+          },
+          {
+            "in": "query",
+            "name": "year",
+            "schema": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "in": "query",
+            "name": "flatId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Due id"
+                          },
+                          "flatId": {
+                            "type": "string",
+                            "description": "Flat the due belongs to"
+                          },
+                          "flatNumber": {
+                            "type": "string",
+                            "description": "Flat number"
+                          },
+                          "towerName": {
+                            "type": "string",
+                            "description": "Tower name"
+                          },
+                          "month": {
+                            "type": "number",
+                            "description": "Billing month, 1–12"
+                          },
+                          "year": {
+                            "type": "number",
+                            "description": "Billing year"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Amount due"
+                          },
+                          "dueDate": {
+                            "type": "string",
+                            "description": "ISO date payment is due by; PENDING flips to OVERDUE after this"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "PAID",
+                              "OVERDUE"
+                            ],
+                            "description": "Due status"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "flatId",
+                          "flatNumber",
+                          "towerName",
+                          "month",
+                          "year",
+                          "amount",
+                          "dueDate",
+                          "status"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A monthly maintenance due for a flat"
+                      },
+                      "description": "Dues on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/initiate": {
+      "post": {
+        "operationId": "payment-initiate",
+        "summary": "Start a payment for a due",
+        "description": "Creates an INITIATED payment for one of the caller's own flat's dues and returns gateway session data. MOCK GATEWAY for MVP: the session is placeholder data and no real money moves — real Razorpay/Stripe wiring is a clearly-labeled later task. Errors: 403 if not a resident, 404 if the due is not for the caller's flat, 409 if the due is already paid.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dueId": {
+                    "type": "string",
+                    "description": "Id of the due to pay"
+                  },
+                  "method": {
+                    "type": "string",
+                    "enum": [
+                      "UPI",
+                      "CARD",
+                      "NETBANKING"
+                    ],
+                    "description": "Payment method"
+                  }
+                },
+                "required": [
+                  "dueId",
+                  "method"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "payment": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Payment id"
+                        },
+                        "dueId": {
+                          "type": "string",
+                          "description": "Due this payment is against"
+                        },
+                        "dueMonth": {
+                          "type": "number",
+                          "description": "Billing month of the due"
+                        },
+                        "dueYear": {
+                          "type": "number",
+                          "description": "Billing year of the due"
+                        },
+                        "amount": {
+                          "type": "number",
+                          "description": "Amount of the payment"
+                        },
+                        "method": {
+                          "type": "string",
+                          "enum": [
+                            "UPI",
+                            "CARD",
+                            "NETBANKING"
+                          ],
+                          "description": "Payment method"
+                        },
+                        "transactionId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Gateway transaction id, once known"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "INITIATED",
+                            "SUCCESS",
+                            "FAILED"
+                          ],
+                          "description": "Payment status"
+                        },
+                        "paidAt": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "ISO time the payment succeeded, if it did"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "description": "ISO time the payment was initiated"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "dueId",
+                        "dueMonth",
+                        "dueYear",
+                        "amount",
+                        "method",
+                        "transactionId",
+                        "status",
+                        "paidAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false,
+                      "description": "A payment attempt against a due"
+                    },
+                    "gateway": {
+                      "type": "object",
+                      "properties": {
+                        "provider": {
+                          "type": "string",
+                          "const": "MOCK",
+                          "description": "Gateway identifier (mock for MVP)"
+                        },
+                        "orderId": {
+                          "type": "string",
+                          "description": "Gateway order id"
+                        },
+                        "checkoutUrl": {
+                          "type": "string",
+                          "description": "URL the client would open to complete payment"
+                        }
+                      },
+                      "required": [
+                        "provider",
+                        "orderId",
+                        "checkoutUrl"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Gateway session data (placeholder until a real gateway is wired)"
+                    }
+                  },
+                  "required": [
+                    "payment",
+                    "gateway"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/webhook": {
+      "post": {
+        "operationId": "payment-webhook",
+        "summary": "Payment gateway webhook (not for app clients)",
+        "description": "CALLED BY THE PAYMENT GATEWAY, NOT BY APP CLIENTS. Confirms a payment's outcome: on payment.success the payment becomes SUCCESS and its due becomes PAID; on payment.failed the payment becomes FAILED and the due stays payable. Requests are verified with an HMAC-SHA256 signature over 'event:paymentId:transactionId' using the shared webhook secret, and processing is idempotent — replaying a processed event returns the current state without side effects. Errors: 401 on a bad signature, 404 for an unknown payment, 409 if the event conflicts with an already-terminal payment, 412 if webhooks are not configured.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "event": {
+                    "type": "string",
+                    "enum": [
+                      "payment.success",
+                      "payment.failed"
+                    ],
+                    "description": "Gateway event type"
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Payment id from the initiate call"
+                  },
+                  "transactionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Gateway transaction id"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "HMAC-SHA256 hex of 'event:paymentId:transactionId' with the webhook secret"
+                  }
+                },
+                "required": [
+                  "event",
+                  "paymentId",
+                  "transactionId",
+                  "signature"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "paymentStatus": {
+                      "type": "string",
+                      "enum": [
+                        "INITIATED",
+                        "SUCCESS",
+                        "FAILED"
+                      ],
+                      "description": "Payment status after processing"
+                    },
+                    "dueStatus": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "PAID",
+                        "OVERDUE"
+                      ],
+                      "description": "Linked due's status after processing"
+                    }
+                  },
+                  "required": [
+                    "paymentStatus",
+                    "dueStatus"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments": {
+      "get": {
+        "operationId": "payment-history",
+        "summary": "List the caller's payment history",
+        "description": "Cursor-paginated payments of the calling resident, newest first — every attempt including INITIATED and FAILED ones. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Payment id"
+                          },
+                          "dueId": {
+                            "type": "string",
+                            "description": "Due this payment is against"
+                          },
+                          "dueMonth": {
+                            "type": "number",
+                            "description": "Billing month of the due"
+                          },
+                          "dueYear": {
+                            "type": "number",
+                            "description": "Billing year of the due"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Amount of the payment"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "UPI",
+                              "CARD",
+                              "NETBANKING"
+                            ],
+                            "description": "Payment method"
+                          },
+                          "transactionId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Gateway transaction id, once known"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "INITIATED",
+                              "SUCCESS",
+                              "FAILED"
+                            ],
+                            "description": "Payment status"
+                          },
+                          "paidAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO time the payment succeeded, if it did"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO time the payment was initiated"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "dueId",
+                          "dueMonth",
+                          "dueYear",
+                          "amount",
+                          "method",
+                          "transactionId",
+                          "status",
+                          "paidAt",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A payment attempt against a due"
+                      },
+                      "description": "Payments on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
