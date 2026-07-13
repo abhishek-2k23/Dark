@@ -65,6 +65,16 @@ const adminOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
     temporaryPassword: "temp-pass-123",
     role: "GUARD",
   }),
+  caller.ticket.assign({ ticketId: "x", assigneeId: "x" }),
+  caller.notice.create({ title: "X", body: "X", category: "GENERAL" }),
+  caller.notice.delete({ noticeId: "x" }),
+  caller.poll.create({
+    question: "X?",
+    options: ["A", "B"],
+    deadline: new Date(Date.now() + 3600_000).toISOString(),
+  }),
+  caller.amenity.create({ name: "X" }),
+  caller.amenityBooking.calendar({ amenityId: "x" }),
 ];
 
 const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
@@ -82,6 +92,15 @@ const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
     validTo: new Date(Date.now() + 3600_000).toISOString(),
   }),
   caller.guestPreApproval.cancel({ preApprovalId: "x" }),
+  caller.ticket.create({ category: "OTHER", title: "X", description: "X" }),
+  caller.poll.vote({ pollId: "x", optionId: "x" }),
+  caller.amenityBooking.create({
+    amenityId: "x",
+    date: "2099-01-01",
+    startTime: "10:00",
+    endTime: "11:00",
+  }),
+  caller.amenityBooking.cancel({ bookingId: "x" }),
 ];
 
 const guardOnlyCalls = (caller: ReturnType<typeof callerFor>) => [

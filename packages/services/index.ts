@@ -5,3 +5,7 @@ export * as profileService from "./profile/profile.service";
 export * as staffService from "./staff/staff.service";
 export * as visitorService from "./visitor/visitor.service";
 export * as preApprovalService from "./visitor/pre-approval.service";
+export * as helpdeskService from "./helpdesk/helpdesk.service";
+export * as noticeService from "./notice/notice.service";
+export * as pollService from "./poll/poll.service";
+export * as amenityService from "./amenity/amenity.service";

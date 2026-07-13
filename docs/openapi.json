@@ -7170,6 +7170,4189 @@
           }
         }
       }
+    },
+    "/v1/tickets": {
+      "post": {
+        "operationId": "ticket-create",
+        "summary": "Raise a helpdesk ticket",
+        "description": "Resident raises a ticket for their own flat; it starts OPEN with MEDIUM priority unless specified. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        "tags": [
+          "Helpdesk"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "PLUMBING",
+                      "ELECTRICAL",
+                      "HOUSEKEEPING",
+                      "SECURITY",
+                      "OTHER"
+                    ],
+                    "description": "Ticket category"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Short summary of the issue"
+                  },
+                  "description": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Full description of the issue"
+                  },
+                  "photoUrls": {
+                    "description": "Photo URLs (Cloudinary, Phase 9)",
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "priority": {
+                    "description": "Defaults to MEDIUM",
+                    "type": "string",
+                    "enum": [
+                      "LOW",
+                      "MEDIUM",
+                      "HIGH"
+                    ]
+                  }
+                },
+                "required": [
+                  "category",
+                  "title",
+                  "description"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Ticket id"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "PLUMBING",
+                        "ELECTRICAL",
+                        "HOUSEKEEPING",
+                        "SECURITY",
+                        "OTHER"
+                      ],
+                      "description": "Ticket category"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short summary of the issue"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Full description of the issue"
+                    },
+                    "photoUrls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Photo URLs attached to the ticket"
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH"
+                      ],
+                      "description": "Ticket priority"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "RESOLVED",
+                        "CLOSED"
+                      ],
+                      "description": "Ticket workflow status"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Flat the ticket was raised for"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Flat number"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower name"
+                    },
+                    "raisedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Resident who raised the ticket"
+                    },
+                    "assignedTo": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Staff member working the ticket, if assigned"
+                    },
+                    "commentCount": {
+                      "type": "number",
+                      "description": "Number of comments on the ticket"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "ISO last-update time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "category",
+                    "title",
+                    "description",
+                    "photoUrls",
+                    "priority",
+                    "status",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "raisedBy",
+                    "assignedTo",
+                    "commentCount",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A helpdesk ticket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "ticket-list",
+        "summary": "List tickets (role-aware scope)",
+        "description": "Cursor-paginated tickets filterable by status/category/priority. Residents see their own tickets; admins see the whole society's. Errors: 401 if not authenticated, 403 for guards.",
+        "tags": [
+          "Helpdesk"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "IN_PROGRESS",
+                "RESOLVED",
+                "CLOSED"
+              ],
+              "description": "Ticket workflow status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PLUMBING",
+                "ELECTRICAL",
+                "HOUSEKEEPING",
+                "SECURITY",
+                "OTHER"
+              ],
+              "description": "Ticket category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "priority",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LOW",
+                "MEDIUM",
+                "HIGH"
+              ],
+              "description": "Ticket priority"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Ticket id"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "PLUMBING",
+                              "ELECTRICAL",
+                              "HOUSEKEEPING",
+                              "SECURITY",
+                              "OTHER"
+                            ],
+                            "description": "Ticket category"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Short summary of the issue"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Full description of the issue"
+                          },
+                          "photoUrls": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Photo URLs attached to the ticket"
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "LOW",
+                              "MEDIUM",
+                              "HIGH"
+                            ],
+                            "description": "Ticket priority"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "IN_PROGRESS",
+                              "RESOLVED",
+                              "CLOSED"
+                            ],
+                            "description": "Ticket workflow status"
+                          },
+                          "flatId": {
+                            "type": "string",
+                            "description": "Flat the ticket was raised for"
+                          },
+                          "flatNumber": {
+                            "type": "string",
+                            "description": "Flat number"
+                          },
+                          "towerName": {
+                            "type": "string",
+                            "description": "Tower name"
+                          },
+                          "raisedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "User id"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Full name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Resident who raised the ticket"
+                          },
+                          "assignedTo": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "description": "User id"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "Full name"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Staff member working the ticket, if assigned"
+                          },
+                          "commentCount": {
+                            "type": "number",
+                            "description": "Number of comments on the ticket"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO creation time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "description": "ISO last-update time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "category",
+                          "title",
+                          "description",
+                          "photoUrls",
+                          "priority",
+                          "status",
+                          "flatId",
+                          "flatNumber",
+                          "towerName",
+                          "raisedBy",
+                          "assignedTo",
+                          "commentCount",
+                          "createdAt",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A helpdesk ticket"
+                      },
+                      "description": "Tickets on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tickets/{ticketId}": {
+      "get": {
+        "operationId": "ticket-get",
+        "summary": "Get a ticket with its comments",
+        "description": "Full ticket detail including the comment thread. Accessible to the raising resident, the society's admins, and the assignee. Errors: 401 if not authenticated, 404 if the ticket is not accessible to the caller.",
+        "tags": [
+          "Helpdesk"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the ticket"
+            },
+            "required": true,
+            "description": "Id of the ticket"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Ticket id"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "PLUMBING",
+                        "ELECTRICAL",
+                        "HOUSEKEEPING",
+                        "SECURITY",
+                        "OTHER"
+                      ],
+                      "description": "Ticket category"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short summary of the issue"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Full description of the issue"
+                    },
+                    "photoUrls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Photo URLs attached to the ticket"
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH"
+                      ],
+                      "description": "Ticket priority"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "RESOLVED",
+                        "CLOSED"
+                      ],
+                      "description": "Ticket workflow status"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Flat the ticket was raised for"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Flat number"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower name"
+                    },
+                    "raisedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Resident who raised the ticket"
+                    },
+                    "assignedTo": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Staff member working the ticket, if assigned"
+                    },
+                    "commentCount": {
+                      "type": "number",
+                      "description": "Number of comments on the ticket"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "ISO last-update time"
+                    },
+                    "comments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Comment id"
+                          },
+                          "author": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "User id"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Full name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Who wrote the comment"
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": "Comment text"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO creation time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "author",
+                          "message",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A comment on a helpdesk ticket"
+                      },
+                      "description": "Comment thread"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "category",
+                    "title",
+                    "description",
+                    "photoUrls",
+                    "priority",
+                    "status",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "raisedBy",
+                    "assignedTo",
+                    "commentCount",
+                    "createdAt",
+                    "updatedAt",
+                    "comments"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tickets/{ticketId}/status": {
+      "post": {
+        "operationId": "ticket-updateStatus",
+        "summary": "Change a ticket's status",
+        "description": "Moves the ticket through OPEN → IN_PROGRESS → RESOLVED → CLOSED (any transition allowed). Only the society's admins or the ticket's assignee may do this. Errors: 401 if not authenticated, 403 if the caller is neither admin nor assignee, 404 if the ticket is not accessible.",
+        "tags": [
+          "Helpdesk"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the ticket"
+            },
+            "required": true,
+            "description": "Id of the ticket"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "OPEN",
+                      "IN_PROGRESS",
+                      "RESOLVED",
+                      "CLOSED"
+                    ],
+                    "description": "Ticket workflow status"
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Ticket id"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "PLUMBING",
+                        "ELECTRICAL",
+                        "HOUSEKEEPING",
+                        "SECURITY",
+                        "OTHER"
+                      ],
+                      "description": "Ticket category"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short summary of the issue"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Full description of the issue"
+                    },
+                    "photoUrls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Photo URLs attached to the ticket"
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH"
+                      ],
+                      "description": "Ticket priority"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "RESOLVED",
+                        "CLOSED"
+                      ],
+                      "description": "Ticket workflow status"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Flat the ticket was raised for"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Flat number"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower name"
+                    },
+                    "raisedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Resident who raised the ticket"
+                    },
+                    "assignedTo": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Staff member working the ticket, if assigned"
+                    },
+                    "commentCount": {
+                      "type": "number",
+                      "description": "Number of comments on the ticket"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "ISO last-update time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "category",
+                    "title",
+                    "description",
+                    "photoUrls",
+                    "priority",
+                    "status",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "raisedBy",
+                    "assignedTo",
+                    "commentCount",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A helpdesk ticket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tickets/{ticketId}/assign": {
+      "post": {
+        "operationId": "ticket-assign",
+        "summary": "Assign a ticket to a staff member",
+        "description": "Admin assigns the ticket to an active guard or admin of the same society. Errors: 403 if not an admin, 404 if the ticket is not accessible or the assignee is not an active guard/admin of the society.",
+        "tags": [
+          "Helpdesk"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the ticket"
+            },
+            "required": true,
+            "description": "Id of the ticket"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "assigneeId": {
+                    "type": "string",
+                    "description": "User id of the guard/admin to assign"
+                  }
+                },
+                "required": [
+                  "assigneeId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Ticket id"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "PLUMBING",
+                        "ELECTRICAL",
+                        "HOUSEKEEPING",
+                        "SECURITY",
+                        "OTHER"
+                      ],
+                      "description": "Ticket category"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Short summary of the issue"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Full description of the issue"
+                    },
+                    "photoUrls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Photo URLs attached to the ticket"
+                    },
+                    "priority": {
+                      "type": "string",
+                      "enum": [
+                        "LOW",
+                        "MEDIUM",
+                        "HIGH"
+                      ],
+                      "description": "Ticket priority"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OPEN",
+                        "IN_PROGRESS",
+                        "RESOLVED",
+                        "CLOSED"
+                      ],
+                      "description": "Ticket workflow status"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Flat the ticket was raised for"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Flat number"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower name"
+                    },
+                    "raisedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Resident who raised the ticket"
+                    },
+                    "assignedTo": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Staff member working the ticket, if assigned"
+                    },
+                    "commentCount": {
+                      "type": "number",
+                      "description": "Number of comments on the ticket"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "description": "ISO last-update time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "category",
+                    "title",
+                    "description",
+                    "photoUrls",
+                    "priority",
+                    "status",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "raisedBy",
+                    "assignedTo",
+                    "commentCount",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A helpdesk ticket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tickets/{ticketId}/comments": {
+      "post": {
+        "operationId": "ticket-addComment",
+        "summary": "Comment on a ticket",
+        "description": "Adds a comment to the ticket's thread. Accessible to the raising resident, the society's admins, and the assignee. Errors: 401 if not authenticated, 404 if the ticket is not accessible to the caller.",
+        "tags": [
+          "Helpdesk"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "ticketId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the ticket"
+            },
+            "required": true,
+            "description": "Id of the ticket"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Comment text"
+                  }
+                },
+                "required": [
+                  "message"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Comment id"
+                    },
+                    "author": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Who wrote the comment"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Comment text"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "author",
+                    "message",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A comment on a helpdesk ticket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notices": {
+      "post": {
+        "operationId": "notice-create",
+        "summary": "Publish or schedule a notice",
+        "description": "Creates a notice for the admin's society. With scheduledAt set (must be future) the notice stays hidden from residents until that time. Errors: 400 if scheduledAt is in the past, 403 if not an admin.",
+        "tags": [
+          "Notices"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Notice title"
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Notice body text"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "MAINTENANCE",
+                      "EVENT",
+                      "EMERGENCY",
+                      "GENERAL"
+                    ],
+                    "description": "Notice category"
+                  },
+                  "isPinned": {
+                    "description": "Pin to the top of the board (default false)",
+                    "type": "boolean"
+                  },
+                  "scheduledAt": {
+                    "description": "ISO future time to auto-publish; omit to publish immediately",
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  }
+                },
+                "required": [
+                  "title",
+                  "body",
+                  "category"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Notice id"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Notice title"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Notice body text"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "MAINTENANCE",
+                        "EVENT",
+                        "EMERGENCY",
+                        "GENERAL"
+                      ],
+                      "description": "Notice category"
+                    },
+                    "isPinned": {
+                      "type": "boolean",
+                      "description": "Pinned notices sort to the top"
+                    },
+                    "publishedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Admin who published the notice"
+                    },
+                    "scheduledAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO future-publish time; null means published on creation"
+                    },
+                    "isPublished": {
+                      "type": "boolean",
+                      "description": "Whether the notice is currently visible to residents"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "body",
+                    "category",
+                    "isPinned",
+                    "publishedBy",
+                    "scheduledAt",
+                    "isPublished",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A society notice"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "notice-list",
+        "summary": "List notices (role-aware visibility)",
+        "description": "Cursor-paginated notice board, pinned first. Residents and guards see only published notices; admins also see future-scheduled ones (check isPublished). Errors: 401 if not authenticated, 412 if the account is not linked to a society.",
+        "tags": [
+          "Notices"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MAINTENANCE",
+                "EVENT",
+                "EMERGENCY",
+                "GENERAL"
+              ],
+              "description": "Notice category"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Notice id"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Notice title"
+                          },
+                          "body": {
+                            "type": "string",
+                            "description": "Notice body text"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "MAINTENANCE",
+                              "EVENT",
+                              "EMERGENCY",
+                              "GENERAL"
+                            ],
+                            "description": "Notice category"
+                          },
+                          "isPinned": {
+                            "type": "boolean",
+                            "description": "Pinned notices sort to the top"
+                          },
+                          "publishedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "User id"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Full name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Admin who published the notice"
+                          },
+                          "scheduledAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO future-publish time; null means published on creation"
+                          },
+                          "isPublished": {
+                            "type": "boolean",
+                            "description": "Whether the notice is currently visible to residents"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO creation time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "body",
+                          "category",
+                          "isPinned",
+                          "publishedBy",
+                          "scheduledAt",
+                          "isPublished",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A society notice"
+                      },
+                      "description": "Notices on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notices/{noticeId}": {
+      "patch": {
+        "operationId": "notice-update",
+        "summary": "Update a notice",
+        "description": "Partially updates a notice of the admin's society; pass scheduledAt null to publish a scheduled notice immediately. Errors: 400 if scheduledAt is in the past, 403 if not an admin, 404 if the notice is not in the admin's society.",
+        "tags": [
+          "Notices"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "noticeId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the notice to update"
+            },
+            "required": true,
+            "description": "Id of the notice to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "description": "New title",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "body": {
+                    "description": "New body",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "MAINTENANCE",
+                      "EVENT",
+                      "EMERGENCY",
+                      "GENERAL"
+                    ],
+                    "description": "Notice category"
+                  },
+                  "isPinned": {
+                    "description": "New pinned state",
+                    "type": "boolean"
+                  },
+                  "scheduledAt": {
+                    "description": "New future-publish time; pass null to publish immediately",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Notice id"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Notice title"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Notice body text"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "MAINTENANCE",
+                        "EVENT",
+                        "EMERGENCY",
+                        "GENERAL"
+                      ],
+                      "description": "Notice category"
+                    },
+                    "isPinned": {
+                      "type": "boolean",
+                      "description": "Pinned notices sort to the top"
+                    },
+                    "publishedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Admin who published the notice"
+                    },
+                    "scheduledAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO future-publish time; null means published on creation"
+                    },
+                    "isPublished": {
+                      "type": "boolean",
+                      "description": "Whether the notice is currently visible to residents"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "body",
+                    "category",
+                    "isPinned",
+                    "publishedBy",
+                    "scheduledAt",
+                    "isPublished",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A society notice"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "notice-delete",
+        "summary": "Delete a notice",
+        "description": "Removes a notice from the admin's society board. Errors: 403 if not an admin, 404 if the notice is not in the admin's society.",
+        "tags": [
+          "Notices"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "noticeId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the notice"
+            },
+            "required": true,
+            "description": "Id of the notice"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/polls": {
+      "post": {
+        "operationId": "poll-create",
+        "summary": "Create a poll",
+        "description": "Admin creates a poll for their society with 2–10 options and a future deadline. Errors: 400 if the deadline is in the past, 403 if not an admin.",
+        "tags": [
+          "Polls"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The poll question"
+                  },
+                  "options": {
+                    "minItems": 2,
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "Votable options (2–10)"
+                  },
+                  "allowMultiple": {
+                    "description": "Allow voting for multiple options (default false)",
+                    "type": "boolean"
+                  },
+                  "deadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "description": "ISO time voting closes; must be in the future"
+                  }
+                },
+                "required": [
+                  "question",
+                  "options",
+                  "deadline"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Poll id"
+                    },
+                    "question": {
+                      "type": "string",
+                      "description": "The poll question"
+                    },
+                    "allowMultiple": {
+                      "type": "boolean",
+                      "description": "Whether a resident may vote for multiple options"
+                    },
+                    "deadline": {
+                      "type": "string",
+                      "description": "ISO time voting closes"
+                    },
+                    "isClosed": {
+                      "type": "boolean",
+                      "description": "Whether the deadline has passed"
+                    },
+                    "createdBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Admin who created the poll"
+                    },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Option id"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Option text"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "The votable options"
+                    },
+                    "totalVotes": {
+                      "type": "number",
+                      "description": "Total votes cast so far"
+                    },
+                    "myOptionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Option ids the caller has voted for (empty for non-residents)"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "question",
+                    "allowMultiple",
+                    "deadline",
+                    "isClosed",
+                    "createdBy",
+                    "options",
+                    "totalVotes",
+                    "myOptionIds",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A society poll"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "poll-list",
+        "summary": "List polls (active vs closed)",
+        "description": "Cursor-paginated polls of the caller's society, newest first, filterable by ACTIVE/CLOSED. myOptionIds shows the caller's own votes. Errors: 401 if not authenticated, 412 if the account is not linked to a society.",
+        "tags": [
+          "Polls"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "state",
+            "schema": {
+              "default": "ALL",
+              "description": "Filter by whether the deadline has passed",
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "CLOSED",
+                "ALL"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Poll id"
+                          },
+                          "question": {
+                            "type": "string",
+                            "description": "The poll question"
+                          },
+                          "allowMultiple": {
+                            "type": "boolean",
+                            "description": "Whether a resident may vote for multiple options"
+                          },
+                          "deadline": {
+                            "type": "string",
+                            "description": "ISO time voting closes"
+                          },
+                          "isClosed": {
+                            "type": "boolean",
+                            "description": "Whether the deadline has passed"
+                          },
+                          "createdBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "User id"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Full name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Admin who created the poll"
+                          },
+                          "options": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "Option id"
+                                },
+                                "text": {
+                                  "type": "string",
+                                  "description": "Option text"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "text"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "description": "The votable options"
+                          },
+                          "totalVotes": {
+                            "type": "number",
+                            "description": "Total votes cast so far"
+                          },
+                          "myOptionIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Option ids the caller has voted for (empty for non-residents)"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO creation time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "question",
+                          "allowMultiple",
+                          "deadline",
+                          "isClosed",
+                          "createdBy",
+                          "options",
+                          "totalVotes",
+                          "myOptionIds",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A society poll"
+                      },
+                      "description": "Polls on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/polls/{pollId}/vote": {
+      "post": {
+        "operationId": "poll-vote",
+        "summary": "Vote in a poll",
+        "description": "Resident casts a vote. One option per poll unless allowMultiple; the same option can never be voted twice; votes cannot be changed. Errors: 403 if not a resident, 404 if the poll/option is not in the caller's society, 409 if the poll is closed or the vote violates the single-vote rule.",
+        "tags": [
+          "Polls"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pollId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the poll"
+            },
+            "required": true,
+            "description": "Id of the poll"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "optionId": {
+                    "type": "string",
+                    "description": "Id of the option to vote for"
+                  }
+                },
+                "required": [
+                  "optionId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Poll id"
+                    },
+                    "question": {
+                      "type": "string",
+                      "description": "The poll question"
+                    },
+                    "allowMultiple": {
+                      "type": "boolean",
+                      "description": "Whether a resident may vote for multiple options"
+                    },
+                    "deadline": {
+                      "type": "string",
+                      "description": "ISO time voting closes"
+                    },
+                    "isClosed": {
+                      "type": "boolean",
+                      "description": "Whether the deadline has passed"
+                    },
+                    "createdBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Admin who created the poll"
+                    },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Option id"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Option text"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "The votable options"
+                    },
+                    "totalVotes": {
+                      "type": "number",
+                      "description": "Total votes cast so far"
+                    },
+                    "myOptionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Option ids the caller has voted for (empty for non-residents)"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "question",
+                    "allowMultiple",
+                    "deadline",
+                    "isClosed",
+                    "createdBy",
+                    "options",
+                    "totalVotes",
+                    "myOptionIds",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A society poll"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/polls/{pollId}/results": {
+      "get": {
+        "operationId": "poll-results",
+        "summary": "Get aggregated poll results",
+        "description": "Per-option vote counts and percentages. Errors: 401 if not authenticated, 404 if the poll is not in the caller's society.",
+        "tags": [
+          "Polls"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pollId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the poll"
+            },
+            "required": true,
+            "description": "Id of the poll"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "pollId": {
+                      "type": "string",
+                      "description": "Poll id"
+                    },
+                    "question": {
+                      "type": "string",
+                      "description": "The poll question"
+                    },
+                    "isClosed": {
+                      "type": "boolean",
+                      "description": "Whether the deadline has passed"
+                    },
+                    "totalVotes": {
+                      "type": "number",
+                      "description": "Total votes cast"
+                    },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Option id"
+                          },
+                          "text": {
+                            "type": "string",
+                            "description": "Option text"
+                          },
+                          "votes": {
+                            "type": "number",
+                            "description": "Votes for this option"
+                          },
+                          "percentage": {
+                            "type": "number",
+                            "description": "Share of total votes, 0–100 (one decimal)"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "text",
+                          "votes",
+                          "percentage"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "Per-option tallies"
+                    }
+                  },
+                  "required": [
+                    "pollId",
+                    "question",
+                    "isClosed",
+                    "totalVotes",
+                    "options"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Aggregated poll results"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/amenities": {
+      "post": {
+        "operationId": "amenity-create",
+        "summary": "Create an amenity",
+        "description": "Admin adds an amenity (gym, clubhouse, court…) to their society. Errors: 403 if not an admin.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Amenity name"
+                  },
+                  "description": {
+                    "description": "Description",
+                    "type": "string"
+                  },
+                  "photoUrls": {
+                    "description": "Photo URLs (Cloudinary, Phase 9)",
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "rules": {
+                    "description": "Usage rules shown to residents",
+                    "type": "string"
+                  },
+                  "pricePerSlot": {
+                    "description": "Price per slot; omit when free",
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "isActive": {
+                    "description": "Open for booking (default true)",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Amenity id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Amenity name"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Description, if set"
+                    },
+                    "photoUrls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Photo URLs"
+                    },
+                    "rules": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Usage rules, if set"
+                    },
+                    "pricePerSlot": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Price per slot; null when free"
+                    },
+                    "isActive": {
+                      "type": "boolean",
+                      "description": "Whether the amenity is open for booking"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "photoUrls",
+                    "rules",
+                    "pricePerSlot",
+                    "isActive"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A society amenity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "amenity-list",
+        "summary": "List the society's amenities",
+        "description": "Amenities of the caller's society, sorted by name. Admins also see inactive ones. Errors: 401 if not authenticated, 412 if the account is not linked to a society.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Amenity id"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Amenity name"
+                      },
+                      "description": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Description, if set"
+                      },
+                      "photoUrls": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Photo URLs"
+                      },
+                      "rules": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Usage rules, if set"
+                      },
+                      "pricePerSlot": {
+                        "anyOf": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Price per slot; null when free"
+                      },
+                      "isActive": {
+                        "type": "boolean",
+                        "description": "Whether the amenity is open for booking"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "description",
+                      "photoUrls",
+                      "rules",
+                      "pricePerSlot",
+                      "isActive"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A society amenity"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/amenities/{amenityId}": {
+      "patch": {
+        "operationId": "amenity-update",
+        "summary": "Update an amenity",
+        "description": "Partially updates an amenity of the admin's society; set isActive false to close it for new bookings. Errors: 403 if not an admin, 404 if the amenity is not in the admin's society.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "amenityId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the amenity to update"
+            },
+            "required": true,
+            "description": "Id of the amenity to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "New name",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "description": "New description",
+                    "type": "string"
+                  },
+                  "photoUrls": {
+                    "description": "New photo URLs",
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "rules": {
+                    "description": "New usage rules",
+                    "type": "string"
+                  },
+                  "pricePerSlot": {
+                    "description": "New price; pass null to make it free",
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "isActive": {
+                    "description": "Open/close for booking",
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Amenity id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Amenity name"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Description, if set"
+                    },
+                    "photoUrls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Photo URLs"
+                    },
+                    "rules": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Usage rules, if set"
+                    },
+                    "pricePerSlot": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Price per slot; null when free"
+                    },
+                    "isActive": {
+                      "type": "boolean",
+                      "description": "Whether the amenity is open for booking"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "description",
+                    "photoUrls",
+                    "rules",
+                    "pricePerSlot",
+                    "isActive"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A society amenity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/amenity-bookings": {
+      "post": {
+        "operationId": "amenityBooking-create",
+        "summary": "Book an amenity slot",
+        "description": "Resident books a time slot on an active amenity. The slot must be in the future and must not overlap any existing BOOKED slot for that amenity and date. Errors: 400 for an invalid/past slot, 403 if not a resident, 404 if the amenity is not in the caller's society, 409 if the amenity is closed or the slot overlaps an existing booking.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amenityId": {
+                    "type": "string",
+                    "description": "Amenity to book"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+                    "description": "Booking date 'YYYY-MM-DD'"
+                  },
+                  "startTime": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                    "description": "Slot start as 'HH:mm' (24h)"
+                  },
+                  "endTime": {
+                    "type": "string",
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                    "description": "Slot end as 'HH:mm' (24h)"
+                  }
+                },
+                "required": [
+                  "amenityId",
+                  "date",
+                  "startTime",
+                  "endTime"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Booking id"
+                    },
+                    "amenityId": {
+                      "type": "string",
+                      "description": "Booked amenity id"
+                    },
+                    "amenityName": {
+                      "type": "string",
+                      "description": "Booked amenity name"
+                    },
+                    "date": {
+                      "type": "string",
+                      "description": "Booking date 'YYYY-MM-DD'"
+                    },
+                    "startTime": {
+                      "type": "string",
+                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                      "description": "Slot start as 'HH:mm' (24h)"
+                    },
+                    "endTime": {
+                      "type": "string",
+                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                      "description": "Slot end as 'HH:mm' (24h)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "BOOKED",
+                        "CANCELLED",
+                        "COMPLETED"
+                      ],
+                      "description": "Booking status"
+                    },
+                    "bookedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        },
+                        "flatNumber": {
+                          "type": "string",
+                          "description": "Flat number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "flatNumber"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Resident who booked the slot"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "amenityId",
+                    "amenityName",
+                    "date",
+                    "startTime",
+                    "endTime",
+                    "status",
+                    "bookedBy",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "An amenity slot booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/amenity-bookings/{bookingId}/cancel": {
+      "post": {
+        "operationId": "amenityBooking-cancel",
+        "summary": "Cancel a booking",
+        "description": "Resident cancels one of their own BOOKED slots before it starts. Errors: 403 if not a resident, 404 if the booking does not belong to the caller, 409 if it is not BOOKED or has already started.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "bookingId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the booking"
+            },
+            "required": true,
+            "description": "Id of the booking"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Booking id"
+                    },
+                    "amenityId": {
+                      "type": "string",
+                      "description": "Booked amenity id"
+                    },
+                    "amenityName": {
+                      "type": "string",
+                      "description": "Booked amenity name"
+                    },
+                    "date": {
+                      "type": "string",
+                      "description": "Booking date 'YYYY-MM-DD'"
+                    },
+                    "startTime": {
+                      "type": "string",
+                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                      "description": "Slot start as 'HH:mm' (24h)"
+                    },
+                    "endTime": {
+                      "type": "string",
+                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                      "description": "Slot end as 'HH:mm' (24h)"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "BOOKED",
+                        "CANCELLED",
+                        "COMPLETED"
+                      ],
+                      "description": "Booking status"
+                    },
+                    "bookedBy": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        },
+                        "flatNumber": {
+                          "type": "string",
+                          "description": "Flat number"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "flatNumber"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Resident who booked the slot"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "amenityId",
+                    "amenityName",
+                    "date",
+                    "startTime",
+                    "endTime",
+                    "status",
+                    "bookedBy",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "An amenity slot booking"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/amenity-bookings/mine": {
+      "get": {
+        "operationId": "amenityBooking-myBookings",
+        "summary": "List the caller's bookings",
+        "description": "Cursor-paginated bookings of the calling resident, most recent date first. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Booking id"
+                          },
+                          "amenityId": {
+                            "type": "string",
+                            "description": "Booked amenity id"
+                          },
+                          "amenityName": {
+                            "type": "string",
+                            "description": "Booked amenity name"
+                          },
+                          "date": {
+                            "type": "string",
+                            "description": "Booking date 'YYYY-MM-DD'"
+                          },
+                          "startTime": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                            "description": "Slot start as 'HH:mm' (24h)"
+                          },
+                          "endTime": {
+                            "type": "string",
+                            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                            "description": "Slot end as 'HH:mm' (24h)"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "BOOKED",
+                              "CANCELLED",
+                              "COMPLETED"
+                            ],
+                            "description": "Booking status"
+                          },
+                          "bookedBy": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "description": "User id"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "Full name"
+                              },
+                              "flatNumber": {
+                                "type": "string",
+                                "description": "Flat number"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "flatNumber"
+                            ],
+                            "additionalProperties": false,
+                            "description": "Resident who booked the slot"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO creation time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "amenityId",
+                          "amenityName",
+                          "date",
+                          "startTime",
+                          "endTime",
+                          "status",
+                          "bookedBy",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "An amenity slot booking"
+                      },
+                      "description": "Bookings on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/amenity-bookings/calendar": {
+      "get": {
+        "operationId": "amenityBooking-calendar",
+        "summary": "Admin calendar of an amenity's bookings",
+        "description": "Every booking (any status) for one amenity across a date range, ordered by date and start time. Defaults to the next 30 days. Errors: 400 for an inverted range, 403 if not an admin, 404 if the amenity is not in the admin's society.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "amenityId",
+            "schema": {
+              "type": "string",
+              "description": "Amenity to view"
+            },
+            "required": true,
+            "description": "Amenity to view"
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Booking id"
+                      },
+                      "amenityId": {
+                        "type": "string",
+                        "description": "Booked amenity id"
+                      },
+                      "amenityName": {
+                        "type": "string",
+                        "description": "Booked amenity name"
+                      },
+                      "date": {
+                        "type": "string",
+                        "description": "Booking date 'YYYY-MM-DD'"
+                      },
+                      "startTime": {
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                        "description": "Slot start as 'HH:mm' (24h)"
+                      },
+                      "endTime": {
+                        "type": "string",
+                        "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+                        "description": "Slot end as 'HH:mm' (24h)"
+                      },
+                      "status": {
+                        "type": "string",
+                        "enum": [
+                          "BOOKED",
+                          "CANCELLED",
+                          "COMPLETED"
+                        ],
+                        "description": "Booking status"
+                      },
+                      "bookedBy": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "User id"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Full name"
+                          },
+                          "flatNumber": {
+                            "type": "string",
+                            "description": "Flat number"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "flatNumber"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Resident who booked the slot"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "description": "ISO creation time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "amenityId",
+                      "amenityName",
+                      "date",
+                      "startTime",
+                      "endTime",
+                      "status",
+                      "bookedBy",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false,
+                    "description": "An amenity slot booking"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
