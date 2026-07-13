@@ -24,6 +24,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@prisma/client':
+        specifier: ^6.16.2
+        version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
       '@repo/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -39,6 +42,9 @@ importers:
       '@trpc/server':
         specifier: ^11.8.1
         version: 11.8.1(typescript@5.9.3)
+      argon2:
+        specifier: ^0.44.0
+        version: 0.44.0
       cors:
         specifier: ^2.8.5
         version: 2.8.5

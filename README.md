@@ -80,6 +80,12 @@ pnpm check-types   # tsc --noEmit across the workspace
 Tests run against the dev Postgres and namespace their own fixtures — see
 [`docs/testing.md`](docs/testing.md) for the conventions.
 
+## Deployment
+
+The backend deploys to **Render** (web service) with **Neon** Postgres. Build
+and start commands, the full environment-variable table, and post-deploy
+verification are in [`docs/deployment.md`](docs/deployment.md).
+
 ## Database
 
 PostgreSQL runs in the `portal-postgres` container (see `docker-compose.yml`), database name `portal`.
