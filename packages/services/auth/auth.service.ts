@@ -10,6 +10,11 @@ import {
   signPasswordResetToken,
   verifyPasswordResetToken,
   passwordFingerprint,
+  generateOtp,
+  hashOtp,
+  verifyOtp,
+  otpExpiry,
+  OTP_MAX_ATTEMPTS,
 } from "@repo/auth";
 import { logger } from "@repo/logger";
 
@@ -27,6 +32,22 @@ export interface AuthSession {
   refreshToken: string;
   user: AuthUser;
 }
+
+/**
+ * Result of a password login. A verified email or any phone login yields a
+ * session immediately; logging in with an *unverified* email instead emails an
+ * OTP and asks the client to confirm it via `verifyEmailOtp`.
+ */
+export type LoginResult =
+  | { status: "SUCCESS"; session: AuthSession }
+  | {
+      status: "OTP_REQUIRED";
+      channel: "email";
+      /** The email the OTP was sent to (echoed so the client can prompt). */
+      email: string;
+      /** Present only when OTP_DEV_ECHO=true — never enable in production. */
+      devCode?: string;
+    };
 
 function toAuthUser(user: User): AuthUser {
   return {
@@ -53,6 +74,41 @@ async function issueSession(user: User): Promise<AuthSession> {
     refreshToken: refresh.token,
     user: toAuthUser(user),
   };
+}
+
+/** Whether OTP codes are echoed in API responses (local/dev testing only). */
+function otpDevEcho(): boolean {
+  return process.env.OTP_DEV_ECHO === "true";
+}
+
+/**
+ * Issue a fresh email-verification OTP for a user, invalidating any earlier
+ * outstanding codes so only one is ever live. Delivery is stubbed to the server
+ * log in development (same approach as password reset); returns the raw code so
+ * callers can optionally echo it under OTP_DEV_ECHO.
+ */
+async function issueEmailOtp(user: User): Promise<string> {
+  const code = generateOtp();
+  await prisma.$transaction([
+    prisma.emailOtp.updateMany({
+      where: {
+        userId: user.id,
+        purpose: "EMAIL_VERIFICATION",
+        consumedAt: null,
+      },
+      data: { consumedAt: new Date() },
+    }),
+    prisma.emailOtp.create({
+      data: {
+        userId: user.id,
+        purpose: "EMAIL_VERIFICATION",
+        codeHash: hashOtp(code),
+        expiresAt: otpExpiry(),
+      },
+    }),
+  ]);
+  logger.info("Email verification OTP issued", { email: user.email, code });
+  return code;
 }
 
 function identifierFilter(email?: string, phone?: string) {
@@ -124,11 +180,17 @@ export async function signup(input: {
 export async function login(input: {
   identifier: string;
   password: string;
-}): Promise<AuthSession> {
+}): Promise<LoginResult> {
   const { identifier, password } = input;
+  // Resolve the identifier as an email first, then as a phone number. We track
+  // which one matched: the OTP gate applies only to *email* logins.
+  const byEmail = await prisma.user.findUnique({
+    where: { email: identifier },
+  });
   const user =
-    (await prisma.user.findUnique({ where: { email: identifier } })) ??
+    byEmail ??
     (await prisma.user.findUnique({ where: { phone: identifier } }));
+  const usedEmail = byEmail !== null;
 
   if (!user) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
@@ -149,7 +211,94 @@ export async function login(input: {
     });
   }
 
-  return issueSession(user);
+  // Email login against an unverified email must prove ownership via OTP first.
+  if (usedEmail && !user.emailVerified) {
+    const code = await issueEmailOtp(user);
+    return {
+      status: "OTP_REQUIRED",
+      channel: "email",
+      email: user.email!,
+      ...(otpDevEcho() ? { devCode: code } : {}),
+    };
+  }
+
+  return { status: "SUCCESS", session: await issueSession(user) };
+}
+
+/**
+ * Confirm an email-verification OTP. On success the email is marked verified
+ * (so future email logins skip the OTP) and a session is issued.
+ */
+export async function verifyEmailOtp(input: {
+  email: string;
+  code: string;
+}): Promise<AuthSession> {
+  const invalid = new TRPCError({
+    code: "UNAUTHORIZED",
+    message: "Invalid or expired code",
+  });
+
+  const user = await prisma.user.findUnique({ where: { email: input.email } });
+  if (!user) throw invalid;
+  if (!user.isActive) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This account has been deactivated — contact your society admin",
+    });
+  }
+
+  const otp = await prisma.emailOtp.findFirst({
+    where: {
+      userId: user.id,
+      purpose: "EMAIL_VERIFICATION",
+      consumedAt: null,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!otp || otp.expiresAt < new Date()) throw invalid;
+  if (otp.attempts >= OTP_MAX_ATTEMPTS) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many incorrect attempts — request a new code",
+    });
+  }
+
+  if (!verifyOtp(input.code, otp.codeHash)) {
+    await prisma.emailOtp.update({
+      where: { id: otp.id },
+      data: { attempts: { increment: 1 } },
+    });
+    throw invalid;
+  }
+
+  const [, verifiedUser] = await prisma.$transaction([
+    prisma.emailOtp.update({
+      where: { id: otp.id },
+      data: { consumedAt: new Date() },
+    }),
+    prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true },
+    }),
+  ]);
+
+  return issueSession(verifiedUser);
+}
+
+/**
+ * Re-send an email-verification OTP. Silently no-ops for accounts that don't
+ * exist, are Google-only, are already verified, or are deactivated — so it can
+ * never be used to probe which emails have accounts.
+ */
+export async function resendEmailOtp(input: {
+  email: string;
+}): Promise<{ devCode?: string }> {
+  const user = await prisma.user.findUnique({ where: { email: input.email } });
+  if (user && user.passwordHash && !user.emailVerified && user.isActive) {
+    const code = await issueEmailOtp(user);
+    if (otpDevEcho()) return { devCode: code };
+  }
+  return {};
 }
 
 export async function googleLogin(input: {

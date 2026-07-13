@@ -24,6 +24,7 @@ function fakeUser(role: Role): User {
     authProvider: "LOCAL",
     googleId: null,
     avatarUrl: null,
+    emailVerified: true,
     role,
     societyId: "fake-society",
     isActive: true,

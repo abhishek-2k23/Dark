@@ -87,11 +87,17 @@ describe("staffAccount.create", () => {
     expect(profile?.gateAssigned).toBe("Gate 1");
     expect(profile?.societyId).toBe(societyId);
 
-    const session = await authService.login({
+    // Verify the email so the login returns a session rather than an OTP prompt.
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerified: true },
+    });
+    const login = await authService.login({
       identifier: email,
       password: "temp-pass-123",
     });
-    expect(session.user.role).toBe("GUARD");
+    if (login.status !== "SUCCESS") throw new Error("expected a session");
+    expect(login.session.user.role).toBe("GUARD");
   });
 
   it("creates an admin with an admin profile", async () => {

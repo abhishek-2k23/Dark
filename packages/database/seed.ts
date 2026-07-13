@@ -22,6 +22,7 @@ async function main() {
   await prisma.visitor.deleteMany();
   await prisma.serviceProvider.deleteMany();
   await prisma.pendingResidentInvite.deleteMany();
+  await prisma.emailOtp.deleteMany();
   await prisma.refreshToken.deleteMany();
   await prisma.vehicle.deleteMany();
   await prisma.familyMember.deleteMany();
@@ -70,6 +71,7 @@ async function main() {
       email: "admin@greenmeadows.test",
       phone: "+919800000001",
       passwordHash,
+      emailVerified: true,
       role: "ADMIN",
       societyId: society.id,
       adminProfile: {
@@ -84,6 +86,7 @@ async function main() {
       email: "guard@greenmeadows.test",
       phone: "+919800000002",
       passwordHash,
+      emailVerified: true,
       role: "GUARD",
       societyId: society.id,
       guardProfile: {
@@ -97,13 +100,15 @@ async function main() {
     },
   });
 
-  // Resident 1 — LOCAL auth.
+  // Resident 1 — LOCAL auth. Deliberately left email-UNVERIFIED so the
+  // email-login OTP flow is testable; logging in via phone works directly.
   await prisma.user.create({
     data: {
       name: "Ravi Kumar",
       email: "ravi@example.test",
       phone: "+919800000003",
       passwordHash,
+      emailVerified: false,
       role: "RESIDENT",
       societyId: society.id,
       residentProfile: {
@@ -128,6 +133,7 @@ async function main() {
       name: "Priya Nair",
       email: "priya@example.test",
       authProvider: "GOOGLE",
+      emailVerified: true,
       googleId: "google-seed-priya-001",
       avatarUrl: "https://example.test/avatars/priya.png",
       role: "RESIDENT",

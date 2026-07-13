@@ -273,7 +273,7 @@
       "post": {
         "operationId": "auth-login",
         "summary": "Log in with email/phone and password",
-        "description": "Resolves the identifier as an email first, then as a phone number. Errors: 401 on unknown identifier, wrong password, or a Google-only account; 403 if the account is deactivated.",
+        "description": "Resolves the identifier as an email first, then as a phone number. Returns a discriminated union: `status: SUCCESS` with a session, or `status: OTP_REQUIRED` when logging in with an unverified email — a code is emailed and must be confirmed at /v1/auth/email-otp/verify. Phone logins are never OTP-gated. Errors: 401 on unknown identifier, wrong password, or a Google-only account; 403 if the account is deactivated.",
         "tags": [
           "Auth"
         ],
@@ -304,6 +304,233 @@
                 "required": [
                   "identifier",
                   "password"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "SUCCESS"
+                        },
+                        "session": {
+                          "type": "object",
+                          "properties": {
+                            "accessToken": {
+                              "type": "string",
+                              "description": "Short-lived JWT (~15 min); send as 'Authorization: Bearer <token>'"
+                            },
+                            "refreshToken": {
+                              "type": "string",
+                              "description": "Long-lived opaque token (~30 days); exchange at /v1/auth/refresh"
+                            },
+                            "user": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "description": "User id"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Full name"
+                                },
+                                "email": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Email address, if set"
+                                },
+                                "phone": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Phone number, if set"
+                                },
+                                "role": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RESIDENT",
+                                    "GUARD",
+                                    "ADMIN"
+                                  ],
+                                  "description": "Role of the account"
+                                },
+                                "avatarUrl": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Profile photo URL, if set"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "email",
+                                "phone",
+                                "role",
+                                "avatarUrl"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Public shape of the authenticated user"
+                            }
+                          },
+                          "required": [
+                            "accessToken",
+                            "refreshToken",
+                            "user"
+                          ],
+                          "additionalProperties": false,
+                          "description": "Token pair plus the logged-in user"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "session"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Credentials accepted — a session was issued"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "OTP_REQUIRED"
+                        },
+                        "channel": {
+                          "type": "string",
+                          "const": "email",
+                          "description": "Where the code was sent"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "Email address the OTP was sent to"
+                        },
+                        "devCode": {
+                          "description": "The OTP itself — present only when OTP_DEV_ECHO=true (dev)",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "channel",
+                        "email"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Email is not verified — confirm the emailed code via /v1/auth/email-otp/verify"
+                    }
+                  ],
+                  "description": "Either a session (SUCCESS) or an email-verification challenge (OTP_REQUIRED)",
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/email-otp/verify": {
+      "post": {
+        "operationId": "auth-verifyEmailOtp",
+        "summary": "Confirm an email-verification OTP",
+        "description": "Confirms the code emailed by an OTP_REQUIRED login. On success the email is marked verified (future email logins skip the OTP) and a session is issued. Errors: 401 on an invalid/expired code, 403 if the account is deactivated, 429 after too many wrong attempts (request a new code).",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Email address being verified"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 4,
+                    "description": "The 6-digit code from the verification email"
+                  }
+                },
+                "required": [
+                  "email",
+                  "code"
                 ]
               }
             }
@@ -398,6 +625,110 @@
                   ],
                   "additionalProperties": false,
                   "description": "Token pair plus the logged-in user"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/auth/email-otp/resend": {
+      "post": {
+        "operationId": "auth-resendEmailOtp",
+        "summary": "Re-send an email-verification OTP",
+        "description": "Issues a fresh verification code, invalidating any previous one. Always returns success so callers cannot probe which emails have accounts (no-ops for unknown, Google-only, already-verified, or deactivated accounts). `devCode` is present only when OTP_DEV_ECHO=true.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Email address to re-send the verification code to"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    },
+                    "devCode": {
+                      "description": "The OTP — present only when OTP_DEV_ECHO=true (dev)",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }

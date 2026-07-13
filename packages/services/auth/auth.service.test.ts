@@ -50,8 +50,19 @@ async function expectTRPCError(promise: Promise<unknown>, code: string) {
   }
 }
 
+/** Log in and assert a straight-through session (no OTP gate). */
+async function loginSession(identifier: string, pwd = password) {
+  const result = await authService.login({ identifier, password: pwd });
+  if (result.status !== "SUCCESS") {
+    throw new Error(`expected SUCCESS login, got ${result.status}`);
+  }
+  return result.session;
+}
+
 beforeAll(async () => {
   process.env.GOOGLE_CLIENT_ID = "test-client-id";
+  // Echo OTP codes in results so the email-verification flow is testable.
+  process.env.OTP_DEV_ECHO = "true";
 
   const society = await prisma.society.create({
     data: {
@@ -98,6 +109,7 @@ afterAll(async () => {
     select: { id: true },
   });
   const userIds = users.map((u) => u.id);
+  await prisma.emailOtp.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.residentProfile.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.pendingResidentInvite.deleteMany({ where: { societyId } });
@@ -158,14 +170,48 @@ describe("signup", () => {
 });
 
 describe("login", () => {
-  it("logs in with email", async () => {
-    const session = await authService.login({ identifier: emailA, password });
-    expect(session.user.email).toBe(emailA);
+  it("logs in with phone directly (no OTP gate)", async () => {
+    const result = await authService.login({ identifier: phoneA, password });
+    expect(result.status).toBe("SUCCESS");
+    if (result.status !== "SUCCESS") return;
+    expect(result.session.user.phone).toBe(phoneA);
   });
 
-  it("logs in with phone", async () => {
-    const session = await authService.login({ identifier: phoneA, password });
-    expect(session.user.phone).toBe(phoneA);
+  it("gates an unverified-email login behind an OTP", async () => {
+    const result = await authService.login({ identifier: emailA, password });
+    expect(result.status).toBe("OTP_REQUIRED");
+    if (result.status !== "OTP_REQUIRED") return;
+    expect(result.channel).toBe("email");
+    expect(result.email).toBe(emailA);
+    expect(result.devCode).toMatch(/^\d{6}$/);
+  });
+
+  it("rejects a wrong OTP, then verifies with the right one and issues a session", async () => {
+    const first = await authService.login({ identifier: emailA, password });
+    if (first.status !== "OTP_REQUIRED") throw new Error("expected OTP_REQUIRED");
+    const code = first.devCode!;
+    const wrong = code === "000000" ? "111111" : "000000";
+
+    await expectTRPCError(
+      authService.verifyEmailOtp({ email: emailA, code: wrong }),
+      "UNAUTHORIZED",
+    );
+
+    const session = await authService.verifyEmailOtp({ email: emailA, code });
+    expect(session.user.email).toBe(emailA);
+
+    const user = await prisma.user.findUnique({ where: { email: emailA } });
+    expect(user?.emailVerified).toBe(true);
+  });
+
+  it("logs a now-verified email in directly", async () => {
+    const result = await authService.login({ identifier: emailA, password });
+    expect(result.status).toBe("SUCCESS");
+  });
+
+  it("resendEmailOtp no-ops (no code) for an already-verified account", async () => {
+    const res = await authService.resendEmailOtp({ email: emailA });
+    expect(res.devCode).toBeUndefined();
   });
 
   it("rejects a wrong password", async () => {
@@ -226,7 +272,7 @@ describe("google login", () => {
 
 describe("refresh rotation", () => {
   it("rotates tokens and detects reuse of the old token", async () => {
-    const session = await authService.login({ identifier: emailA, password });
+    const session = await loginSession(emailA);
 
     const rotated = await authService.refreshSession({
       refreshToken: session.refreshToken,
@@ -254,7 +300,7 @@ describe("refresh rotation", () => {
 
 describe("logout", () => {
   it("revokes the presented refresh token", async () => {
-    const session = await authService.login({ identifier: emailA, password });
+    const session = await loginSession(emailA);
     await authService.logout({ refreshToken: session.refreshToken });
     await expectTRPCError(
       authService.refreshSession({ refreshToken: session.refreshToken }),
@@ -263,8 +309,8 @@ describe("logout", () => {
   });
 
   it("logoutAll revokes every active session", async () => {
-    const a = await authService.login({ identifier: emailA, password });
-    const b = await authService.login({ identifier: emailA, password });
+    const a = await loginSession(emailA);
+    const b = await loginSession(emailA);
     const revoked = await authService.logoutAll(a.user.id);
     expect(revoked).toBeGreaterThanOrEqual(2);
     await expectTRPCError(
@@ -276,7 +322,7 @@ describe("logout", () => {
 
 describe("password reset", () => {
   it("resets the password, revokes sessions, and burns the token", async () => {
-    const before = await authService.login({ identifier: emailA, password });
+    const before = await loginSession(emailA);
     const user = await prisma.user.findUnique({ where: { email: emailA } });
     const token = signPasswordResetToken(user!);
 
@@ -287,10 +333,7 @@ describe("password reset", () => {
       authService.login({ identifier: emailA, password }),
       "UNAUTHORIZED",
     );
-    const after = await authService.login({
-      identifier: emailA,
-      password: "new-password-456",
-    });
+    const after = await loginSession(emailA, "new-password-456");
     expect(after.user.id).toBe(before.user.id);
 
     // Sessions from before the reset are dead.

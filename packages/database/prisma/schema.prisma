@@ -207,6 +207,10 @@ model User {
   authProvider AuthProvider @default(LOCAL)
   googleId     String?      @unique
   avatarUrl    String?
+  // Email ownership proven via an emailed OTP. Login with an *unverified* email
+  // is gated behind OTP verification (phone login is not). GOOGLE accounts are
+  // verified by Google, so they are seeded/created as verified.
+  emailVerified Boolean     @default(false)
   role         Role
   societyId    String?
   society      Society?     @relation(fields: [societyId], references: [id])
@@ -222,6 +226,7 @@ model User {
   adminProfile    AdminProfile?
   pushTokens      PushToken[]
   refreshTokens   RefreshToken[]
+  emailOtps       EmailOtp[]
 
   registeredVisitors    Visitor[]               @relation("VisitorRegisteredByGuard")
   approvedVisitors      Visitor[]               @relation("VisitorApprovedByResident")
@@ -312,6 +317,24 @@ model RefreshToken {
   revokedAt DateTime?
 
   @@index([userId])
+}
+
+enum EmailOtpPurpose {
+  EMAIL_VERIFICATION
+}
+
+model EmailOtp {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+  purpose   EmailOtpPurpose @default(EMAIL_VERIFICATION)
+  codeHash  String // SHA-256 of the 6-digit code — never store the raw code
+  expiresAt DateTime
+  attempts  Int             @default(0) // wrong-code tries; consumed after a cap
+  consumedAt DateTime?
+  createdAt DateTime        @default(now())
+
+  @@index([userId, purpose])
 }
 
 model PendingResidentInvite {

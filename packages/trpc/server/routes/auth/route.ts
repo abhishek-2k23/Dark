@@ -41,6 +41,33 @@ const SuccessModel = z.object({
   success: z.literal(true).describe("Always true when the call succeeds"),
 });
 
+const LoginSuccessModel = z
+  .object({
+    status: z.literal("SUCCESS"),
+    session: AuthSessionModel,
+  })
+  .describe("Credentials accepted — a session was issued");
+
+const OtpRequiredModel = z
+  .object({
+    status: z.literal("OTP_REQUIRED"),
+    channel: z.literal("email").describe("Where the code was sent"),
+    email: z.string().describe("Email address the OTP was sent to"),
+    devCode: z
+      .string()
+      .optional()
+      .describe("The OTP itself — present only when OTP_DEV_ECHO=true (dev)"),
+  })
+  .describe(
+    "Email is not verified — confirm the emailed code via /v1/auth/email-otp/verify",
+  );
+
+const LoginResultModel = z
+  .discriminatedUnion("status", [LoginSuccessModel, OtpRequiredModel])
+  .describe(
+    "Either a session (SUCCESS) or an email-verification challenge (OTP_REQUIRED)",
+  );
+
 // ---------------------------------------------------------------------------
 // Inputs
 // ---------------------------------------------------------------------------
@@ -59,6 +86,18 @@ const SignupInput = z.object({
 const LoginInput = z.object({
   identifier: z.string().min(1).describe("Email address or phone number"),
   password: z.string().min(1).describe("Account password"),
+});
+
+const VerifyEmailOtpInput = z.object({
+  email: z.email().describe("Email address being verified"),
+  code: z
+    .string()
+    .min(4)
+    .describe("The 6-digit code from the verification email"),
+});
+
+const ResendEmailOtpInput = z.object({
+  email: z.email().describe("Email address to re-send the verification code to"),
 });
 
 const GoogleLoginInput = z.object({
@@ -112,14 +151,60 @@ export const authRouter = router({
         tags: ["Auth"],
         summary: "Log in with email/phone and password",
         description:
-          "Resolves the identifier as an email first, then as a phone number. " +
-          "Errors: 401 on unknown identifier, wrong password, or a Google-only account; " +
-          "403 if the account is deactivated.",
+          "Resolves the identifier as an email first, then as a phone number. Returns a discriminated " +
+          "union: `status: SUCCESS` with a session, or `status: OTP_REQUIRED` when logging in with an " +
+          "unverified email — a code is emailed and must be confirmed at /v1/auth/email-otp/verify. " +
+          "Phone logins are never OTP-gated. Errors: 401 on unknown identifier, wrong password, or a " +
+          "Google-only account; 403 if the account is deactivated.",
       },
     })
     .input(LoginInput)
-    .output(AuthSessionModel)
+    .output(LoginResultModel)
     .mutation(({ input }) => authService.login(input)),
+
+  verifyEmailOtp: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: path("email-otp/verify"),
+        tags: ["Auth"],
+        summary: "Confirm an email-verification OTP",
+        description:
+          "Confirms the code emailed by an OTP_REQUIRED login. On success the email is marked verified " +
+          "(future email logins skip the OTP) and a session is issued. Errors: 401 on an invalid/expired " +
+          "code, 403 if the account is deactivated, 429 after too many wrong attempts (request a new code).",
+      },
+    })
+    .input(VerifyEmailOtpInput)
+    .output(AuthSessionModel)
+    .mutation(({ input }) => authService.verifyEmailOtp(input)),
+
+  resendEmailOtp: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: path("email-otp/resend"),
+        tags: ["Auth"],
+        summary: "Re-send an email-verification OTP",
+        description:
+          "Issues a fresh verification code, invalidating any previous one. Always returns success so " +
+          "callers cannot probe which emails have accounts (no-ops for unknown, Google-only, already-" +
+          "verified, or deactivated accounts). `devCode` is present only when OTP_DEV_ECHO=true.",
+      },
+    })
+    .input(ResendEmailOtpInput)
+    .output(
+      SuccessModel.extend({
+        devCode: z
+          .string()
+          .optional()
+          .describe("The OTP — present only when OTP_DEV_ECHO=true (dev)"),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const res = await authService.resendEmailOtp(input);
+      return { success: true as const, ...res };
+    }),
 
   googleLogin: publicProcedure
     .meta({

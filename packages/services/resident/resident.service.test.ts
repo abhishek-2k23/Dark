@@ -195,7 +195,14 @@ describe("resident.list", () => {
 
 describe("resident.deactivate / reactivate", () => {
   it("deactivates (revoking sessions), then reactivates", async () => {
-    const session = await authService.login({ identifier: inviteeEmail, password });
+    // Verify the email so login yields a session directly (not an OTP prompt).
+    await prisma.user.update({
+      where: { email: inviteeEmail },
+      data: { emailVerified: true },
+    });
+    const login = await authService.login({ identifier: inviteeEmail, password });
+    if (login.status !== "SUCCESS") throw new Error("expected a session");
+    const session = login.session;
     const resident = await prisma.user.findUnique({ where: { email: inviteeEmail } });
 
     const off = await residentService.setResidentActive(admin, {
@@ -226,7 +233,8 @@ describe("resident.deactivate / reactivate", () => {
     });
     expect(on.isActive).toBe(true);
     const back = await authService.login({ identifier: inviteeEmail, password });
-    expect(back.user.email).toBe(inviteeEmail);
+    if (back.status !== "SUCCESS") throw new Error("expected a session");
+    expect(back.session.user.email).toBe(inviteeEmail);
   });
 
   it("cannot touch a resident of another society", async () => {
