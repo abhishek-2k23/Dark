@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type Prisma, type User, type NoticeCategory } from "@repo/database";
 
+import { notifyUsers, societyResidentUserIds } from "../notification/notification.service";
+
 /**
  * Society notice board. Admins manage notices (including future-scheduled
  * ones); everyone else sees only published notices — those with no
@@ -81,8 +83,17 @@ export async function createNotice(
     include: noticeInclude,
   });
 
-  // TODO(Phase 8): NotificationService — push "notice published" to every
-  // resident of the society (respecting scheduledAt for scheduled notices).
+  // Scheduled notices notify when published (see updateNotice); a proper
+  // publish-time push for untouched scheduled notices needs a notifiedAt
+  // flag + sweep — future enhancement.
+  if (!scheduledAt) {
+    await notifyUsers(await societyResidentUserIds(societyId), {
+      type: "NOTICE_PUBLISHED",
+      title: `Notice: ${notice.title}`,
+      body: notice.body.length > 120 ? `${notice.body.slice(0, 117)}...` : notice.body,
+      data: { noticeId: notice.id },
+    });
+  }
 
   return toNoticeInfo(notice);
 }
@@ -133,6 +144,19 @@ export async function updateNotice(
     },
     include: noticeInclude,
   });
+
+  // Publish-now transition (was scheduled for the future, now unscheduled):
+  // this is the moment residents can see it, so notify them.
+  const wasUnpublished = notice.scheduledAt && notice.scheduledAt > new Date();
+  if (wasUnpublished && scheduledAt === null) {
+    await notifyUsers(await societyResidentUserIds(notice.societyId), {
+      type: "NOTICE_PUBLISHED",
+      title: `Notice: ${updated.title}`,
+      body: updated.body.length > 120 ? `${updated.body.slice(0, 117)}...` : updated.body,
+      data: { noticeId: updated.id },
+    });
+  }
+
   return toNoticeInfo(updated);
 }
 

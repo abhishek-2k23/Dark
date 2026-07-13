@@ -12,6 +12,8 @@ import { noticeRouter } from "./routes/notice/route";
 import { pollRouter } from "./routes/poll/route";
 import { amenityRouter, amenityBookingRouter } from "./routes/amenity/route";
 import { dueRouter, paymentRouter } from "./routes/dues/route";
+import { serviceProviderRouter } from "./routes/directory/route";
+import { pushTokenRouter, notificationRouter } from "./routes/notification/route";
 
 export const serverRouter = router({
   health: healthRouter,
@@ -33,6 +35,9 @@ export const serverRouter = router({
   amenityBooking: amenityBookingRouter,
   due: dueRouter,
   payment: paymentRouter,
+  serviceProvider: serviceProviderRouter,
+  pushToken: pushTokenRouter,
+  notification: notificationRouter,
 });
 
 export { createContext } from "./context";

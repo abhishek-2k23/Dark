@@ -11,3 +11,5 @@ export * as pollService from "./poll/poll.service";
 export * as amenityService from "./amenity/amenity.service";
 export * as dueService from "./dues/due.service";
 export * as paymentService from "./dues/payment.service";
+export * as notificationService from "./notification/notification.service";
+export * as directoryService from "./directory/directory.service";

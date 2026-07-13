@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type Prisma, type User, type DueStatus } from "@repo/database";
 
+import { notifyUsers, societyResidentUserIds } from "../notification/notification.service";
+
 /**
  * Maintenance dues. Admins generate one due per flat per month; residents
  * see their own flat's dues. PENDING dues past their dueDate are flipped to
@@ -82,8 +84,18 @@ export async function generateMonthly(
     skipDuplicates: true,
   });
 
-  // TODO(Phase 8): NotificationService — push "maintenance due generated" to
-  // each flat's residents here.
+  if (result.count > 0) {
+    const monthName = new Date(Date.UTC(input.year, input.month - 1)).toLocaleString("en", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    await notifyUsers(await societyResidentUserIds(societyId), {
+      type: "DUE_GENERATED",
+      title: `Maintenance due for ${monthName} ${input.year}`,
+      body: `₹${input.amount} due by ${dueDate.toISOString().slice(0, 10)}`,
+      data: { month: String(input.month), year: String(input.year) },
+    });
+  }
 
   return { created: result.count, skipped: flats.length - result.count };
 }

@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type User } from "@repo/database";
 
+import { notifyUsers, societyResidentUserIds } from "../notification/notification.service";
+
 /**
  * Society polls. Admins create; residents vote — one option per poll unless
  * `allowMultiple`, never twice on the same option, never after the deadline.
@@ -89,8 +91,12 @@ export async function createPoll(
     include: pollInclude,
   });
 
-  // TODO(Phase 8): NotificationService — push "new poll" to every resident
-  // of the society here.
+  await notifyUsers(await societyResidentUserIds(societyId), {
+    type: "POLL_CREATED",
+    title: "New poll",
+    body: poll.question,
+    data: { pollId: poll.id },
+  });
 
   return toPollInfo(poll, []);
 }

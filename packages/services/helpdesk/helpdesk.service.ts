@@ -8,6 +8,8 @@ import {
   type TicketStatus,
 } from "@repo/database";
 
+import { notifyUser } from "../notification/notification.service";
+
 /**
  * Helpdesk tickets. Residents raise tickets for their own flat; admins see
  * the whole society; the assignee (a guard or admin) can work the ticket.
@@ -220,8 +222,12 @@ export async function updateTicketStatus(
     include: ticketInclude,
   });
 
-  // TODO(Phase 8): NotificationService — notify the raising resident of the
-  // status change here.
+  await notifyUser(updated.resident.user.id, {
+    type: "TICKET_STATUS_CHANGED",
+    title: `Ticket ${input.status.toLowerCase().replace("_", " ")}`,
+    body: `'${updated.title}' is now ${input.status.toLowerCase().replace("_", " ")}`,
+    data: { ticketId: updated.id },
+  });
 
   return toTicketInfo(updated);
 }

@@ -7,6 +7,8 @@ import {
   type VisitorStatus,
 } from "@repo/database";
 
+import { notifyUser, notifyUsers, flatResidentUserIds } from "../notification/notification.service";
+
 /**
  * Visitor lifecycle. State machine (see docs/api-conventions.md):
  *
@@ -120,8 +122,12 @@ export async function registerVisitor(
     include: visitorInclude,
   });
 
-  // TODO(Phase 8): NotificationService — push "visitor waiting" to the
-  // flat's residents here.
+  await notifyUsers(await flatResidentUserIds(flat.id), {
+    type: "VISITOR_PENDING",
+    title: "Visitor waiting at the gate",
+    body: `${visitor.name} (${visitor.purpose.toLowerCase().replace("_", " ")}) is waiting for your approval`,
+    data: { visitorId: visitor.id },
+  });
 
   return toVisitorInfo(visitor);
 }
@@ -151,8 +157,12 @@ export async function decideVisitor(
     include: visitorInclude,
   });
 
-  // TODO(Phase 8): NotificationService — notify the registering guard of
-  // the decision here.
+  await notifyUser(updated.registeredByGuard.id, {
+    type: input.decision === "APPROVED" ? "VISITOR_APPROVED" : "VISITOR_DENIED",
+    title: `Visitor ${input.decision.toLowerCase()}`,
+    body: `${updated.name} was ${input.decision.toLowerCase()} by the resident of flat ${updated.flat.flatNumber}`,
+    data: { visitorId: updated.id },
+  });
 
   return toVisitorInfo(updated);
 }

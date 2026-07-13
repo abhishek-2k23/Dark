@@ -76,6 +76,8 @@ const adminOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   caller.amenity.create({ name: "X" }),
   caller.amenityBooking.calendar({ amenityId: "x" }),
   caller.due.generateMonthly({ month: 1, year: 2030, amount: 100 }),
+  caller.serviceProvider.create({ name: "X", category: "OTHER", phone: "+910000000000" }),
+  caller.serviceProvider.delete({ serviceProviderId: "x" }),
 ];
 
 const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
@@ -187,5 +189,11 @@ describe("profile procedures (any authenticated role)", () => {
     const caller = callerFor(null);
     await expectTRPCError(caller.profile.me(), "UNAUTHORIZED");
     await expectTRPCError(caller.profile.update({ name: "X" }), "UNAUTHORIZED");
+    await expectTRPCError(
+      caller.pushToken.register({ token: "ExponentPushToken[x]", deviceType: "IOS" }),
+      "UNAUTHORIZED",
+    );
+    await expectTRPCError(caller.notification.list({ limit: 20 }), "UNAUTHORIZED");
+    await expectTRPCError(caller.notification.markAllRead({}), "UNAUTHORIZED");
   });
 });

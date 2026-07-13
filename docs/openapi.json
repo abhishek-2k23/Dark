@@ -12239,6 +12239,1109 @@
           }
         }
       }
+    },
+    "/v1/service-providers": {
+      "post": {
+        "operationId": "serviceProvider-create",
+        "summary": "Add a service provider to the directory",
+        "description": "Admin adds a maid/electrician/plumber/driver/etc. to their society's directory. Errors: 403 if not an admin.",
+        "tags": [
+          "Directory"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Full name"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "MAID",
+                      "ELECTRICIAN",
+                      "PLUMBER",
+                      "DRIVER",
+                      "OTHER"
+                    ],
+                    "description": "Service category"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 8,
+                    "description": "Contact phone number"
+                  },
+                  "photoUrl": {
+                    "description": "Photo URL (Cloudinary, Phase 9)",
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "isVerified": {
+                    "description": "Mark as admin-verified (default false)",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "category",
+                  "phone"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Service provider id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Full name"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "MAID",
+                        "ELECTRICIAN",
+                        "PLUMBER",
+                        "DRIVER",
+                        "OTHER"
+                      ],
+                      "description": "Service category"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Contact phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL, if set"
+                    },
+                    "isVerified": {
+                      "type": "boolean",
+                      "description": "Whether the society admin has verified this provider"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "category",
+                    "phone",
+                    "photoUrl",
+                    "isVerified"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A staff/service provider in the society directory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "serviceProvider-list",
+        "summary": "List the society's service providers",
+        "description": "Directory of the caller's society, sorted by category then name, optionally filtered by category. Errors: 401 if not authenticated, 412 if the account is not linked to a society.",
+        "tags": [
+          "Directory"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "MAID",
+                "ELECTRICIAN",
+                "PLUMBER",
+                "DRIVER",
+                "OTHER"
+              ],
+              "description": "Service category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Service provider id"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Full name"
+                      },
+                      "category": {
+                        "type": "string",
+                        "enum": [
+                          "MAID",
+                          "ELECTRICIAN",
+                          "PLUMBER",
+                          "DRIVER",
+                          "OTHER"
+                        ],
+                        "description": "Service category"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "Contact phone number"
+                      },
+                      "photoUrl": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Photo URL, if set"
+                      },
+                      "isVerified": {
+                        "type": "boolean",
+                        "description": "Whether the society admin has verified this provider"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "category",
+                      "phone",
+                      "photoUrl",
+                      "isVerified"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A staff/service provider in the society directory"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/service-providers/{serviceProviderId}": {
+      "patch": {
+        "operationId": "serviceProvider-update",
+        "summary": "Update a service provider",
+        "description": "Partially updates a directory entry, including the isVerified flag. Errors: 403 if not an admin, 404 if the provider is not in the admin's society.",
+        "tags": [
+          "Directory"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serviceProviderId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the provider to update"
+            },
+            "required": true,
+            "description": "Id of the provider to update"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "New name",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "MAID",
+                      "ELECTRICIAN",
+                      "PLUMBER",
+                      "DRIVER",
+                      "OTHER"
+                    ],
+                    "description": "Service category"
+                  },
+                  "phone": {
+                    "description": "New phone",
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "photoUrl": {
+                    "description": "New photo URL",
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "isVerified": {
+                    "description": "New verification state",
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Service provider id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Full name"
+                    },
+                    "category": {
+                      "type": "string",
+                      "enum": [
+                        "MAID",
+                        "ELECTRICIAN",
+                        "PLUMBER",
+                        "DRIVER",
+                        "OTHER"
+                      ],
+                      "description": "Service category"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Contact phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL, if set"
+                    },
+                    "isVerified": {
+                      "type": "boolean",
+                      "description": "Whether the society admin has verified this provider"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "category",
+                    "phone",
+                    "photoUrl",
+                    "isVerified"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A staff/service provider in the society directory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "serviceProvider-delete",
+        "summary": "Remove a service provider",
+        "description": "Deletes a directory entry. Errors: 403 if not an admin, 404 if the provider is not in the admin's society.",
+        "tags": [
+          "Directory"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serviceProviderId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the provider"
+            },
+            "required": true,
+            "description": "Id of the provider"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/push-tokens/register": {
+      "post": {
+        "operationId": "pushToken-register",
+        "summary": "Register a device's Expo push token",
+        "description": "Called by the mobile app after push permission is granted; upserts by (user, token) so re-registering the same device is safe. Errors: 400 if the token is not a valid Expo push token, 401 if not authenticated.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Expo push token from Notifications.getExpoPushTokenAsync()"
+                  },
+                  "deviceType": {
+                    "type": "string",
+                    "enum": [
+                      "IOS",
+                      "ANDROID"
+                    ],
+                    "description": "Device platform"
+                  }
+                },
+                "required": [
+                  "token",
+                  "deviceType"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notifications": {
+      "get": {
+        "operationId": "notification-list",
+        "summary": "List the caller's notifications",
+        "description": "Cursor-paginated notifications, newest first (clients group by day), plus the caller's total unread count for badges. Errors: 401 if not authenticated.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Notification id"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "VISITOR_PENDING",
+                              "VISITOR_APPROVED",
+                              "VISITOR_DENIED",
+                              "TICKET_STATUS_CHANGED",
+                              "TICKET_COMMENT",
+                              "NOTICE_PUBLISHED",
+                              "POLL_CREATED",
+                              "DUE_GENERATED",
+                              "BOOKING_CONFIRMED",
+                              "GENERAL"
+                            ],
+                            "description": "What event produced this notification"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Notification title"
+                          },
+                          "body": {
+                            "type": "string",
+                            "description": "Notification body"
+                          },
+                          "data": {
+                            "description": "Deep-link payload (e.g. { visitorId }) matching the type; null if none"
+                          },
+                          "isRead": {
+                            "type": "boolean",
+                            "description": "Whether the user has read it"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO creation time"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "type",
+                          "title",
+                          "body",
+                          "data",
+                          "isRead",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "An in-app notification"
+                      },
+                      "description": "Notifications on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when there are no more pages"
+                    },
+                    "unreadCount": {
+                      "type": "number",
+                      "description": "Caller's total unread notifications (for badges)"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "unreadCount"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notifications/{notificationId}/read": {
+      "post": {
+        "operationId": "notification-markRead",
+        "summary": "Mark one notification as read",
+        "description": "Errors: 401 if not authenticated, 404 if the notification does not belong to the caller.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notificationId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the notification"
+            },
+            "required": true,
+            "description": "Id of the notification"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Notification id"
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "VISITOR_PENDING",
+                        "VISITOR_APPROVED",
+                        "VISITOR_DENIED",
+                        "TICKET_STATUS_CHANGED",
+                        "TICKET_COMMENT",
+                        "NOTICE_PUBLISHED",
+                        "POLL_CREATED",
+                        "DUE_GENERATED",
+                        "BOOKING_CONFIRMED",
+                        "GENERAL"
+                      ],
+                      "description": "What event produced this notification"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Notification title"
+                    },
+                    "body": {
+                      "type": "string",
+                      "description": "Notification body"
+                    },
+                    "data": {
+                      "description": "Deep-link payload (e.g. { visitorId }) matching the type; null if none"
+                    },
+                    "isRead": {
+                      "type": "boolean",
+                      "description": "Whether the user has read it"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO creation time"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "type",
+                    "title",
+                    "body",
+                    "data",
+                    "isRead",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "An in-app notification"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/notifications/read-all": {
+      "post": {
+        "operationId": "notification-markAllRead",
+        "summary": "Mark all notifications as read",
+        "description": "Errors: 401 if not authenticated.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {},
+                "description": "No fields"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    },
+                    "marked": {
+                      "type": "number",
+                      "description": "How many notifications were marked read"
+                    }
+                  },
+                  "required": [
+                    "success",
+                    "marked"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
