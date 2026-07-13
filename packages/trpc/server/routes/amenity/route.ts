@@ -49,26 +49,26 @@ const BookingModel = z
 
 const CreateAmenityInput = z.object({
   name: z.string().min(1).describe("Amenity name"),
-  description: z.string().optional().describe("Description"),
-  photoUrls: z.array(z.url()).max(5).optional().describe("Photo URLs (Cloudinary, Phase 9)"),
-  rules: z.string().optional().describe("Usage rules shown to residents"),
-  pricePerSlot: z.number().nonnegative().optional().describe("Price per slot; omit when free"),
-  isActive: z.boolean().optional().describe("Open for booking (default true)"),
+  description: z.string().describe("Description").optional(),
+  photoUrls: z.array(z.url()).max(5).describe("Photo URLs (Cloudinary, Phase 9)").optional(),
+  rules: z.string().describe("Usage rules shown to residents").optional(),
+  pricePerSlot: z.number().nonnegative().describe("Price per slot; omit when free").optional(),
+  isActive: z.boolean().describe("Open for booking (default true)").optional(),
 });
 
 const UpdateAmenityInput = z.object({
   amenityId: z.string().describe("Id of the amenity to update"),
-  name: z.string().min(1).optional().describe("New name"),
-  description: z.string().optional().describe("New description"),
-  photoUrls: z.array(z.url()).max(5).optional().describe("New photo URLs"),
-  rules: z.string().optional().describe("New usage rules"),
+  name: z.string().min(1).describe("New name").optional(),
+  description: z.string().describe("New description").optional(),
+  photoUrls: z.array(z.url()).max(5).describe("New photo URLs").optional(),
+  rules: z.string().describe("New usage rules").optional(),
   pricePerSlot: z
     .number()
     .nonnegative()
+    .describe("New price; pass null to make it free")
     .nullable()
-    .optional()
-    .describe("New price; pass null to make it free"),
-  isActive: z.boolean().optional().describe("Open/close for booking"),
+    .optional(),
+  isActive: z.boolean().describe("Open/close for booking").optional(),
 });
 
 const CreateBookingInput = z.object({
@@ -84,13 +84,13 @@ const BookingIdInput = z.object({
 
 const MyBookingsInput = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last booking from the previous page"),
+  cursor: z.string().describe("Id of the last booking from the previous page").optional(),
 });
 
 const CalendarInput = z.object({
   amenityId: z.string().describe("Amenity to view"),
-  from: z.iso.date().optional().describe("Range start 'YYYY-MM-DD' (default today)"),
-  to: z.iso.date().optional().describe("Range end 'YYYY-MM-DD' (default from + 30 days)"),
+  from: z.iso.date().describe("Range start 'YYYY-MM-DD' (default today)").optional(),
+  to: z.iso.date().describe("Range end 'YYYY-MM-DD' (default from + 30 days)").optional(),
 });
 
 export const amenityRouter = router({

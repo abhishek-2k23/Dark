@@ -46,7 +46,7 @@ const RegisterPushTokenInput = z.object({
 
 const ListNotificationsInput = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last notification from the previous page"),
+  cursor: z.string().describe("Id of the last notification from the previous page").optional(),
 });
 
 const NotificationIdInput = z.object({
@@ -131,7 +131,10 @@ export const notificationRouter = router({
         path: notificationPath("read-all"),
         tags: ["Notifications"],
         summary: "Mark all notifications as read",
-        description: "Errors: 401 if not authenticated.",
+        description:
+          "Marks every unread notification for the calling user as read in one call and returns " +
+          "how many rows were updated (drives clearing the unread badge). Idempotent — a second " +
+          "call marks 0. Errors: 401 if not authenticated.",
         protect: true,
       },
     })

@@ -62,16 +62,16 @@ const CreateTicketInput = z.object({
   category: TicketCategoryEnum,
   title: z.string().min(1).describe("Short summary of the issue"),
   description: z.string().min(1).describe("Full description of the issue"),
-  photoUrls: z.array(z.url()).max(5).optional().describe("Photo URLs (Cloudinary, Phase 9)"),
-  priority: TicketPriorityEnum.optional().describe("Defaults to MEDIUM"),
+  photoUrls: z.array(z.url()).max(5).describe("Photo URLs (Cloudinary, Phase 9)").optional(),
+  priority: TicketPriorityEnum.describe("Defaults to MEDIUM").optional(),
 });
 
 const ListTicketsInput = z.object({
-  status: TicketStatusEnum.optional().describe("Only tickets with this status"),
-  category: TicketCategoryEnum.optional().describe("Only tickets in this category"),
-  priority: TicketPriorityEnum.optional().describe("Only tickets with this priority"),
+  status: TicketStatusEnum.describe("Only tickets with this status").optional(),
+  category: TicketCategoryEnum.describe("Only tickets in this category").optional(),
+  priority: TicketPriorityEnum.describe("Only tickets with this priority").optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last ticket from the previous page"),
+  cursor: z.string().describe("Id of the last ticket from the previous page").optional(),
 });
 
 const TicketIdInput = z.object({

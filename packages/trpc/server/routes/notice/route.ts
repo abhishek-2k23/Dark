@@ -36,24 +36,24 @@ const CreateNoticeInput = z.object({
   title: z.string().min(1).describe("Notice title"),
   body: z.string().min(1).describe("Notice body text"),
   category: NoticeCategoryEnum,
-  isPinned: z.boolean().optional().describe("Pin to the top of the board (default false)"),
+  isPinned: z.boolean().describe("Pin to the top of the board (default false)").optional(),
   scheduledAt: z.iso
     .datetime()
-    .optional()
-    .describe("ISO future time to auto-publish; omit to publish immediately"),
+    .describe("ISO future time to auto-publish; omit to publish immediately")
+    .optional(),
 });
 
 const UpdateNoticeInput = z.object({
   noticeId: z.string().describe("Id of the notice to update"),
-  title: z.string().min(1).optional().describe("New title"),
-  body: z.string().min(1).optional().describe("New body"),
+  title: z.string().min(1).describe("New title").optional(),
+  body: z.string().min(1).describe("New body").optional(),
   category: NoticeCategoryEnum.optional(),
-  isPinned: z.boolean().optional().describe("New pinned state"),
+  isPinned: z.boolean().describe("New pinned state").optional(),
   scheduledAt: z.iso
     .datetime()
+    .describe("New future-publish time; pass null to publish immediately")
     .nullable()
-    .optional()
-    .describe("New future-publish time; pass null to publish immediately"),
+    .optional(),
 });
 
 const NoticeIdInput = z.object({
@@ -61,9 +61,9 @@ const NoticeIdInput = z.object({
 });
 
 const ListNoticesInput = z.object({
-  category: NoticeCategoryEnum.optional().describe("Only notices in this category"),
+  category: NoticeCategoryEnum.describe("Only notices in this category").optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last notice from the previous page"),
+  cursor: z.string().describe("Id of the last notice from the previous page").optional(),
 });
 
 const SuccessModel = z.object({

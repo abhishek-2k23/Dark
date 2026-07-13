@@ -53,11 +53,11 @@ const FlatModel = z
 // ---------------------------------------------------------------------------
 
 const UpdateSocietyInput = z.object({
-  name: z.string().min(1).optional().describe("New society name"),
-  address: z.string().min(1).optional().describe("New street address"),
-  city: z.string().min(1).optional().describe("New city"),
-  state: z.string().min(1).optional().describe("New state"),
-  pincode: z.string().min(1).optional().describe("New postal code"),
+  name: z.string().min(1).describe("New society name").optional(),
+  address: z.string().min(1).describe("New street address").optional(),
+  city: z.string().min(1).describe("New city").optional(),
+  state: z.string().min(1).describe("New state").optional(),
+  pincode: z.string().min(1).describe("New postal code").optional(),
 });
 
 const CreateTowerInput = z.object({
@@ -78,15 +78,15 @@ const CreateFlatInput = z.object({
 
 const UpdateFlatInput = z.object({
   flatId: z.string().describe("Id of the flat to update"),
-  flatNumber: z.string().min(1).optional().describe("New flat number, unique within the tower"),
-  floor: z.number().int().optional().describe("New floor"),
+  flatNumber: z.string().min(1).describe("New flat number, unique within the tower").optional(),
+  floor: z.number().int().describe("New floor").optional(),
   type: FlatTypeEnum.optional(),
 });
 
 const ListFlatsInput = z.object({
-  towerId: z.string().optional().describe("Only list flats in this tower"),
+  towerId: z.string().describe("Only list flats in this tower").optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last flat from the previous page"),
+  cursor: z.string().describe("Id of the last flat from the previous page").optional(),
 });
 
 // ---------------------------------------------------------------------------

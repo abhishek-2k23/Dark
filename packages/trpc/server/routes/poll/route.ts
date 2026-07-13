@@ -59,8 +59,8 @@ const CreatePollInput = z.object({
     .describe("Votable options (2–10)"),
   allowMultiple: z
     .boolean()
-    .optional()
-    .describe("Allow voting for multiple options (default false)"),
+    .describe("Allow voting for multiple options (default false)")
+    .optional(),
   deadline: z.iso.datetime().describe("ISO time voting closes; must be in the future"),
 });
 
@@ -79,7 +79,7 @@ const ListPollsInput = z.object({
     .default("ALL")
     .describe("Filter by whether the deadline has passed"),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last poll from the previous page"),
+  cursor: z.string().describe("Id of the last poll from the previous page").optional(),
 });
 
 export const pollRouter = router({

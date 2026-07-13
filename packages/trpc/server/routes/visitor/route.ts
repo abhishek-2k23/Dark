@@ -86,8 +86,8 @@ const RegisterVisitorInput = z.object({
   phone: z.string().min(8).describe("Visitor phone number, with country code"),
   purpose: VisitorPurposeEnum,
   flatId: z.string().describe("Target flat the visitor is heading to"),
-  photoUrl: z.url().optional().describe("Photo URL of the visitor (Cloudinary, Phase 9)"),
-  vehicleNumber: z.string().optional().describe("Vehicle registration number, if applicable"),
+  photoUrl: z.url().describe("Photo URL of the visitor (Cloudinary, Phase 9)").optional(),
+  vehicleNumber: z.string().describe("Vehicle registration number, if applicable").optional(),
 });
 
 const VisitorIdInput = z.object({
@@ -99,13 +99,13 @@ const HistoryInput = z.object({
     .enum(["TODAY", "WEEK", "MONTH", "ALL"])
     .default("ALL")
     .describe("Time window: today, last 7 days, last 30 days, or everything"),
-  status: VisitorStatusEnum.optional().describe("Only requests with this status"),
+  status: VisitorStatusEnum.describe("Only requests with this status").optional(),
   flatId: z
     .string()
-    .optional()
-    .describe("Only this flat (guards/admins only — residents always see their own flat)"),
+    .describe("Only this flat (guards/admins only — residents always see their own flat)")
+    .optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last visitor from the previous page"),
+  cursor: z.string().describe("Id of the last visitor from the previous page").optional(),
 });
 
 const CreatePreApprovalInput = z.object({
@@ -113,7 +113,7 @@ const CreatePreApprovalInput = z.object({
   guestPhone: z.string().min(8).describe("Expected guest's phone, with country code"),
   validFrom: z.iso.datetime().describe("ISO start of the validity window"),
   validTo: z.iso.datetime().describe("ISO end of the validity window"),
-  vehicleNumber: z.string().optional().describe("Expected vehicle number, if known"),
+  vehicleNumber: z.string().describe("Expected vehicle number, if known").optional(),
 });
 
 const VerifyPreApprovalInput = z.object({

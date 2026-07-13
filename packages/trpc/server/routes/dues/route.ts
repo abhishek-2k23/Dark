@@ -58,20 +58,20 @@ const GenerateMonthlyInput = z.object({
   amount: z.number().positive().describe("Amount to bill each flat"),
   dueDate: z.iso
     .datetime()
-    .optional()
-    .describe("ISO payment deadline; defaults to the 10th of the billing month"),
+    .describe("ISO payment deadline; defaults to the 10th of the billing month")
+    .optional(),
 });
 
 const ListDuesInput = z.object({
-  status: DueStatusEnum.optional().describe("Only dues with this status"),
-  month: z.coerce.number().int().min(1).max(12).optional().describe("Only this billing month"),
-  year: z.coerce.number().int().optional().describe("Only this billing year"),
+  status: DueStatusEnum.describe("Only dues with this status").optional(),
+  month: z.coerce.number().int().min(1).max(12).describe("Only this billing month").optional(),
+  year: z.coerce.number().int().describe("Only this billing year").optional(),
   flatId: z
     .string()
-    .optional()
-    .describe("Only this flat (admins only — residents always see their own flat)"),
+    .describe("Only this flat (admins only — residents always see their own flat)")
+    .optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last due from the previous page"),
+  cursor: z.string().describe("Id of the last due from the previous page").optional(),
 });
 
 const InitiatePaymentInput = z.object({
@@ -93,7 +93,7 @@ const WebhookInput = z.object({
 
 const HistoryInput = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last payment from the previous page"),
+  cursor: z.string().describe("Id of the last payment from the previous page").optional(),
 });
 
 // ---------------------------------------------------------------------------

@@ -15,6 +15,10 @@ The same tRPC router is exposed twice by `apps/api`:
 
 Interactive docs: **`/docs`** (Scalar). Raw spec: **`/openapi.json`**, or
 regenerate the committed copy at `docs/openapi.json` with `pnpm openapi:generate`.
+A ready-to-import **Postman collection** (folders per tag, bearer auth wired to a
+`bearerToken` variable that the auth requests auto-capture) lives at
+`docs/postman-collection.json` — regenerate it from the spec with
+`pnpm dlx openapi-to-postmanv2 -s docs/openapi.json -o docs/postman-collection.json -p -O folderStrategy=Tags`.
 
 ### REST quirk: Content-Type on mutations
 
@@ -28,6 +32,18 @@ tRPC clients are unaffected.
 Every REST path is namespaced under `/api/v1/...`. Router files build paths
 with `generatePath("v1/<domain>")` (`packages/trpc/server/utils/path-generator.ts`)
 so the version prefix lives in exactly one place per router.
+
+## Naming
+
+- **tRPC procedures**: `<domain>.<action>` in camelCase — `visitor.register`,
+  `resident.list`, `amenityBooking.cancel`. Actions read as verbs; list/query
+  reads use `list`/`get`/`me`/`history`, writes use `create`/`update`/`delete`
+  or a domain verb (`approve`, `markEntry`, `vote`).
+- **REST paths**: kebab-case, plural resource nouns under `/api/v1/` —
+  `/api/v1/service-providers`, `/api/v1/amenity-bookings/mine`. Path params are
+  camelCase in braces (`/api/v1/visitors/{visitorId}/approve`).
+- **Zod schemas**: `PascalCase` suffixed by role — `RegisterVisitorInput`,
+  `VisitorModel`, `DueStatusEnum`.
 
 ## Authentication
 
@@ -109,9 +125,9 @@ List endpoints use cursor pagination:
    `summary`, `description`, and `protect: true` when bearer auth is required.
    - One **tag per domain router**, matching: `Auth`, `Society`, `Profile`,
      `Visitors`, `Helpdesk`, `Notices`, `Polls`, `Amenities`, `Dues`,
-     `Directory`, `Notifications`, `Uploads`. (`Society` covers society/
-     tower/flat/resident/staff admin; `Profile` covers self-service profile,
-     family members, and vehicles.)
+     `Directory`, `Notifications`, `Uploads`, plus `Health` for the liveness
+     probe. (`Society` covers society/tower/flat/resident/staff admin;
+     `Profile` covers self-service profile, family members, and vehicles.)
    - The `description` of every **mutation documents its error cases**
      (e.g. "Errors: 404 if the flat does not exist, 403 if the guard belongs
      to another society").
@@ -119,6 +135,13 @@ List endpoints use cursor pagination:
    with `.describe()` on **every field** (these become the field docs).
    Procedures with no input take `zodUndefinedModel` from
    `packages/trpc/server/schema.ts`.
+   - **Order `.describe()` before `.optional()`** (and before `.nullable()`):
+     `z.string().describe("…").optional()`, not `.optional().describe("…")`.
+     For a **GET** endpoint, an optional field's input becomes a query
+     parameter, and trpc-to-openapi reads the description off the inner type —
+     `.describe()` on the outer `ZodOptional` wrapper is silently dropped, so
+     the query param renders with no docs. (Request-body fields tolerate either
+     order, but keep the rule uniform so a field is safe to move to a query.)
 4. **Business logic lives in `packages/services`**, throwing `TRPCError` with
    the correct code; the route file stays a thin schema + wiring layer.
 5. Register the router in `packages/trpc/server/index.ts`.

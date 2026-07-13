@@ -20,17 +20,17 @@ const StaffModel = z
 
 const CreateStaffInput = z.object({
   name: z.string().min(1).describe("Full name of the staff member"),
-  email: z.email().optional().describe("Email (this or phone required)"),
-  phone: z.string().min(8).optional().describe("Phone with country code (this or email required)"),
+  email: z.email().describe("Email (this or phone required)").optional(),
+  phone: z.string().min(8).describe("Phone with country code (this or email required)").optional(),
   temporaryPassword: z
     .string()
     .min(8)
     .describe("Temporary password (min 8 chars); the staff member should change it after first login"),
   role: StaffRoleEnum,
-  gateAssigned: z.string().optional().describe("Assigned gate (GUARD role only)"),
-  shiftStart: z.string().optional().describe("Shift start 'HH:mm' 24h (GUARD role only)"),
-  shiftEnd: z.string().optional().describe("Shift end 'HH:mm' 24h (GUARD role only)"),
-  designation: z.string().optional().describe("Designation, e.g. 'Secretary' (ADMIN role only)"),
+  gateAssigned: z.string().describe("Assigned gate (GUARD role only)").optional(),
+  shiftStart: z.string().describe("Shift start 'HH:mm' 24h (GUARD role only)").optional(),
+  shiftEnd: z.string().describe("Shift end 'HH:mm' 24h (GUARD role only)").optional(),
+  designation: z.string().describe("Designation, e.g. 'Secretary' (ADMIN role only)").optional(),
 });
 
 export const staffRouter = router({

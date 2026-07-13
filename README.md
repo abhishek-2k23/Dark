@@ -65,6 +65,21 @@ procedure needs `meta.openapi` (method, path, tags, summary, description,
 `protect`), named Zod schemas with `.describe()` on each field, and mutation
 descriptions listing their error cases.
 
+**Postman:** import [`docs/postman-collection.json`](docs/postman-collection.json)
+(folders per tag). Set the `baseUrl` variable, run **Auth → Log in** with a
+seeded account, and the returned token is captured into `bearerToken`
+automatically for the protected requests.
+
+## Testing
+
+```sh
+pnpm test          # Vitest across all packages (169 tests)
+pnpm check-types   # tsc --noEmit across the workspace
+```
+
+Tests run against the dev Postgres and namespace their own fixtures — see
+[`docs/testing.md`](docs/testing.md) for the conventions.
+
 ## Database
 
 PostgreSQL runs in the `portal-postgres` container (see `docker-compose.yml`), database name `portal`.

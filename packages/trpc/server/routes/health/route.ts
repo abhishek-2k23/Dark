@@ -3,7 +3,17 @@ import { publicProcedure, router } from "../../trpc";
 
 export const healthRouter = router({
   getHealth: publicProcedure
-    .meta({ openapi: { method: "GET", path: "/health" } })
+    .meta({
+      openapi: {
+        method: "GET",
+        path: "/health",
+        tags: ["Health"],
+        summary: "Health check",
+        description:
+          "Liveness probe. Returns `{ status: \"healthy\" }` with a 200 when the API process " +
+          "is up and able to serve requests. Public — no authentication required.",
+      },
+    })
     .input(zodUndefinedModel)
     .output(
       z.object({

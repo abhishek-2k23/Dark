@@ -17,6 +17,11 @@
     "/health": {
       "get": {
         "operationId": "health-getHealth",
+        "summary": "Health check",
+        "description": "Liveness probe. Returns `{ status: \"healthy\" }` with a 200 when the API process is up and able to serve requests. Public — no authentication required.",
+        "tags": [
+          "Health"
+        ],
         "security": [
           {
             "Authorization": []
@@ -104,15 +109,15 @@
                     "description": "Full name of the new resident"
                   },
                   "email": {
-                    "description": "Email address (this or phone required)",
                     "type": "string",
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Email address (this or phone required)"
                   },
                   "phone": {
-                    "description": "Phone number with country code (this or email required)",
                     "type": "string",
-                    "minLength": 8
+                    "minLength": 8,
+                    "description": "Phone number with country code (this or email required)"
                   },
                   "password": {
                     "type": "string",
@@ -1394,29 +1399,29 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "New society name",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New society name"
                   },
                   "address": {
-                    "description": "New street address",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New street address"
                   },
                   "city": {
-                    "description": "New city",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New city"
                   },
                   "state": {
-                    "description": "New state",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New state"
                   },
                   "pincode": {
-                    "description": "New postal code",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New postal code"
                   }
                 }
               }
@@ -2024,7 +2029,8 @@
             "in": "query",
             "name": "towerId",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Only list flats in this tower"
             }
           },
           {
@@ -2042,7 +2048,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last flat from the previous page"
             }
           }
         ],
@@ -2217,15 +2224,15 @@
                 "type": "object",
                 "properties": {
                   "flatNumber": {
-                    "description": "New flat number, unique within the tower",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New flat number, unique within the tower"
                   },
                   "floor": {
-                    "description": "New floor",
                     "type": "integer",
                     "minimum": -9007199254740991,
-                    "maximum": 9007199254740991
+                    "maximum": 9007199254740991,
+                    "description": "New floor"
                   },
                   "type": {
                     "type": "string",
@@ -2383,15 +2390,15 @@
                     "description": "Flat to link the future resident to"
                   },
                   "email": {
-                    "description": "Invitee email (this or phone required)",
                     "type": "string",
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Invitee email (this or phone required)"
                   },
                   "phone": {
-                    "description": "Invitee phone (this or email required)",
                     "type": "string",
-                    "minLength": 8
+                    "minLength": 8,
+                    "description": "Invitee phone (this or email required)"
                   }
                 },
                 "required": [
@@ -2527,14 +2534,16 @@
             "in": "query",
             "name": "towerId",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Only residents of this tower"
             }
           },
           {
             "in": "query",
             "name": "flatId",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Only residents of this flat"
             }
           },
           {
@@ -2555,7 +2564,8 @@
             "in": "query",
             "name": "search",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Match against name, email, or phone"
             }
           },
           {
@@ -2573,7 +2583,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last resident from the previous page"
             }
           }
         ],
@@ -2968,15 +2979,15 @@
                     "description": "Full name of the staff member"
                   },
                   "email": {
-                    "description": "Email (this or phone required)",
                     "type": "string",
                     "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Email (this or phone required)"
                   },
                   "phone": {
-                    "description": "Phone with country code (this or email required)",
                     "type": "string",
-                    "minLength": 8
+                    "minLength": 8,
+                    "description": "Phone with country code (this or email required)"
                   },
                   "temporaryPassword": {
                     "type": "string",
@@ -2992,20 +3003,20 @@
                     "description": "Staff role for the new account"
                   },
                   "gateAssigned": {
-                    "description": "Assigned gate (GUARD role only)",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Assigned gate (GUARD role only)"
                   },
                   "shiftStart": {
-                    "description": "Shift start 'HH:mm' 24h (GUARD role only)",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Shift start 'HH:mm' 24h (GUARD role only)"
                   },
                   "shiftEnd": {
-                    "description": "Shift end 'HH:mm' 24h (GUARD role only)",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Shift end 'HH:mm' 24h (GUARD role only)"
                   },
                   "designation": {
-                    "description": "Designation, e.g. 'Secretary' (ADMIN role only)",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Designation, e.g. 'Secretary' (ADMIN role only)"
                   }
                 },
                 "required": [
@@ -3528,24 +3539,24 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "New display name",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New display name"
                   },
                   "avatarUrl": {
-                    "description": "New profile photo URL (Cloudinary, Phase 9)",
                     "type": "string",
-                    "format": "uri"
+                    "format": "uri",
+                    "description": "New profile photo URL (Cloudinary, Phase 9)"
                   },
                   "emergencyContactName": {
-                    "description": "Emergency contact name",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "Emergency contact name"
                   },
                   "emergencyContactPhone": {
-                    "description": "Emergency contact phone",
                     "type": "string",
-                    "minLength": 8
+                    "minLength": 8,
+                    "description": "Emergency contact phone"
                   }
                 }
               }
@@ -3979,15 +3990,15 @@
                     "description": "Relation to the resident, e.g. 'spouse'"
                   },
                   "age": {
-                    "description": "Age in years",
                     "type": "integer",
                     "minimum": 0,
-                    "maximum": 130
+                    "maximum": 130,
+                    "description": "Age in years"
                   },
                   "photoUrl": {
-                    "description": "Photo URL",
                     "type": "string",
-                    "format": "uri"
+                    "format": "uri",
+                    "description": "Photo URL"
                   }
                 },
                 "required": [
@@ -4130,25 +4141,25 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "New name",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New name"
                   },
                   "relation": {
-                    "description": "New relation",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New relation"
                   },
                   "age": {
-                    "description": "New age",
                     "type": "integer",
                     "minimum": 0,
-                    "maximum": 130
+                    "maximum": 130,
+                    "description": "New age"
                   },
                   "photoUrl": {
-                    "description": "New photo URL",
                     "type": "string",
-                    "format": "uri"
+                    "format": "uri",
+                    "description": "New photo URL"
                   }
                 }
               }
@@ -4519,9 +4530,9 @@
                 "type": "object",
                 "properties": {
                   "number": {
-                    "description": "New registration number",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New registration number"
                   },
                   "type": {
                     "type": "string",
@@ -4772,13 +4783,13 @@
                     "description": "Target flat the visitor is heading to"
                   },
                   "photoUrl": {
-                    "description": "Photo URL of the visitor (Cloudinary, Phase 9)",
                     "type": "string",
-                    "format": "uri"
+                    "format": "uri",
+                    "description": "Photo URL of the visitor (Cloudinary, Phase 9)"
                   },
                   "vehicleNumber": {
-                    "description": "Vehicle registration number, if applicable",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Vehicle registration number, if applicable"
                   }
                 },
                 "required": [
@@ -6215,14 +6226,15 @@
                 "DENIED",
                 "EXPIRED"
               ],
-              "description": "Approval status of the visitor request"
+              "description": "Only requests with this status"
             }
           },
           {
             "in": "query",
             "name": "flatId",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Only this flat (guards/admins only — residents always see their own flat)"
             }
           },
           {
@@ -6240,7 +6252,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last visitor from the previous page"
             }
           }
         ],
@@ -6536,8 +6549,8 @@
                     "description": "ISO end of the validity window"
                   },
                   "vehicleNumber": {
-                    "description": "Expected vehicle number, if known",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Expected vehicle number, if known"
                   }
                 },
                 "required": [
@@ -7214,22 +7227,22 @@
                     "description": "Full description of the issue"
                   },
                   "photoUrls": {
-                    "description": "Photo URLs (Cloudinary, Phase 9)",
                     "maxItems": 5,
                     "type": "array",
                     "items": {
                       "type": "string",
                       "format": "uri"
-                    }
+                    },
+                    "description": "Photo URLs (Cloudinary, Phase 9)"
                   },
                   "priority": {
-                    "description": "Defaults to MEDIUM",
                     "type": "string",
                     "enum": [
                       "LOW",
                       "MEDIUM",
                       "HIGH"
-                    ]
+                    ],
+                    "description": "Defaults to MEDIUM"
                   }
                 },
                 "required": [
@@ -7457,7 +7470,7 @@
                 "RESOLVED",
                 "CLOSED"
               ],
-              "description": "Ticket workflow status"
+              "description": "Only tickets with this status"
             }
           },
           {
@@ -7472,7 +7485,7 @@
                 "SECURITY",
                 "OTHER"
               ],
-              "description": "Ticket category"
+              "description": "Only tickets in this category"
             }
           },
           {
@@ -7485,7 +7498,7 @@
                 "MEDIUM",
                 "HIGH"
               ],
-              "description": "Ticket priority"
+              "description": "Only tickets with this priority"
             }
           },
           {
@@ -7503,7 +7516,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last ticket from the previous page"
             }
           }
         ],
@@ -8673,14 +8687,14 @@
                     "description": "Notice category"
                   },
                   "isPinned": {
-                    "description": "Pin to the top of the board (default false)",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Pin to the top of the board (default false)"
                   },
                   "scheduledAt": {
-                    "description": "ISO future time to auto-publish; omit to publish immediately",
                     "type": "string",
                     "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "description": "ISO future time to auto-publish; omit to publish immediately"
                   }
                 },
                 "required": [
@@ -8848,7 +8862,7 @@
                 "EMERGENCY",
                 "GENERAL"
               ],
-              "description": "Notice category"
+              "description": "Only notices in this category"
             }
           },
           {
@@ -8866,7 +8880,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last notice from the previous page"
             }
           }
         ],
@@ -9071,14 +9086,14 @@
                 "type": "object",
                 "properties": {
                   "title": {
-                    "description": "New title",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New title"
                   },
                   "body": {
-                    "description": "New body",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New body"
                   },
                   "category": {
                     "type": "string",
@@ -9091,16 +9106,16 @@
                     "description": "Notice category"
                   },
                   "isPinned": {
-                    "description": "New pinned state",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "New pinned state"
                   },
                   "scheduledAt": {
-                    "description": "New future-publish time; pass null to publish immediately",
                     "anyOf": [
                       {
                         "type": "string",
                         "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                        "description": "New future-publish time; pass null to publish immediately"
                       },
                       {
                         "type": "null"
@@ -9390,8 +9405,8 @@
                     "description": "Votable options (2–10)"
                   },
                   "allowMultiple": {
-                    "description": "Allow voting for multiple options (default false)",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Allow voting for multiple options (default false)"
                   },
                   "deadline": {
                     "type": "string",
@@ -9596,7 +9611,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last poll from the previous page"
             }
           }
         ],
@@ -10146,30 +10162,30 @@
                     "description": "Amenity name"
                   },
                   "description": {
-                    "description": "Description",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Description"
                   },
                   "photoUrls": {
-                    "description": "Photo URLs (Cloudinary, Phase 9)",
                     "maxItems": 5,
                     "type": "array",
                     "items": {
                       "type": "string",
                       "format": "uri"
-                    }
+                    },
+                    "description": "Photo URLs (Cloudinary, Phase 9)"
                   },
                   "rules": {
-                    "description": "Usage rules shown to residents",
-                    "type": "string"
+                    "type": "string",
+                    "description": "Usage rules shown to residents"
                   },
                   "pricePerSlot": {
-                    "description": "Price per slot; omit when free",
                     "type": "number",
-                    "minimum": 0
+                    "minimum": 0,
+                    "description": "Price per slot; omit when free"
                   },
                   "isActive": {
-                    "description": "Open for booking (default true)",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Open for booking (default true)"
                   }
                 },
                 "required": [
@@ -10454,33 +10470,33 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "New name",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New name"
                   },
                   "description": {
-                    "description": "New description",
-                    "type": "string"
+                    "type": "string",
+                    "description": "New description"
                   },
                   "photoUrls": {
-                    "description": "New photo URLs",
                     "maxItems": 5,
                     "type": "array",
                     "items": {
                       "type": "string",
                       "format": "uri"
-                    }
+                    },
+                    "description": "New photo URLs"
                   },
                   "rules": {
-                    "description": "New usage rules",
-                    "type": "string"
+                    "type": "string",
+                    "description": "New usage rules"
                   },
                   "pricePerSlot": {
-                    "description": "New price; pass null to make it free",
                     "anyOf": [
                       {
                         "type": "number",
-                        "minimum": 0
+                        "minimum": 0,
+                        "description": "New price; pass null to make it free"
                       },
                       {
                         "type": "null"
@@ -10488,8 +10504,8 @@
                     ]
                   },
                   "isActive": {
-                    "description": "Open/close for booking",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Open/close for booking"
                   }
                 }
               }
@@ -10995,7 +11011,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last booking from the previous page"
             }
           }
         ],
@@ -11196,7 +11213,8 @@
             "schema": {
               "type": "string",
               "format": "date",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "description": "Range start 'YYYY-MM-DD' (default today)"
             }
           },
           {
@@ -11205,7 +11223,8 @@
             "schema": {
               "type": "string",
               "format": "date",
-              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+              "description": "Range end 'YYYY-MM-DD' (default from + 30 days)"
             }
           }
         ],
@@ -11393,10 +11412,10 @@
                     "description": "Amount to bill each flat"
                   },
                   "dueDate": {
-                    "description": "ISO payment deadline; defaults to the 10th of the billing month",
                     "type": "string",
                     "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$",
+                    "description": "ISO payment deadline; defaults to the 10th of the billing month"
                   }
                 },
                 "required": [
@@ -11501,7 +11520,7 @@
                 "PAID",
                 "OVERDUE"
               ],
-              "description": "Due status"
+              "description": "Only dues with this status"
             }
           },
           {
@@ -11510,7 +11529,8 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 12
+              "maximum": 12,
+              "description": "Only this billing month"
             }
           },
           {
@@ -11519,14 +11539,16 @@
             "schema": {
               "type": "integer",
               "minimum": -9007199254740991,
-              "maximum": 9007199254740991
+              "maximum": 9007199254740991,
+              "description": "Only this billing year"
             }
           },
           {
             "in": "query",
             "name": "flatId",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Only this flat (admins only — residents always see their own flat)"
             }
           },
           {
@@ -11544,7 +11566,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last due from the previous page"
             }
           }
         ],
@@ -12067,7 +12090,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last payment from the previous page"
             }
           }
         ],
@@ -12283,13 +12307,13 @@
                     "description": "Contact phone number"
                   },
                   "photoUrl": {
-                    "description": "Photo URL (Cloudinary, Phase 9)",
                     "type": "string",
-                    "format": "uri"
+                    "format": "uri",
+                    "description": "Photo URL (Cloudinary, Phase 9)"
                   },
                   "isVerified": {
-                    "description": "Mark as admin-verified (default false)",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "Mark as admin-verified (default false)"
                   }
                 },
                 "required": [
@@ -12429,7 +12453,7 @@
                 "DRIVER",
                 "OTHER"
               ],
-              "description": "Service category"
+              "description": "Only providers in this category"
             }
           }
         ],
@@ -12583,9 +12607,9 @@
                 "type": "object",
                 "properties": {
                   "name": {
-                    "description": "New name",
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "description": "New name"
                   },
                   "category": {
                     "type": "string",
@@ -12599,18 +12623,18 @@
                     "description": "Service category"
                   },
                   "phone": {
-                    "description": "New phone",
                     "type": "string",
-                    "minLength": 8
+                    "minLength": 8,
+                    "description": "New phone"
                   },
                   "photoUrl": {
-                    "description": "New photo URL",
                     "type": "string",
-                    "format": "uri"
+                    "format": "uri",
+                    "description": "New photo URL"
                   },
                   "isVerified": {
-                    "description": "New verification state",
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "New verification state"
                   }
                 }
               }
@@ -12966,7 +12990,8 @@
             "in": "query",
             "name": "cursor",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Id of the last notification from the previous page"
             }
           }
         ],
@@ -13251,7 +13276,7 @@
       "post": {
         "operationId": "notification-markAllRead",
         "summary": "Mark all notifications as read",
-        "description": "Errors: 401 if not authenticated.",
+        "description": "Marks every unread notification for the calling user as read in one call and returns how many rows were updated (drives clearing the unread badge). Idempotent — a second call marks 0. Errors: 401 if not authenticated.",
         "tags": [
           "Notifications"
         ],

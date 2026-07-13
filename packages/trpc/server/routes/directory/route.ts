@@ -25,17 +25,17 @@ const CreateProviderInput = z.object({
   name: z.string().min(1).describe("Full name"),
   category: ServiceCategoryEnum,
   phone: z.string().min(8).describe("Contact phone number"),
-  photoUrl: z.url().optional().describe("Photo URL (Cloudinary, Phase 9)"),
-  isVerified: z.boolean().optional().describe("Mark as admin-verified (default false)"),
+  photoUrl: z.url().describe("Photo URL (Cloudinary, Phase 9)").optional(),
+  isVerified: z.boolean().describe("Mark as admin-verified (default false)").optional(),
 });
 
 const UpdateProviderInput = z.object({
   serviceProviderId: z.string().describe("Id of the provider to update"),
-  name: z.string().min(1).optional().describe("New name"),
+  name: z.string().min(1).describe("New name").optional(),
   category: ServiceCategoryEnum.optional(),
-  phone: z.string().min(8).optional().describe("New phone"),
-  photoUrl: z.url().optional().describe("New photo URL"),
-  isVerified: z.boolean().optional().describe("New verification state"),
+  phone: z.string().min(8).describe("New phone").optional(),
+  photoUrl: z.url().describe("New photo URL").optional(),
+  isVerified: z.boolean().describe("New verification state").optional(),
 });
 
 const ProviderIdInput = z.object({
@@ -43,7 +43,7 @@ const ProviderIdInput = z.object({
 });
 
 const ListProvidersInput = z.object({
-  category: ServiceCategoryEnum.optional().describe("Only providers in this category"),
+  category: ServiceCategoryEnum.describe("Only providers in this category").optional(),
 });
 
 const SuccessModel = z.object({

@@ -44,20 +44,20 @@ const ResidentModel = z
 
 const InviteResidentInput = z.object({
   flatId: z.string().describe("Flat to link the future resident to"),
-  email: z.email().optional().describe("Invitee email (this or phone required)"),
-  phone: z.string().min(8).optional().describe("Invitee phone (this or email required)"),
+  email: z.email().describe("Invitee email (this or phone required)").optional(),
+  phone: z.string().min(8).describe("Invitee phone (this or email required)").optional(),
 });
 
 const ListResidentsInput = z.object({
-  towerId: z.string().optional().describe("Only residents of this tower"),
-  flatId: z.string().optional().describe("Only residents of this flat"),
+  towerId: z.string().describe("Only residents of this tower").optional(),
+  flatId: z.string().describe("Only residents of this flat").optional(),
   status: z
     .enum(["ACTIVE", "INACTIVE", "ALL"])
     .default("ALL")
     .describe("Filter by account status"),
-  search: z.string().optional().describe("Match against name, email, or phone"),
+  search: z.string().describe("Match against name, email, or phone").optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
-  cursor: z.string().optional().describe("Id of the last resident from the previous page"),
+  cursor: z.string().describe("Id of the last resident from the previous page").optional(),
 });
 
 const ResidentIdInput = z.object({

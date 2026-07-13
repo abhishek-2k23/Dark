@@ -47,12 +47,12 @@ const SuccessModel = z.object({
 
 const SignupInput = z.object({
   name: z.string().min(1).describe("Full name of the new resident"),
-  email: z.email().optional().describe("Email address (this or phone required)"),
+  email: z.email().describe("Email address (this or phone required)").optional(),
   phone: z
     .string()
     .min(8)
-    .optional()
-    .describe("Phone number with country code (this or email required)"),
+    .describe("Phone number with country code (this or email required)")
+    .optional(),
   password: z.string().min(8).describe("Password, minimum 8 characters"),
 });
 

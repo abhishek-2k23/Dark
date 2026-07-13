@@ -83,25 +83,25 @@ const MyProfileModel = z
 // ---------------------------------------------------------------------------
 
 const UpdateProfileInput = z.object({
-  name: z.string().min(1).optional().describe("New display name"),
-  avatarUrl: z.url().optional().describe("New profile photo URL (Cloudinary, Phase 9)"),
-  emergencyContactName: z.string().min(1).optional().describe("Emergency contact name"),
-  emergencyContactPhone: z.string().min(8).optional().describe("Emergency contact phone"),
+  name: z.string().min(1).describe("New display name").optional(),
+  avatarUrl: z.url().describe("New profile photo URL (Cloudinary, Phase 9)").optional(),
+  emergencyContactName: z.string().min(1).describe("Emergency contact name").optional(),
+  emergencyContactPhone: z.string().min(8).describe("Emergency contact phone").optional(),
 });
 
 const AddFamilyMemberInput = z.object({
   name: z.string().min(1).describe("Full name"),
   relation: z.string().min(1).describe("Relation to the resident, e.g. 'spouse'"),
-  age: z.number().int().min(0).max(130).optional().describe("Age in years"),
-  photoUrl: z.url().optional().describe("Photo URL"),
+  age: z.number().int().min(0).max(130).describe("Age in years").optional(),
+  photoUrl: z.url().describe("Photo URL").optional(),
 });
 
 const UpdateFamilyMemberInput = z.object({
   familyMemberId: z.string().describe("Id of the family member to update"),
-  name: z.string().min(1).optional().describe("New name"),
-  relation: z.string().min(1).optional().describe("New relation"),
-  age: z.number().int().min(0).max(130).optional().describe("New age"),
-  photoUrl: z.url().optional().describe("New photo URL"),
+  name: z.string().min(1).describe("New name").optional(),
+  relation: z.string().min(1).describe("New relation").optional(),
+  age: z.number().int().min(0).max(130).describe("New age").optional(),
+  photoUrl: z.url().describe("New photo URL").optional(),
 });
 
 const FamilyMemberIdInput = z.object({
@@ -115,7 +115,7 @@ const AddVehicleInput = z.object({
 
 const UpdateVehicleInput = z.object({
   vehicleId: z.string().describe("Id of the vehicle to update"),
-  number: z.string().min(1).optional().describe("New registration number"),
+  number: z.string().min(1).describe("New registration number").optional(),
   type: VehicleTypeEnum.optional(),
 });
 
