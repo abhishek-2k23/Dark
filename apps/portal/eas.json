@@ -9,7 +9,8 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com",
+        "EXPO_PUBLIC_WEB_URL": "https://prangan.iamabhishek01.dev"
       },
       "android": {
         "buildType": "apk"
@@ -19,7 +20,8 @@
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com",
+        "EXPO_PUBLIC_WEB_URL": "https://prangan.iamabhishek01.dev"
       },
       "android": {
         "buildType": "apk"
@@ -29,7 +31,8 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com"
+        "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com",
+        "EXPO_PUBLIC_WEB_URL": "https://prangan.iamabhishek01.dev"
       }
     }
   },

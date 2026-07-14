@@ -41,7 +41,6 @@ export const REST_BASE_URL = `${API_BASE_URL}/api`;
  * opened from the profile screen via an in-app browser. Trailing slash trimmed
  * so callers can append `/privacy`, `/delete-account`, etc.
  */
-export const WEB_BASE_URL = (extra.webUrl ?? "http://localhost:3000").replace(
-  /\/+$/,
-  "",
-);
+export const WEB_BASE_URL = (
+  extra.webUrl ?? "https://prangan.iamabhishek01.dev"
+).replace(/\/+$/, "");
