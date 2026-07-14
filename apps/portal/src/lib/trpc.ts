@@ -29,11 +29,30 @@ async function authHeaders(): Promise<Record<string, string>> {
 const authFetch: typeof fetch = async (input, init) => {
   const url = typeof input === "string" ? input : input.toString();
   const isAuthCall = url.includes("auth.");
+  const method = (init?.method ?? "GET").toUpperCase();
+  // Log the tRPC procedure name (the ?input part is noisy/omitted).
+  const label = url.replace(TRPC_URL, "").split("?")[0] || url;
+  const started = Date.now();
+  if (__DEV__) console.log(`[API →] ${method} ${label}`);
 
-  let res = await fetch(input, init);
+  let res: Response;
+  try {
+    res = await fetch(input, init);
+  } catch (err) {
+    // Network-level failure (server unreachable, CORS, timeout) — fetch rejects
+    // here rather than returning a Response, so surface it explicitly.
+    if (__DEV__) console.log(`[API ✕] ${method} ${label} — network error:`, String(err));
+    throw err;
+  }
+
+  if (__DEV__) {
+    console.log(`[API ←] ${res.status} ${method} ${label} (${Date.now() - started}ms)`);
+  }
+
   if (res.status === 401 && !isAuthCall) {
     const fresh = await runTokenRefresh();
     if (fresh) {
+      if (__DEV__) console.log(`[API ↻] retrying ${label} with refreshed token`);
       const headers = new Headers(init?.headers as HeadersInit | undefined);
       headers.set("authorization", `Bearer ${fresh}`);
       res = await fetch(input, { ...init, headers });

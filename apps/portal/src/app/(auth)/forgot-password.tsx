@@ -6,6 +6,7 @@ import { View } from "react-native";
 import { StackHeader } from "@/components/StackHeader";
 import { Button, Card, Icon, Input, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
+import { toErrorMessage } from "@/utils/errors";
 import { useUIStore } from "@/stores/uiStore";
 
 /**
@@ -28,7 +29,7 @@ export default function ForgotPasswordScreen() {
       showToast(t("reset.sent"), "success");
       setStep("confirm");
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   const confirm = trpc.auth.resetPassword.useMutation({
@@ -36,7 +37,7 @@ export default function ForgotPasswordScreen() {
       showToast(t("reset.done"), "success");
       router.back();
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   return (

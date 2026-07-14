@@ -32,6 +32,16 @@ vi.mock("google-auth-library", () => ({
   },
 }));
 
+// Stub the SMTP mailer so tests never hit the network / send real email — the
+// repo .env may carry real SMTP credentials. OTP + reset codes are still
+// asserted through OTP_DEV_ECHO, so nothing here depends on delivery.
+vi.mock("@repo/mailer", () => ({
+  isMailerConfigured: () => false,
+  sendOtpEmail: vi.fn(async () => {}),
+  sendPasswordResetEmail: vi.fn(async () => {}),
+  sendMail: vi.fn(async () => {}),
+}));
+
 const emailA = `resident-a-${h.runId}@test.local`;
 const phoneA = `+9190000${h.runId.slice(-5)}`;
 const password = "test-password-123";
@@ -39,6 +49,7 @@ const password = "test-password-123";
 let societyId: string;
 let flatId: string;
 let adminId: string;
+let registeredSocietyId: string | undefined;
 
 async function expectTRPCError(promise: Promise<unknown>, code: string) {
   try {
@@ -112,11 +123,16 @@ afterAll(async () => {
   await prisma.emailOtp.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.residentProfile.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.adminProfile.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.pendingResidentInvite.deleteMany({ where: { societyId } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   await prisma.flat.deleteMany({ where: { id: flatId } });
   await prisma.tower.deleteMany({ where: { societyId } });
   await prisma.society.deleteMany({ where: { id: societyId } });
+  // Society created by the registerSociety test (its admin was removed above).
+  if (registeredSocietyId) {
+    await prisma.society.deleteMany({ where: { id: registeredSocietyId } });
+  }
   await prisma.$disconnect();
 });
 
@@ -164,6 +180,77 @@ describe("signup", () => {
   it("rejects a duplicate signup", async () => {
     await expectTRPCError(
       authService.signup({ name: "Dup", email: emailA, password }),
+      "CONFLICT",
+    );
+  });
+});
+
+describe("registerSociety", () => {
+  const founderEmail = `founder-${h.runId}@test.local`;
+
+  it("rejects when the admin has neither email nor phone", async () => {
+    await expectTRPCError(
+      authService.registerSociety({
+        society: {
+          name: `New Society ${h.runId}`,
+          address: "1 Founder St",
+          city: "Newtown",
+          state: "NT",
+          pincode: "111111",
+        },
+        admin: { name: "Founder", password } as never,
+      }),
+      "BAD_REQUEST",
+    );
+  });
+
+  it("creates the society and a linked ADMIN, returning a session", async () => {
+    const session = await authService.registerSociety({
+      society: {
+        name: `New Society ${h.runId}`,
+        address: "1 Founder St",
+        city: "Newtown",
+        state: "NT",
+        pincode: "111111",
+      },
+      admin: {
+        name: "Founder",
+        email: founderEmail,
+        password,
+        designation: "Chairperson",
+      },
+    });
+    expect(session.accessToken).toBeTruthy();
+    expect(session.refreshToken).toBeTruthy();
+    expect(session.user.role).toBe("ADMIN");
+
+    const admin = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { adminProfile: true },
+    });
+    expect(admin?.role).toBe("ADMIN");
+    expect(admin?.societyId).toBeTruthy();
+    expect(admin?.adminProfile?.designation).toBe("Chairperson");
+    registeredSocietyId = admin!.societyId!;
+
+    const society = await prisma.society.findUnique({
+      where: { id: registeredSocietyId },
+    });
+    expect(society?.name).toBe(`New Society ${h.runId}`);
+  });
+
+  it("rejects a duplicate admin email", async () => {
+    await expectTRPCError(
+      authService.registerSociety({
+        society: {
+          name: `Another Society ${h.runId}`,
+          address: "2 Founder St",
+          city: "Newtown",
+          state: "NT",
+          pincode: "111111",
+        },
+        admin: { name: "Dup Founder", email: founderEmail, password },
+      }),
       "CONFLICT",
     );
   });

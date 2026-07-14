@@ -1,12 +1,13 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { Alert, Pressable, View } from "react-native";
 
 import { StackHeader } from "@/components/StackHeader";
 import { Button, Card, Icon, Input, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
+import { toErrorMessage } from "@/utils/errors";
 
 export default function CreateAmenity() {
   const { t } = useTranslation();
@@ -47,16 +48,35 @@ export default function CreateAmenity() {
       showToast(t("admin.amenityCreated"), "success");
       afterSave();
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
   const update = trpc.amenity.update.useMutation({
     onSuccess: () => {
       showToast(t("admin.amenitySaved"), "success");
       afterSave();
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
-  const busy = create.isPending || update.isPending;
+  const del = trpc.amenity.delete.useMutation({
+    onSuccess: () => {
+      showToast(t("admin.amenityDeleted"), "success");
+      void utils.amenity.list.invalidate();
+      router.replace("/(admin)/amenities");
+    },
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
+  });
+  const busy = create.isPending || update.isPending || del.isPending;
+
+  const onDelete = () => {
+    Alert.alert(t("admin.deleteAmenity"), t("admin.deleteAmenityConfirm"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("admin.confirmDelete"),
+        style: "destructive",
+        onPress: () => del.mutate({ amenityId: id! }),
+      },
+    ]);
+  };
 
   const onSubmit = () => {
     if (!name.trim()) {
@@ -142,10 +162,24 @@ export default function CreateAmenity() {
           label={isEdit ? t("common.save") : t("admin.createAmenity")}
           variant="primary"
           size="lg"
-          loading={busy}
+          loading={create.isPending || update.isPending}
+          disabled={busy}
           onPress={onSubmit}
           fullWidth
         />
+
+        {isEdit && (
+          <Button
+            label={t("admin.deleteAmenity")}
+            variant="danger"
+            size="lg"
+            leftIcon="trash-outline"
+            loading={del.isPending}
+            disabled={busy}
+            onPress={onDelete}
+            fullWidth
+          />
+        )}
       </Card>
     </Screen>
   );

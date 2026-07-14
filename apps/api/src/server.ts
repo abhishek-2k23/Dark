@@ -57,6 +57,7 @@ app.use(
   [
     "/api/v1/auth/login",
     "/api/v1/auth/signup",
+    "/api/v1/auth/register-society",
     "/api/v1/auth/google",
     "/api/v1/auth/email-otp/verify",
     "/api/v1/auth/email-otp/resend",
@@ -64,6 +65,7 @@ app.use(
     "/api/v1/auth/password-reset/confirm",
     "/trpc/auth.login",
     "/trpc/auth.signup",
+    "/trpc/auth.registerSociety",
     "/trpc/auth.googleLogin",
     "/trpc/auth.verifyEmailOtp",
     "/trpc/auth.resendEmailOtp",

@@ -17,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import { useGoogleSignIn } from "@/lib/useGoogleSignIn";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import { toErrorMessage } from "@/utils/errors";
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ export default function LoginScreen() {
         });
       }
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   const googleLogin = trpc.auth.googleLogin.useMutation({
@@ -50,7 +51,7 @@ export default function LoginScreen() {
       await setSession(session);
       showToast(t("auth.welcomeToast"), "success");
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   const google = useGoogleSignIn((idToken) => googleLogin.mutate({ idToken }));
@@ -172,6 +173,14 @@ export default function LoginScreen() {
           onPress={() => router.push("/(auth)/signup")}
         />
       </View>
+
+      <Link
+        label={t("auth.registerSocietyLink")}
+        size="sm"
+        leftIcon="business-outline"
+        className="justify-center"
+        onPress={() => router.push("/(auth)/register-society")}
+      />
 
       {/* Footer */}
       <View className="mt-2 flex-row flex-wrap items-center justify-center gap-x-1">

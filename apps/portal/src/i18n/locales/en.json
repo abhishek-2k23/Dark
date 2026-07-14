@@ -4,6 +4,11 @@
     "tagline": "Where the Gate Meets the Community",
     "brandline": "SECURE • CONNECTED • SMART"
   },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "network": "Can't reach the server. Check your connection and try again.",
+    "server": "Something went wrong on our end. Please try again shortly."
+  },
   "common": {
     "approve": "Approve",
     "deny": "Deny",
@@ -69,7 +74,29 @@
     "otpSentToast": "We sent a code to {{email}}",
     "missingFields": "Enter your email/phone and password.",
     "forgotPassword": "Forgot password?",
-    "createAccount": "Create account"
+    "createAccount": "Create account",
+    "registerSocietyLink": "Register a new society",
+    "registerSocietyTitle": "Register your society",
+    "registerSocietyPrompt": "Set up your society and create the first admin account. You can add towers, flats, residents and guards once you're in.",
+    "societySection": "Society details",
+    "adminSection": "Admin account",
+    "societyName": "Society name",
+    "societyNamePlaceholder": "e.g. Green Meadows",
+    "address": "Address",
+    "addressPlaceholder": "Street address",
+    "city": "City",
+    "state": "State",
+    "pincode": "PIN code",
+    "adminName": "Your name",
+    "adminNamePlaceholder": "Full name",
+    "designation": "Designation",
+    "designationPlaceholder": "e.g. Society Secretary",
+    "registerSocietyCta": "Create society",
+    "societyCreatedToast": "Society created — welcome!",
+    "registerMissingFields": "Fill in all society fields and the admin name.",
+    "registerMissingAdminId": "Provide an admin email or phone number.",
+    "registerShortPassword": "Password must be at least 8 characters.",
+    "haveAccount": "Already have an account?"
   },
   "otp": {
     "title": "Verify your email",
@@ -469,6 +496,10 @@
     "amenityCreated": "Amenity created.",
     "amenitySaved": "Amenity updated.",
     "amenityNameRequired": "Enter an amenity name.",
+    "deleteAmenity": "Delete amenity",
+    "deleteAmenityConfirm": "Delete this amenity and all of its bookings? This can't be undone.",
+    "amenityDeleted": "Amenity deleted.",
+    "confirmDelete": "Delete",
     "badPrice": "Enter a valid price.",
     "bookingCalendar": "Booking Calendar",
     "noBookings": "No bookings",

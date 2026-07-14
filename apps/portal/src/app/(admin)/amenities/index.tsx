@@ -13,6 +13,7 @@ import {
   Text,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
+import { toErrorMessage } from "@/utils/errors";
 import { formatMoney } from "@/utils/format";
 
 export default function ManageAmenities() {
@@ -38,7 +39,7 @@ export default function ManageAmenities() {
       {q.isLoading ? (
         <Loading />
       ) : q.error ? (
-        <ErrorState message={q.error.message} onRetry={q.refetch} />
+        <ErrorState message={toErrorMessage(q.error, t)} onRetry={q.refetch} />
       ) : (q.data?.length ?? 0) === 0 ? (
         <EmptyState
           icon="tennisball-outline"

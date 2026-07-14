@@ -6,6 +6,7 @@ import { View } from "react-native";
 import { StackHeader } from "@/components/StackHeader";
 import { Button, Card, Icon, Input, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
+import { toErrorMessage } from "@/utils/errors";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -27,7 +28,7 @@ export default function SignupScreen() {
       // First login → collect emergency contact before landing on the dashboard.
       router.replace("/(resident)/profile-setup");
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   const onSubmit = () => {

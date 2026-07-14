@@ -4,6 +4,11 @@
     "tagline": "जहाँ गेट समुदाय से मिलता है",
     "brandline": "सुरक्षित • जुड़ा हुआ • स्मार्ट"
   },
+  "errors": {
+    "generic": "कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।",
+    "network": "सर्वर से कनेक्ट नहीं हो पा रहा। अपना कनेक्शन जाँचें और फिर से प्रयास करें।",
+    "server": "हमारी ओर से कुछ गड़बड़ हुई। कृपया थोड़ी देर बाद प्रयास करें।"
+  },
   "common": {
     "approve": "स्वीकृत करें",
     "deny": "अस्वीकार करें",
@@ -69,7 +74,29 @@
     "otpSentToast": "हमने {{email}} पर एक कोड भेजा है",
     "missingFields": "अपना ईमेल/फ़ोन और पासवर्ड दर्ज करें।",
     "forgotPassword": "पासवर्ड भूल गए?",
-    "createAccount": "खाता बनाएँ"
+    "createAccount": "खाता बनाएँ",
+    "registerSocietyLink": "नई सोसायटी पंजीकृत करें",
+    "registerSocietyTitle": "अपनी सोसायटी पंजीकृत करें",
+    "registerSocietyPrompt": "अपनी सोसायटी सेट करें और पहला एडमिन खाता बनाएँ। अंदर आने के बाद आप टावर, फ्लैट, निवासी और गार्ड जोड़ सकते हैं।",
+    "societySection": "सोसायटी विवरण",
+    "adminSection": "एडमिन खाता",
+    "societyName": "सोसायटी का नाम",
+    "societyNamePlaceholder": "जैसे Green Meadows",
+    "address": "पता",
+    "addressPlaceholder": "गली का पता",
+    "city": "शहर",
+    "state": "राज्य",
+    "pincode": "पिन कोड",
+    "adminName": "आपका नाम",
+    "adminNamePlaceholder": "पूरा नाम",
+    "designation": "पदनाम",
+    "designationPlaceholder": "जैसे सोसायटी सचिव",
+    "registerSocietyCta": "सोसायटी बनाएँ",
+    "societyCreatedToast": "सोसायटी बन गई — स्वागत है!",
+    "registerMissingFields": "सभी सोसायटी फ़ील्ड और एडमिन का नाम भरें।",
+    "registerMissingAdminId": "एडमिन का ईमेल या फ़ोन नंबर दें।",
+    "registerShortPassword": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए।",
+    "haveAccount": "पहले से खाता है?"
   },
   "otp": {
     "title": "अपना ईमेल सत्यापित करें",
@@ -469,6 +496,10 @@
     "amenityCreated": "सुविधा बनाई गई।",
     "amenitySaved": "सुविधा अपडेट हुई।",
     "amenityNameRequired": "सुविधा नाम दर्ज करें।",
+    "deleteAmenity": "सुविधा हटाएँ",
+    "deleteAmenityConfirm": "इस सुविधा और इसकी सभी बुकिंग हटाएँ? इसे वापस नहीं किया जा सकता।",
+    "amenityDeleted": "सुविधा हटा दी गई।",
+    "confirmDelete": "हटाएँ",
     "badPrice": "सही मूल्य दर्ज करें।",
     "bookingCalendar": "बुकिंग कैलेंडर",
     "noBookings": "कोई बुकिंग नहीं",

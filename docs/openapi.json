@@ -269,6 +269,245 @@
         }
       }
     },
+    "/v1/auth/register-society": {
+      "post": {
+        "operationId": "auth-registerSociety",
+        "summary": "Register a new society and its first admin",
+        "description": "Public self-serve onboarding: creates a brand-new Society plus its founding ADMIN account in one transaction and returns a session. This is the only entry point for a new society — further admins/guards are then created by that admin (staff.create) and residents join via invite-gated signup. The admin email starts unverified (future email logins are OTP-gated). Errors: 400 if neither admin email nor phone is given, 409 if an account already exists with that email/phone.",
+        "tags": [
+          "Auth"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "society": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Society name, e.g. 'Green Meadows'"
+                      },
+                      "address": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Street address"
+                      },
+                      "city": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "City"
+                      },
+                      "state": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "State / province"
+                      },
+                      "pincode": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Postal / PIN code"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "address",
+                      "city",
+                      "state",
+                      "pincode"
+                    ],
+                    "description": "Details of the society being registered"
+                  },
+                  "admin": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Full name of the founding admin"
+                      },
+                      "email": {
+                        "type": "string",
+                        "format": "email",
+                        "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                        "description": "Admin email (this or phone required)"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "minLength": 8,
+                        "description": "Admin phone with country code (this or email required)"
+                      },
+                      "password": {
+                        "type": "string",
+                        "minLength": 8,
+                        "description": "Admin password, minimum 8 characters"
+                      },
+                      "designation": {
+                        "type": "string",
+                        "description": "Admin's role/title, e.g. 'Society Secretary' (defaults to 'Society Admin')"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "password"
+                    ],
+                    "description": "The founding admin account for the new society"
+                  }
+                },
+                "required": [
+                  "society",
+                  "admin"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string",
+                      "description": "Short-lived JWT (~15 min); send as 'Authorization: Bearer <token>'"
+                    },
+                    "refreshToken": {
+                      "type": "string",
+                      "description": "Long-lived opaque token (~30 days); exchange at /v1/auth/refresh"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        },
+                        "email": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Email address, if set"
+                        },
+                        "phone": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Phone number, if set"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": [
+                            "RESIDENT",
+                            "GUARD",
+                            "ADMIN"
+                          ],
+                          "description": "Role of the account"
+                        },
+                        "avatarUrl": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Profile photo URL, if set"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "phone",
+                        "role",
+                        "avatarUrl"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Public shape of the authenticated user"
+                    }
+                  },
+                  "required": [
+                    "accessToken",
+                    "refreshToken",
+                    "user"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Token pair plus the logged-in user"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/auth/login": {
       "post": {
         "operationId": "auth-login",
@@ -1411,7 +1650,7 @@
       "post": {
         "operationId": "auth-requestPasswordReset",
         "summary": "Request a password reset email",
-        "description": "Issues a short-lived (30 min) reset token for the account. Always returns success so callers cannot probe which emails have accounts. Email delivery is stubbed in development: the token is written to the server log.",
+        "description": "Issues a short-lived (30 min) reset token for the account. Always returns success so callers cannot probe which emails have accounts. The token is emailed via SMTP; when no mailer is configured (dev) it is written to the server log instead.",
         "tags": [
           "Auth"
         ],
@@ -11616,6 +11855,103 @@
                   ],
                   "additionalProperties": false,
                   "description": "A society amenity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "amenity-delete",
+        "summary": "Delete an amenity",
+        "description": "Permanently deletes an amenity of the admin's society along with all of its bookings. To merely hide it from residents while keeping history, PATCH isActive to false instead. Errors: 403 if not an admin, 404 if the amenity is not in the admin's society.",
+        "tags": [
+          "Amenities"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "amenityId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the amenity to delete"
+            },
+            "required": true,
+            "description": "Id of the amenity to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Id of the deleted amenity"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }

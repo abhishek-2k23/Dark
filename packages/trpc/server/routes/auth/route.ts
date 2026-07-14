@@ -88,6 +88,34 @@ const LoginInput = z.object({
   password: z.string().min(1).describe("Account password"),
 });
 
+const RegisterSocietyInput = z.object({
+  society: z
+    .object({
+      name: z.string().min(1).describe("Society name, e.g. 'Green Meadows'"),
+      address: z.string().min(1).describe("Street address"),
+      city: z.string().min(1).describe("City"),
+      state: z.string().min(1).describe("State / province"),
+      pincode: z.string().min(1).describe("Postal / PIN code"),
+    })
+    .describe("Details of the society being registered"),
+  admin: z
+    .object({
+      name: z.string().min(1).describe("Full name of the founding admin"),
+      email: z.email().describe("Admin email (this or phone required)").optional(),
+      phone: z
+        .string()
+        .min(8)
+        .describe("Admin phone with country code (this or email required)")
+        .optional(),
+      password: z.string().min(8).describe("Admin password, minimum 8 characters"),
+      designation: z
+        .string()
+        .describe("Admin's role/title, e.g. 'Society Secretary' (defaults to 'Society Admin')")
+        .optional(),
+    })
+    .describe("The founding admin account for the new society"),
+});
+
 const VerifyEmailOtpInput = z.object({
   email: z.email().describe("Email address being verified"),
   code: z
@@ -142,6 +170,26 @@ export const authRouter = router({
     .input(SignupInput)
     .output(AuthSessionModel)
     .mutation(({ input }) => authService.signup(input)),
+
+  registerSociety: publicProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: path("register-society"),
+        tags: ["Auth"],
+        summary: "Register a new society and its first admin",
+        description:
+          "Public self-serve onboarding: creates a brand-new Society plus its founding ADMIN account " +
+          "in one transaction and returns a session. This is the only entry point for a new society — " +
+          "further admins/guards are then created by that admin (staff.create) and residents join via " +
+          "invite-gated signup. The admin email starts unverified (future email logins are OTP-gated). " +
+          "Errors: 400 if neither admin email nor phone is given, 409 if an account already exists with " +
+          "that email/phone.",
+      },
+    })
+    .input(RegisterSocietyInput)
+    .output(AuthSessionModel)
+    .mutation(({ input }) => authService.registerSociety(input)),
 
   login: publicProcedure
     .meta({
@@ -314,8 +362,8 @@ export const authRouter = router({
         summary: "Request a password reset email",
         description:
           "Issues a short-lived (30 min) reset token for the account. Always returns success so callers " +
-          "cannot probe which emails have accounts. Email delivery is stubbed in development: the token " +
-          "is written to the server log.",
+          "cannot probe which emails have accounts. The token is emailed via SMTP; when no mailer is " +
+          "configured (dev) it is written to the server log instead.",
       },
     })
     .input(PasswordResetRequestInput)

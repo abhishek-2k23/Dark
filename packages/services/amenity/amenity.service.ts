@@ -109,6 +109,29 @@ export async function updateAmenity(
   return toAmenityInfo(updated);
 }
 
+/**
+ * Permanently delete an amenity and all of its bookings (admin only,
+ * society-scoped). Prefer `updateAmenity({ isActive: false })` to merely hide it
+ * from residents while keeping booking history.
+ */
+export async function deleteAmenity(
+  actor: User,
+  input: { amenityId: string },
+): Promise<{ id: string }> {
+  const amenity = await prisma.amenity.findFirst({
+    where: { id: input.amenityId, societyId: actorSocietyId(actor) },
+  });
+  if (!amenity) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Amenity not found" });
+  }
+  // Bookings FK-reference the amenity — remove them in the same transaction.
+  await prisma.$transaction([
+    prisma.amenityBooking.deleteMany({ where: { amenityId: amenity.id } }),
+    prisma.amenity.delete({ where: { id: amenity.id } }),
+  ]);
+  return { id: amenity.id };
+}
+
 /** Admins see all amenities; everyone else sees only active ones. */
 export async function listAmenities(actor: User): Promise<AmenityInfo[]> {
   const societyId = actorSocietyId(actor);

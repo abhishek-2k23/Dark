@@ -88,6 +88,31 @@ describe("amenity management", () => {
     const adminView = await amenityService.listAmenities(admin);
     expect(adminView.map((a) => a.name)).toContain("Old Gym");
   });
+
+  it("admin deletes an amenity and its bookings; unknown id 404s", async () => {
+    const amenity = await amenityService.createAmenity(admin, { name: "Squash Court" });
+    await amenityService.createBooking(residentA, {
+      amenityId: amenity.id,
+      date: "2099-01-01",
+      startTime: "10:00",
+      endTime: "11:00",
+    });
+
+    const res = await amenityService.deleteAmenity(admin, { amenityId: amenity.id });
+    expect(res.id).toBe(amenity.id);
+
+    const adminView = await amenityService.listAmenities(admin);
+    expect(adminView.map((a) => a.name)).not.toContain("Squash Court");
+
+    const bookings = await prisma.amenityBooking.findMany({
+      where: { amenityId: amenity.id },
+    });
+    expect(bookings).toHaveLength(0);
+
+    await expect(
+      amenityService.deleteAmenity(admin, { amenityId: amenity.id }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+  });
 });
 
 describe("double-booking prevention", () => {

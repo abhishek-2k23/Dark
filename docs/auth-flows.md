@@ -51,6 +51,28 @@ Secret: `JWT_SECRET` env var (HS256).
 `logout` revokes the one presented token; `logout-all` (authenticated)
 revokes every active token for the user.
 
+## Society registration (self-serve onboarding)
+
+A brand-new society enters the system through **one public endpoint** —
+`auth.registerSociety` (`POST /api/v1/auth/register-society`). It is the only
+way a society and its **founding admin** are created; every later admin/guard is
+created by an existing admin (`staff.create`), and residents join via
+invite-gated signup below.
+
+1. Input: `society` (`name`, `address`, `city`, `state`, `pincode`) and `admin`
+   (`name`, `email` and/or `phone`, `password` min 8, optional `designation`).
+   At least one admin identifier is required (service rejects with 400).
+2. Reject 409 if a user already exists with that email/phone.
+3. In one transaction: create the `Society`, then the `User` (role `ADMIN`,
+   `societyId` = the new society) + `AdminProfile` (`designation` defaults to
+   "Society Admin").
+4. Issue a token pair — the founder is logged in immediately.
+
+The admin's email starts **unverified** (like resident signup), so a later
+*email* login is OTP-gated; the session returned at registration time logs them
+in regardless. There is no super-admin role — societies are peers, each fully
+scoped by `societyId`. (Rate-limited alongside the other auth endpoints.)
+
 ## Signup (email/phone + password)
 
 Self-signup is **invite-gated**: only people a society admin has pre-added
@@ -111,6 +133,7 @@ docs at `/docs`).
 
 | tRPC procedure | REST | Auth |
 |---|---|---|
+| `auth.registerSociety` | `POST /api/v1/auth/register-society` | public |
 | `auth.signup` | `POST /api/v1/auth/signup` | public |
 | `auth.login` | `POST /api/v1/auth/login` | public |
 | `auth.googleLogin` | `POST /api/v1/auth/google` | public |

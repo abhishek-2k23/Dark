@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { bookingStatusTone } from "@/utils/domain";
+import { toErrorMessage } from "@/utils/errors";
 import { formatClock, formatDate } from "@/utils/format";
 
 export default function AmenityCalendar() {
@@ -52,7 +53,7 @@ export default function AmenityCalendar() {
       {q.isLoading ? (
         <Loading />
       ) : q.error ? (
-        <ErrorState message={q.error.message} onRetry={q.refetch} />
+        <ErrorState message={toErrorMessage(q.error, t)} onRetry={q.refetch} />
       ) : groups.length === 0 ? (
         <EmptyState
           icon="calendar-outline"

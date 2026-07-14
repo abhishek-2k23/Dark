@@ -15,8 +15,14 @@ import {
   verifyOtp,
   otpExpiry,
   OTP_MAX_ATTEMPTS,
+  OTP_TTL_SECONDS,
 } from "@repo/auth";
 import { logger } from "@repo/logger";
+import {
+  sendOtpEmail,
+  sendPasswordResetEmail,
+  isMailerConfigured,
+} from "@repo/mailer";
 
 export interface AuthUser {
   id: string;
@@ -83,8 +89,8 @@ function otpDevEcho(): boolean {
 
 /**
  * Issue a fresh email-verification OTP for a user, invalidating any earlier
- * outstanding codes so only one is ever live. Delivery is stubbed to the server
- * log in development (same approach as password reset); returns the raw code so
+ * outstanding codes so only one is ever live. The code is emailed via the SMTP
+ * mailer (a no-op that logs when SMTP is unconfigured); returns the raw code so
  * callers can optionally echo it under OTP_DEV_ECHO.
  */
 async function issueEmailOtp(user: User): Promise<string> {
@@ -107,7 +113,19 @@ async function issueEmailOtp(user: User): Promise<string> {
       },
     }),
   ]);
-  logger.info("Email verification OTP issued", { email: user.email, code });
+  // Without SMTP the code can't be emailed — log it so local dev stays testable
+  // (pair with OTP_DEV_ECHO). With SMTP configured the code never hits the logs.
+  logger.info("Email verification OTP issued", {
+    email: user.email,
+    ...(isMailerConfigured() ? {} : { code }),
+  });
+  if (user.email) {
+    await sendOtpEmail({
+      to: user.email,
+      code,
+      ttlMinutes: Math.round(OTP_TTL_SECONDS / 60),
+    });
+  }
   return code;
 }
 
@@ -172,6 +190,82 @@ export async function signup(input: {
       data: { status: "CLAIMED", claimedAt: new Date() },
     });
     return created;
+  });
+
+  return issueSession(user);
+}
+
+/**
+ * Public self-serve society onboarding: register a brand-new society together
+ * with its first ADMIN account in a single transaction, then issue a session.
+ *
+ * This is the only way a society (and its founding admin) enters the system —
+ * every subsequent admin/guard is created by an existing admin via
+ * `staff.create`, and residents join through invite-gated signup. The admin's
+ * email starts UNVERIFIED (same as resident signup), so a later email login is
+ * OTP-gated; the session returned here logs them in immediately regardless.
+ */
+export async function registerSociety(input: {
+  society: {
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    pincode: string;
+  };
+  admin: {
+    name: string;
+    email?: string;
+    phone?: string;
+    password: string;
+    designation?: string;
+  };
+}): Promise<AuthSession> {
+  const { society, admin } = input;
+  if (!admin.email && !admin.phone) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Provide an email or a phone number for the admin account",
+    });
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: { OR: identifierFilter(admin.email, admin.phone) },
+  });
+  if (existing) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "An account already exists with this email or phone",
+    });
+  }
+
+  const passwordHash = await hashPassword(admin.password);
+  const user = await prisma.$transaction(async (tx) => {
+    const createdSociety = await tx.society.create({
+      data: {
+        name: society.name,
+        address: society.address,
+        city: society.city,
+        state: society.state,
+        pincode: society.pincode,
+      },
+    });
+    return tx.user.create({
+      data: {
+        name: admin.name,
+        email: admin.email,
+        phone: admin.phone,
+        passwordHash,
+        role: "ADMIN",
+        societyId: createdSociety.id,
+        adminProfile: {
+          create: {
+            societyId: createdSociety.id,
+            designation: admin.designation ?? "Society Admin",
+          },
+        },
+      },
+    });
   });
 
   return issueSession(user);
@@ -461,9 +555,13 @@ export async function requestPasswordReset(input: {
   if (!user || !user.passwordHash) return;
 
   const token = signPasswordResetToken(user);
-  // Email delivery is not wired up yet — surface the token in server logs so
-  // the flow is testable in development. Swap for a real mailer later.
-  logger.info("Password reset requested", { email: input.email, token });
+  // Same log-vs-email tradeoff as OTP: the token is only logged when there's no
+  // mailer configured, so the dev reset flow still works without SMTP.
+  logger.info("Password reset requested", {
+    email: input.email,
+    ...(isMailerConfigured() ? {} : { token }),
+  });
+  await sendPasswordResetEmail({ to: input.email, token });
 }
 
 export async function resetPassword(input: {

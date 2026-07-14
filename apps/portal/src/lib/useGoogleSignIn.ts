@@ -1,36 +1,22 @@
-import * as Google from "expo-auth-session/providers/google";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect } from "react";
-
-import { GOOGLE_CLIENT_ID } from "./env";
-
-// Required so the auth popup/redirect can settle back into the app.
-WebBrowser.maybeCompleteAuthSession();
-
 /**
- * Wraps the Expo Google auth request. `available` is false until a
- * `googleClientId` is configured (see app.config.ts), so callers can degrade
- * gracefully; once set, `promptAsync` runs the native flow and `onIdToken`
- * fires with the Google ID token to hand to `auth.googleLogin`.
+ * Google sign-in is temporarily disabled — the button stays in the UI but is
+ * inert (`available: false`), so pressing it just shows the "unavailable" toast
+ * instead of crashing.
+ *
+ * The previous implementation called `expo-auth-session`'s
+ * `Google.useAuthRequest`, which throws on native platforms unless a
+ * platform-specific client id is configured (`androidClientId` on Android,
+ * `iosClientId` on iOS) — that's the source of the
+ * "Client Id property `androidClientId` must be defined" error.
+ *
+ * To re-enable later:
+ *   1. Add the OAuth client ids to app.config.ts `extra` and env.ts.
+ *   2. Restore the `Google.useAuthRequest` flow (see git history for this file),
+ *      passing `androidClientId` / `iosClientId` / `webClientId`.
  */
-export function useGoogleSignIn(onIdToken: (idToken: string) => void) {
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    webClientId: GOOGLE_CLIENT_ID ?? undefined,
-  });
-
-  useEffect(() => {
-    if (response?.type === "success") {
-      const idToken =
-        response.authentication?.idToken ??
-        (response.params?.id_token as string | undefined);
-      if (idToken) onIdToken(idToken);
-    }
-    // onIdToken intentionally omitted — we only react to a new response.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [response]);
-
+export function useGoogleSignIn(_onIdToken: (idToken: string) => void) {
   return {
-    available: Boolean(GOOGLE_CLIENT_ID && request),
-    promptAsync,
+    available: false,
+    promptAsync: async () => {},
   };
 }

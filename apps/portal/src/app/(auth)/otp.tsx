@@ -5,6 +5,7 @@ import { View } from "react-native";
 
 import { Button, IconCircle, Input, Link, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
+import { toErrorMessage } from "@/utils/errors";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -24,7 +25,7 @@ export default function OtpScreen() {
       await setSession(session);
       showToast(t("auth.welcomeToast"), "success");
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   const resend = trpc.auth.resendEmailOtp.useMutation({
@@ -32,7 +33,7 @@ export default function OtpScreen() {
       showToast(t("otp.resent"), "info");
       if (res.devCode) setCode(res.devCode);
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   const onVerify = () => {

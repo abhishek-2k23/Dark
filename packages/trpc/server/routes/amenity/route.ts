@@ -129,6 +129,25 @@ export const amenityRouter = router({
     .output(AmenityModel)
     .mutation(({ ctx, input }) => amenityService.updateAmenity(ctx.user, input)),
 
+  delete: adminProcedure
+    .meta({
+      openapi: {
+        method: "DELETE",
+        path: amenityPath("{amenityId}"),
+        tags: ["Amenities"],
+        summary: "Delete an amenity",
+        description:
+          "Permanently deletes an amenity of the admin's society along with all of its " +
+          "bookings. To merely hide it from residents while keeping history, PATCH " +
+          "isActive to false instead. Errors: 403 if not an admin, 404 if the amenity is " +
+          "not in the admin's society.",
+        protect: true,
+      },
+    })
+    .input(z.object({ amenityId: z.string().describe("Id of the amenity to delete") }))
+    .output(z.object({ id: z.string().describe("Id of the deleted amenity") }))
+    .mutation(({ ctx, input }) => amenityService.deleteAmenity(ctx.user, input)),
+
   list: protectedProcedure
     .meta({
       openapi: {
