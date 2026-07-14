@@ -159,6 +159,20 @@ export default function LoginScreen() {
         fullWidth
       />
 
+      {/* Secondary actions */}
+      <View className="flex-row items-center justify-center gap-6">
+        <Link
+          label={t("auth.forgotPassword")}
+          size="sm"
+          onPress={() => router.push("/(auth)/forgot-password")}
+        />
+        <Link
+          label={t("auth.createAccount")}
+          size="sm"
+          onPress={() => router.push("/(auth)/signup")}
+        />
+      </View>
+
       {/* Footer */}
       <View className="mt-2 flex-row flex-wrap items-center justify-center gap-x-1">
         <Text variant="caption" color="tertiary">
