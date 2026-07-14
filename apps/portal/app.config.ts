@@ -8,7 +8,7 @@ const WEB_URL =
   process.env.EXPO_PUBLIC_WEB_URL ?? "https://prangan.iamabhishek01.dev";
 
 /** EAS project id — also drives the OTA update URL below. */
-const EAS_PROJECT_ID = "18ca1c18-584c-4ec8-aad7-fd81448c227a";
+const EAS_PROJECT_ID = "7096d5b3-fd1d-415d-90a8-f3a03e4b46ce";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
