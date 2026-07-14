@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { prisma } from "@repo/database";
-import { signPasswordResetToken } from "@repo/auth";
+import { hashPassword, signPasswordResetToken } from "@repo/auth";
 
 import * as authService from "./auth.service";
 
@@ -294,6 +294,26 @@ describe("login", () => {
   it("logs a now-verified email in directly", async () => {
     const result = await authService.login({ identifier: emailA, password });
     expect(result.status).toBe("SUCCESS");
+  });
+
+  it("never OTP-gates a hardcoded test account (.test email), even when unverified", async () => {
+    const email = `demo-${h.runId}@example.test`;
+    const user = await prisma.user.create({
+      data: {
+        name: "Demo Test",
+        email,
+        passwordHash: await hashPassword(password),
+        role: "RESIDENT",
+        emailVerified: false, // deliberately unverified — must still skip OTP
+        societyId,
+      },
+    });
+
+    const result = await authService.login({ identifier: email, password });
+    expect(result.status).toBe("SUCCESS");
+
+    await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+    await prisma.user.delete({ where: { id: user.id } });
   });
 
   it("resendEmailOtp no-ops (no code) for an already-verified account", async () => {

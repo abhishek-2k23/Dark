@@ -29,7 +29,7 @@ export function SegmentedControl<T extends string>({
   return (
     <View
       className={cn(
-        "flex-row rounded-[14px] bg-surface-muted p-1",
+        "flex-row rounded-[9px] bg-surface-muted p-1",
         className,
       )}
     >
@@ -42,7 +42,7 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             className={cn(
-              "flex-1 items-center justify-center rounded-[11px] px-3 py-2.5",
+              "flex-1 items-center justify-center rounded-[7px] px-3 py-2.5",
               active ? "bg-surface" : "active:opacity-70",
             )}
             style={active ? elevation.sm : undefined}

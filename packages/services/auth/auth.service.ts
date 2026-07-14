@@ -88,6 +88,22 @@ function otpDevEcho(): boolean {
 }
 
 /**
+ * Test/demo accounts must NEVER be OTP-gated on email login — hardcoded so the
+ * seeded credentials always log in straight through, regardless of their
+ * `emailVerified` flag. Identified by the reserved `.test` TLD (RFC 2606, never
+ * a real domain) plus an explicit allowlist for any non-`.test` demo emails.
+ */
+const TEST_ACCOUNT_EMAILS = new Set<string>([
+  "ravi@example.test",
+  "priya@example.test",
+]);
+function isTestAccount(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const e = email.toLowerCase();
+  return e.endsWith(".test") || TEST_ACCOUNT_EMAILS.has(e);
+}
+
+/**
  * Issue a fresh email-verification OTP for a user, invalidating any earlier
  * outstanding codes so only one is ever live. The code is emailed via the SMTP
  * mailer (a no-op that logs when SMTP is unconfigured); returns the raw code so
@@ -305,8 +321,9 @@ export async function login(input: {
     });
   }
 
-  // Email login against an unverified email must prove ownership via OTP first.
-  if (usedEmail && !user.emailVerified) {
+  // Email login against an unverified email must prove ownership via OTP first —
+  // except hardcoded test/demo accounts, which always skip the OTP gate.
+  if (usedEmail && !user.emailVerified && !isTestAccount(user.email)) {
     const code = await issueEmailOtp(user);
     return {
       status: "OTP_REQUIRED",

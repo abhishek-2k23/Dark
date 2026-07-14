@@ -103,7 +103,7 @@ export function Button({
       disabled={isDisabled}
       onPress={handlePress}
       className={cn(
-        "flex-row items-center justify-center rounded-[14px]",
+        "flex-row items-center justify-center rounded-[9px]",
         s.pad,
         s.gap,
         v.container,

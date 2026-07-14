@@ -68,7 +68,7 @@ export function Input({
 
       <View
         className={cn(
-          "flex-row items-center gap-2.5 rounded-[14px] border bg-surface-muted px-3.5",
+          "flex-row items-center gap-2.5 rounded-[9px] border bg-surface-muted px-3.5",
           borderClass,
           !editable && "opacity-60",
         )}
