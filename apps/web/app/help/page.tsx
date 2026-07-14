@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Help & Support — Portal",
-  description: "Frequently asked questions and support contact for Portal.",
+  title: "Help & Support — Prangan",
+  description: "Frequently asked questions and support contact for Prangan.",
 };
 
 export default function HelpPage() {
@@ -16,7 +16,7 @@ export default function HelpPage() {
 
       <h2>Getting Started</h2>
       <p>
-        Download Portal, create an account, and follow the in-app prompts to get up and running.
+        Download Prangan, create an account, and follow the in-app prompts to get up and running.
       </p>
 
       <h2>Frequently Asked Questions</h2>

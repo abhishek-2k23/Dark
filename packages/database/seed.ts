@@ -14,10 +14,10 @@ const prisma = new PrismaClient();
 const PASSWORD = "password123";
 
 // ---------------------------------------------------------------------------
-// SEED DATA — "Portl Communities"
+// SEED DATA — "Prangan Communities"
 //
-// Portl hosts many independent societies (a multi-tenant registry we call
-// "Portl Communities"). Each society below is fully self-contained: its own
+// Prangan hosts many independent societies (a multi-tenant registry we call
+// "Prangan Communities"). Each society below is fully self-contained: its own
 // towers, flats, admin, guard, residents, notices, poll, amenities, service
 // directory and current-month maintenance dues. Data is scoped by societyId
 // everywhere, so the societies never see each other's data.
@@ -583,7 +583,7 @@ async function main() {
     results.push(await seedSociety(spec, passwordHash));
   }
 
-  console.log(`Seed complete — ${results.length} societies ("Portl Communities"):`);
+  console.log(`Seed complete — ${results.length} societies ("Prangan Communities"):`);
   for (const r of results) {
     console.log(
       `  • ${r.society}: ${r.towers} towers, ${r.flats} flats, ${r.residents} residents (+1 admin, +1 guard)`,

@@ -29373,7 +29373,7 @@
   ],
   "info": {
     "_postman_id": "c2b5492f-8f3e-486b-94f6-53f1d0e73ff8",
-    "name": "Portl API",
+    "name": "Prangan API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": {
       "content": "Society-management API: authentication, visitor management, helpdesk, notices, polls, amenities, dues, and staff directory. All REST paths are namespaced under /api/v1.",

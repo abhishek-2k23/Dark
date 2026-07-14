@@ -13,8 +13,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Portal",
-  description: "Support and legal information for Portal.",
+  title: "Prangan",
+  description: "Support and legal information for Prangan.",
 };
 
 export default function RootLayout({

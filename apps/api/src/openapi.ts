@@ -11,7 +11,7 @@ import { env } from "./env";
  * docs/openapi.json by `pnpm openapi:generate`.
  */
 export const openApiDocument = generateOpenApiDocument(serverRouter, {
-  title: "Portl API",
+  title: "Prangan API",
   version: "1.0.0",
   description:
     "Society-management API: authentication, visitor management, helpdesk, " +

@@ -1,4 +1,4 @@
-# Portl — Mobile App (`apps/portal`)
+# Prangan — Mobile App (`apps/portal`)
 
 Expo (SDK 56) + expo-router app. This document covers the **common UI foundation**:
 theming, fonts, localization, and the shared component library that screens are

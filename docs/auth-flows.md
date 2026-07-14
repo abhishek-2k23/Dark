@@ -1,4 +1,4 @@
-# Portl — Auth Flows
+# Prangan — Auth Flows
 
 Canonical reference for how authentication works across the backend and the
 mobile app. Code lives in `packages/auth` (primitives), `packages/services`

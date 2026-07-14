@@ -82,7 +82,7 @@ export default function Showcase() {
             {t("auth.mobilePrompt")}
           </Text>
           <Text variant="caption" color="tertiary">
-            © 2026 Portl Society Management · v2.4.0
+            © 2026 Prangan Management · v2.4.0
           </Text>
         </Card>
       </Section>

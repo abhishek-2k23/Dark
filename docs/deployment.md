@@ -143,7 +143,7 @@ node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"   # PAY
 
 ```sh
 curl https://<your-service>.onrender.com/health
-# -> {"message":"Portal server is healthy","healthy":true}
+# -> {"message":"Prangan server is healthy","healthy":true}
 
 # Interactive API docs:
 open https://<your-service>.onrender.com/docs

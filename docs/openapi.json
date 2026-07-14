@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Portl API",
+    "title": "Prangan API",
     "description": "Society-management API: authentication, visitor management, helpdesk, notices, polls, amenities, dues, and staff directory. All REST paths are namespaced under /api/v1.",
     "version": "1.0.0"
   },

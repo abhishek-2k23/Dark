@@ -1,6 +1,6 @@
-# Portal
+# Prangan
 
-A pnpm + Turborepo monorepo for the **Portal** application.
+A pnpm + Turborepo monorepo for the **Prangan** application.
 
 ## Structure
 

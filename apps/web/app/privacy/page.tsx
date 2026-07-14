@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Portal",
-  description: "How Portal collects, uses, and protects your data.",
+  title: "Privacy Policy — Prangan",
+  description: "How Prangan collects, uses, and protects your data.",
 };
 
 export default function PrivacyPage() {
@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 
       <h2>Overview</h2>
       <p>
-        This Privacy Policy explains how Portal (&quot;we&quot;, &quot;us&quot;) collects, uses, and
+        This Privacy Policy explains how Prangan (&quot;we&quot;, &quot;us&quot;) collects, uses, and
         safeguards your information when you use our application and services.
       </p>
 

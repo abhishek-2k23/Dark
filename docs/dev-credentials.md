@@ -1,6 +1,6 @@
-# Portl — Dev Login Credentials
+# Prangan — Dev Login Credentials
 
-Seeded by `packages/database/seed.ts` ("Portl Communities" — 3 sample societies).
+Seeded by `packages/database/seed.ts` ("Prangan Communities" — 3 sample societies).
 **All LOCAL accounts share the password `password123`.**
 
 > ⚠️ **Which backend has these accounts?**

@@ -1,6 +1,6 @@
 # API Conventions
 
-Canonical reference for how Portl API endpoints are defined, documented, and
+Canonical reference for how Prangan API endpoints are defined, documented, and
 consumed. Follow this checklist for every new procedure — the OpenAPI docs at
 `/docs` are only as good as the metadata each endpoint carries.
 

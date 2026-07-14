@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Portl Society",
+    "name": "Prangan",
     "tagline": "Where the Gate Meets the Community",
     "brandline": "SECURE • CONNECTED • SMART"
   },
@@ -110,7 +110,7 @@
   },
   "signup": {
     "title": "Create account",
-    "welcome": "Welcome to Portl!",
+    "welcome": "Welcome to Prangan!",
     "inviteHint": "You need an invite from your society admin. Sign up with the same email or phone the invite was sent to.",
     "name": "Full name",
     "namePlaceholder": "Your full name",
@@ -660,7 +660,7 @@
   },
   "showcase": {
     "title": "Design System",
-    "subtitle": "Common UI, theming & localization for Portl Society.",
+    "subtitle": "Common UI, theming & localization for Prangan.",
     "typography": "Typography",
     "buttons": "Buttons",
     "cards": "Cards",

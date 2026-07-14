@@ -1,6 +1,6 @@
 # Backend Testing
 
-How the Portl backend is tested, and the conventions to follow when adding tests.
+How the Prangan backend is tested, and the conventions to follow when adding tests.
 
 Run everything from the repo root:
 

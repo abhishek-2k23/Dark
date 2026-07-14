@@ -13,7 +13,7 @@ import { logger } from "@repo/logger";
  *   SMTP_SECURE   "true" for implicit TLS (port 465); default false (STARTTLS)
  *   SMTP_USER     SMTP username / login
  *   SMTP_PASS     SMTP password / app-password
- *   SMTP_FROM     From header, e.g. "Portl Society <no-reply@example.com>"
+ *   SMTP_FROM     From header, e.g. "Prangan <no-reply@example.com>"
  *                 (falls back to SMTP_USER)
  */
 

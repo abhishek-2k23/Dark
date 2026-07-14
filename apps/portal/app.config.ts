@@ -8,12 +8,12 @@ const EAS_PROJECT_ID = "18ca1c18-584c-4ec8-aad7-fd81448c227a";
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: "Portl Society",
-  slug: "portal",
+  name: "Prangan",
+  slug: "prangan",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
-  scheme: "portal",
+  scheme: "prangan",
   userInterfaceStyle: "automatic",
   runtimeVersion: { policy: "appVersion" },
   updates: {
@@ -24,6 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
   },
   android: {
+    package: "com.prangan.app",
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
       backgroundColor: "#E6F4FE",

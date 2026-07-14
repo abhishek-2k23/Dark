@@ -76,11 +76,11 @@ app.use(
 );
 
 app.get("/", (req, res) => {
-  return res.json({ message: "Portal is up and running..." });
+  return res.json({ message: "Prangan is up and running..." });
 });
 
 app.get("/health", (req, res) => {
-  return res.json({ message: "Portal server is healthy", healthy: true });
+  return res.json({ message: "Prangan server is healthy", healthy: true });
 });
 
 logger.debug(`openapi.json: ${env.BASE_URL}/openapi.json`);

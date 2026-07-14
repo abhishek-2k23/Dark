@@ -1,4 +1,4 @@
-# Portl — Entity Relationship Diagram
+# Prangan — Entity Relationship Diagram
 
 Generated from `packages/database/prisma/schema.prisma` (Phase 1). Enum-typed
 fields show the enum name; see the schema file for the full value lists.

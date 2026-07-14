@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Delete Account — Portal",
-  description: "How to request deletion of your Portal account and data.",
+  title: "Delete Account — Prangan",
+  description: "How to request deletion of your Prangan account and data.",
 };
 
 export default function DeleteAccountPage() {
@@ -14,7 +14,7 @@ export default function DeleteAccountPage() {
       </Link>
       <h1>Delete Your Account</h1>
       <p>
-        You can request permanent deletion of your Portal account and all associated data at any
+        You can request permanent deletion of your Prangan account and all associated data at any
         time.
       </p>
 

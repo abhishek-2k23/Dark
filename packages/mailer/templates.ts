@@ -1,6 +1,6 @@
 import { sendMail } from "./index";
 
-const APP_NAME = "Portl Society";
+const APP_NAME = "Prangan";
 
 /** Minimal branded HTML shell shared by transactional emails. */
 function shell(heading: string, body: string): string {
