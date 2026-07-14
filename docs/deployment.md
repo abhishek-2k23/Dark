@@ -17,15 +17,50 @@ direct:  ...@ep-xxxx.<region>.aws.neon.tech/neondb?sslmode=require&channel_bindi
                     ^ no "-pooler"
 ```
 
+Worked example (this project's Neon endpoint, `ap-southeast-2`):
+
+```
+pooled:  ...@ep-restless-water-a7n95axt-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+direct:  ...@ep-restless-water-a7n95axt.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+```
+
+The local `.env` keeps the Neon string under a separate `NEON_CONENCTION_URL` key
+(the pooled endpoint) while `DATABASE_URL` points at local Docker Postgres — so
+local dev and Neon don't collide. Use the **direct** form above for both the
+`DATABASE_URL` you set on Render *and* any migration you run by hand.
+
 Keep `?sslmode=require&channel_binding=require`. A single Render instance holds a
 small Prisma connection pool against the direct endpoint, which is well within
 Neon's limits. (If you later scale to many instances, switch the app to the
 pooled URL and add a Prisma `directUrl` for migrations.)
 
-Migrations and seed data are applied by the **build command** (below), so the
-schema is created automatically on first deploy. They were also applied once
-during setup, so the DB is already live with the demo seed
-(`admin@greenmeadows.test` / `password123`, plus guard + two residents).
+### Applying the schema by hand
+
+The **build command** (below) runs `prisma migrate deploy` on every deploy, so
+the schema is created automatically. To apply it once yourself against a fresh
+Neon database (e.g. before the first deploy), run it with the **direct**
+`DATABASE_URL` overriding the local one. `prisma.config.ts` loads `.env`
+non-destructively, so a pre-set env var wins:
+
+```powershell
+# PowerShell
+cd packages/database
+$env:DATABASE_URL = "postgresql://<user>:<password>@ep-restless-water-a7n95axt.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+npx prisma migrate deploy      # applies committed migrations (idempotent)
+npx tsx seed.ts                # optional: load the demo seed
+Remove-Item Env:DATABASE_URL   # so local dev keeps using Docker
+```
+
+```sh
+# bash
+cd packages/database
+DATABASE_URL="postgresql://<user>:<password>@ep-restless-water-a7n95axt.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require" \
+  npx prisma migrate deploy
+```
+
+The demo seed (`npx tsx seed.ts`) creates `admin@greenmeadows.test` /
+`password123`, plus a guard and two residents — handy for a first smoke test,
+but skip it if you want an empty production database.
 
 ## 2. Render web service
 
@@ -82,6 +117,7 @@ secrets — `.env` is gitignored.
 | `PAYMENT_WEBHOOK_SECRET` | ✅ | Random string — verifies payment-gateway webhook signatures |
 | `BASE_URL` | ✅ | Your service URL, e.g. `https://portl-api.onrender.com` — used in the OpenAPI `servers` list and the `/docs` link |
 | `PORT` | — | Injected by Render; do **not** set |
+| `OTP_DEV_ECHO` | ⛔ | **Leave unset in prod.** When `true`, login/resend responses echo the raw email-OTP code (`devCode`) so you can log in without a real mailer — a dev-only convenience that leaks the OTP if enabled in production. The local `.env` ships with `OTP_DEV_ECHO="true"`; make sure that value does **not** carry over to Render. |
 | `ALLOWED_ORIGINS` | ⬜ | Comma-separated browser origins for CORS. Native mobile clients don't need it. Unset = no CORS headers. |
 | `GOOGLE_CLIENT_ID` | ⬜ | Google OAuth web client id — required only for "Sign in with Google" |
 | `CLOUDINARY_CLOUD_NAME` / `_API_KEY` / `_API_SECRET` | ⬜ | Enables signed media uploads; unset = uploads return 412 and URL validation is skipped |
