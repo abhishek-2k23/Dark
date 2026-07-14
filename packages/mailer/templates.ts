@@ -48,6 +48,27 @@ export async function sendOtpEmail(params: {
 }
 
 /**
+ * Deliver an account-deletion OTP. Same one-time-code shape as `sendOtpEmail`,
+ * but the copy makes clear this confirms a *permanent* account deletion so the
+ * recipient can react if they didn't request it.
+ */
+export async function sendAccountDeletionOtpEmail(params: {
+  to: string;
+  code: string;
+  ttlMinutes: number;
+}): Promise<void> {
+  const { to, code, ttlMinutes } = params;
+  const text = `Your ${APP_NAME} account-deletion code is ${code}. It expires in ${ttlMinutes} minutes. If you didn't request this, ignore this email and your account stays active.`;
+  const html = shell(
+    "Confirm account deletion",
+    `<p style="margin:0 0 16px;font-size:14px;color:#374151;">Use this code to confirm permanent deletion of your ${APP_NAME} account:</p>
+     <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#111827;background:#f3f4f6;border-radius:10px;padding:16px;text-align:center;">${code}</div>
+     <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">This code expires in ${ttlMinutes} minutes. If you didn't request this, ignore this email — your account stays active.</p>`,
+  );
+  await sendMail({ to, subject: `Confirm your ${APP_NAME} account deletion`, text, html });
+}
+
+/**
  * Deliver a password-reset token. The app's reset screen takes the token as
  * input (copy/paste), so it's shown as a code block rather than a link.
  */

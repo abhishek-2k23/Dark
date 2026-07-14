@@ -1851,6 +1851,220 @@
         }
       }
     },
+    "/v1/account/deletion/request": {
+      "post": {
+        "operationId": "account-requestDeletion",
+        "summary": "Request account deletion (emails a one-time code)",
+        "description": "Starts the self-serve account-deletion flow. For a real, active account a 6-digit code is emailed; confirm it at /v1/account/deletion/confirm. Demo/test accounts return `status: DEMO_BLOCKED` and can never be deleted. Unknown or already-deactivated emails also return `status: OTP_SENT` (with nothing sent) so the endpoint can't reveal which emails exist. `devCode` is present only when OTP_DEV_ECHO=true.",
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Email of the account to delete"
+                  }
+                },
+                "required": [
+                  "email"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OTP_SENT",
+                        "DEMO_BLOCKED"
+                      ],
+                      "description": "OTP_SENT: a code was emailed (or the account doesn't exist — indistinguishable). DEMO_BLOCKED: this is a demo/test account and can never be deleted."
+                    },
+                    "devCode": {
+                      "description": "The OTP itself — present only when OTP_DEV_ECHO=true (dev)",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Outcome of an account-deletion request"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/account/deletion/confirm": {
+      "post": {
+        "operationId": "account-confirmDeletion",
+        "summary": "Confirm account deletion with the emailed code",
+        "description": "Verifies the emailed code and permanently deletes the account: it is deactivated, all personal data is scrubbed, and every session is revoked. The freed email/phone can be reused to register again. Errors: 401 on an invalid/expired code, 403 for demo/test accounts, 429 after too many wrong attempts (request a new code).",
+        "tags": [
+          "Account"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Email of the account being deleted"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 4,
+                    "description": "The 6-digit code from the deletion email"
+                  }
+                },
+                "required": [
+                  "email",
+                  "code"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/society": {
       "get": {
         "operationId": "society-get",

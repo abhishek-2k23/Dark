@@ -3,6 +3,9 @@ import type { ExpoConfig, ConfigContext } from "expo/config";
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ?? "https://dark-9k8o.onrender.com";
 
+/** Base URL of the web app that hosts the legal/support & account-deletion pages. */
+const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? "http://localhost:3000";
+
 /** EAS project id — also drives the OTA update URL below. */
 const EAS_PROJECT_ID = "18ca1c18-584c-4ec8-aad7-fd81448c227a";
 
@@ -54,6 +57,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     apiUrl: API_URL,
+    webUrl: WEB_URL,
     googleClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ?? null,
     eas: {
       projectId: EAS_PROJECT_ID,

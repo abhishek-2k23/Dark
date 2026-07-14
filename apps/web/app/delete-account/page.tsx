@@ -1,44 +1,42 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { DeleteAccountFlow } from "./delete-account-flow";
+
 export const metadata: Metadata = {
   title: "Delete Account — Prangan",
-  description: "How to request deletion of your Prangan account and data.",
+  description: "Verify your identity and permanently delete your Prangan account.",
 };
 
 export default function DeleteAccountPage() {
   return (
-    <main className="prose prose-neutral dark:prose-invert mx-auto max-w-2xl px-6 py-16">
-      <Link href="/" className="text-sm text-muted-foreground no-underline">
+    <main className="mx-auto max-w-lg px-6 py-16">
+      <Link href="/" className="text-sm text-muted-foreground no-underline hover:underline">
         ← Back
       </Link>
-      <h1>Delete Your Account</h1>
-      <p>
-        You can request permanent deletion of your Prangan account and all associated data at any
-        time.
-      </p>
 
-      <h2>How to Request Deletion</h2>
-      <ol>
-        <li>
-          Email <a href="mailto:support@example.com">support@example.com</a> from the address
-          associated with your account.
-        </li>
-        <li>
-          Use the subject line <strong>&quot;Delete my account&quot;</strong>.
-        </li>
-        <li>We will verify your request and delete your account within 30 days.</li>
-      </ol>
+      <div className="mt-6 space-y-2">
+        <h1 className="text-2xl font-semibold tracking-tight">Delete your account</h1>
+        <p className="text-sm text-muted-foreground">
+          Deleting your account removes your profile, credentials, and personal data. To protect you,
+          we verify it&apos;s really you with a one-time code before anything is deleted.
+        </p>
+      </div>
 
-      <h2>What Gets Deleted</h2>
-      <p>
-        Your profile, account credentials, and personal data are permanently removed. Some records
-        may be retained where required by law.
-      </p>
+      <div className="mt-8">
+        <DeleteAccountFlow />
+      </div>
 
-      <p>
-        Questions? See <Link href="/help">Help &amp; Support</Link> or review our{" "}
-        <Link href="/privacy">Privacy Policy</Link>.
+      <p className="mt-6 text-xs text-muted-foreground">
+        Some records may be retained where required by law. See our{" "}
+        <Link href="/privacy" className="underline underline-offset-4">
+          Privacy Policy
+        </Link>{" "}
+        or{" "}
+        <Link href="/help" className="underline underline-offset-4">
+          Help &amp; Support
+        </Link>
+        .
       </p>
     </main>
   );

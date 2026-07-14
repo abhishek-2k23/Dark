@@ -6,6 +6,7 @@ import { View } from "react-native";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { ErrorState, Loading } from "@/components/ListState";
+import { AccountLegalActions } from "@/components/AccountLegalActions";
 import {
   Avatar,
   Badge,
@@ -164,6 +165,10 @@ export default function ProfileTab() {
             }}
             fullWidth
           />
+
+          <Divider />
+
+          <AccountLegalActions />
         </>
       ) : null}
     </Screen>

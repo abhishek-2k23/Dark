@@ -2,6 +2,7 @@ import { router } from "./trpc";
 
 import { healthRouter } from "./routes/health/route";
 import { authRouter } from "./routes/auth/route";
+import { accountRouter } from "./routes/account/route";
 import { societyRouter, towerRouter, flatRouter } from "./routes/society/route";
 import { residentRouter } from "./routes/resident/route";
 import { staffRouter } from "./routes/staff/route";
@@ -19,6 +20,7 @@ import { uploadRouter } from "./routes/upload/route";
 export const serverRouter = router({
   health: healthRouter,
   auth: authRouter,
+  account: accountRouter,
   society: societyRouter,
   tower: towerRouter,
   flat: flatRouter,

@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 interface Extra {
   apiUrl?: string;
+  webUrl?: string;
   googleClientId?: string | null;
 }
 
@@ -34,3 +35,13 @@ export const TRPC_URL = `${API_BASE_URL}/trpc`;
 
 /** REST (OpenAPI) base, e.g. for health checks. */
 export const REST_BASE_URL = `${API_BASE_URL}/api`;
+
+/**
+ * Base URL of the web app hosting the legal/support & account-deletion pages,
+ * opened from the profile screen via an in-app browser. Trailing slash trimmed
+ * so callers can append `/privacy`, `/delete-account`, etc.
+ */
+export const WEB_BASE_URL = (extra.webUrl ?? "http://localhost:3000").replace(
+  /\/+$/,
+  "",
+);

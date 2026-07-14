@@ -532,7 +532,14 @@
     "memberCount": "{{count}} members",
     "vehicleCount": "{{count}} vehicles",
     "logout": "Log out",
-    "loggedOut": "Signed out"
+    "loggedOut": "Signed out",
+    "legal": "Legal & support",
+    "privacy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "help": "Help & Support",
+    "deleteAccount": "Delete account",
+    "deleteAccountHint": "Opens a secure web page to verify your identity and permanently delete your account.",
+    "linkError": "Couldn't open the page. Please try again."
   },
   "family": {
     "title": "Family Members",

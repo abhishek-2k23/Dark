@@ -38,6 +38,7 @@ vi.mock("google-auth-library", () => ({
 vi.mock("@repo/mailer", () => ({
   isMailerConfigured: () => false,
   sendOtpEmail: vi.fn(async () => {}),
+  sendAccountDeletionOtpEmail: vi.fn(async () => {}),
   sendPasswordResetEmail: vi.fn(async () => {}),
   sendMail: vi.fn(async () => {}),
 }));
@@ -50,6 +51,10 @@ let societyId: string;
 let flatId: string;
 let adminId: string;
 let registeredSocietyId: string | undefined;
+// Users created directly in tests (e.g. the deletion cases) whose emails may be
+// nulled or use a non-@test.local domain, so the email-based sweep won't find
+// them — cleaned up by id in afterAll.
+const extraUserIds: string[] = [];
 
 async function expectTRPCError(promise: Promise<unknown>, code: string) {
   try {
@@ -119,7 +124,7 @@ afterAll(async () => {
     where: { email: { endsWith: "@test.local", contains: h.runId } },
     select: { id: true },
   });
-  const userIds = users.map((u) => u.id);
+  const userIds = [...new Set([...users.map((u) => u.id), ...extraUserIds])];
   await prisma.emailOtp.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.residentProfile.deleteMany({ where: { userId: { in: userIds } } });
@@ -460,5 +465,93 @@ describe("password reset", () => {
     await expect(
       authService.requestPasswordReset({ email: "ghost@test.local" }),
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("account deletion", () => {
+  const deleteEmail = `delete-me-${h.runId}@test.local`;
+  const demoEmail = `demo-del-${h.runId}@example.test`;
+
+  it("blocks deletion for demo/test accounts (request and confirm)", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Demo Del",
+        email: demoEmail,
+        passwordHash: await hashPassword(password),
+        role: "RESIDENT",
+        emailVerified: true,
+        societyId,
+      },
+    });
+    extraUserIds.push(user.id);
+
+    const res = await authService.requestAccountDeletion({ email: demoEmail });
+    expect(res.status).toBe("DEMO_BLOCKED");
+
+    // Confirm refuses demo accounts outright, before any code check.
+    await expectTRPCError(
+      authService.confirmAccountDeletion({ email: demoEmail, code: "000000" }),
+      "FORBIDDEN",
+    );
+
+    // The demo account is untouched.
+    const still = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(still?.isActive).toBe(true);
+    expect(still?.email).toBe(demoEmail);
+  });
+
+  it("reports OTP_SENT without a code for an unknown email (no enumeration)", async () => {
+    const res = await authService.requestAccountDeletion({
+      email: `ghost-${h.runId}@test.local`,
+    });
+    expect(res.status).toBe("OTP_SENT");
+    if (res.status !== "OTP_SENT") return;
+    expect(res.devCode).toBeUndefined();
+  });
+
+  it("emails a code, rejects a wrong one, then soft-deletes on the right code", async () => {
+    const user = await prisma.user.create({
+      data: {
+        name: "Delete Me",
+        email: deleteEmail,
+        phone: `+9199999${h.runId.slice(-5)}`,
+        passwordHash: await hashPassword(password),
+        role: "RESIDENT",
+        emailVerified: true,
+        societyId,
+      },
+    });
+    extraUserIds.push(user.id);
+
+    // An active session that the deletion must revoke.
+    const session = await loginSession(deleteEmail);
+
+    const req = await authService.requestAccountDeletion({ email: deleteEmail });
+    expect(req.status).toBe("OTP_SENT");
+    if (req.status !== "OTP_SENT") return;
+    const code = req.devCode!;
+    expect(code).toMatch(/^\d{6}$/);
+
+    const wrong = code === "000000" ? "111111" : "000000";
+    await expectTRPCError(
+      authService.confirmAccountDeletion({ email: deleteEmail, code: wrong }),
+      "UNAUTHORIZED",
+    );
+
+    await authService.confirmAccountDeletion({ email: deleteEmail, code });
+
+    // Row is anonymized + deactivated; unique identifiers are freed.
+    const deleted = await prisma.user.findUnique({ where: { id: user.id } });
+    expect(deleted?.isActive).toBe(false);
+    expect(deleted?.email).toBeNull();
+    expect(deleted?.phone).toBeNull();
+    expect(deleted?.passwordHash).toBeNull();
+    expect(deleted?.name).toBe("Deleted user");
+
+    // The pre-deletion session is dead.
+    await expectTRPCError(
+      authService.refreshSession({ refreshToken: session.refreshToken }),
+      "UNAUTHORIZED",
+    );
   });
 });

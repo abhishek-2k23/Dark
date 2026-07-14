@@ -321,6 +321,7 @@ model RefreshToken {
 
 enum EmailOtpPurpose {
   EMAIL_VERIFICATION
+  ACCOUNT_DELETION
 }
 
 model EmailOtp {

@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { OAuth2Client } from "google-auth-library";
-import { prisma, type User } from "@repo/database";
+import { prisma, EmailOtpPurpose, type User } from "@repo/database";
 import {
   hashPassword,
   verifyPassword,
@@ -20,6 +20,7 @@ import {
 import { logger } from "@repo/logger";
 import {
   sendOtpEmail,
+  sendAccountDeletionOtpEmail,
   sendPasswordResetEmail,
   isMailerConfigured,
 } from "@repo/mailer";
@@ -104,26 +105,25 @@ function isTestAccount(email: string | null | undefined): boolean {
 }
 
 /**
- * Issue a fresh email-verification OTP for a user, invalidating any earlier
- * outstanding codes so only one is ever live. The code is emailed via the SMTP
- * mailer (a no-op that logs when SMTP is unconfigured); returns the raw code so
- * callers can optionally echo it under OTP_DEV_ECHO.
+ * Issue a fresh email OTP for a user (for the given `purpose`), invalidating any
+ * earlier outstanding codes of that purpose so only one is ever live. The code
+ * is emailed via the SMTP mailer (a no-op that logs when SMTP is unconfigured);
+ * returns the raw code so callers can optionally echo it under OTP_DEV_ECHO.
  */
-async function issueEmailOtp(user: User): Promise<string> {
+async function issueEmailOtp(
+  user: User,
+  purpose: EmailOtpPurpose = EmailOtpPurpose.EMAIL_VERIFICATION,
+): Promise<string> {
   const code = generateOtp();
   await prisma.$transaction([
     prisma.emailOtp.updateMany({
-      where: {
-        userId: user.id,
-        purpose: "EMAIL_VERIFICATION",
-        consumedAt: null,
-      },
+      where: { userId: user.id, purpose, consumedAt: null },
       data: { consumedAt: new Date() },
     }),
     prisma.emailOtp.create({
       data: {
         userId: user.id,
-        purpose: "EMAIL_VERIFICATION",
+        purpose,
         codeHash: hashOtp(code),
         expiresAt: otpExpiry(),
       },
@@ -131,18 +131,58 @@ async function issueEmailOtp(user: User): Promise<string> {
   ]);
   // Without SMTP the code can't be emailed — log it so local dev stays testable
   // (pair with OTP_DEV_ECHO). With SMTP configured the code never hits the logs.
-  logger.info("Email verification OTP issued", {
+  logger.info("Email OTP issued", {
     email: user.email,
+    purpose,
     ...(isMailerConfigured() ? {} : { code }),
   });
   if (user.email) {
-    await sendOtpEmail({
-      to: user.email,
-      code,
-      ttlMinutes: Math.round(OTP_TTL_SECONDS / 60),
-    });
+    const ttlMinutes = Math.round(OTP_TTL_SECONDS / 60);
+    if (purpose === EmailOtpPurpose.ACCOUNT_DELETION) {
+      await sendAccountDeletionOtpEmail({ to: user.email, code, ttlMinutes });
+    } else {
+      await sendOtpEmail({ to: user.email, code, ttlMinutes });
+    }
   }
   return code;
+}
+
+/**
+ * Validate a candidate OTP `code` for a user + purpose against the newest
+ * outstanding code, incrementing the attempt counter on a wrong guess. Returns
+ * the matched (still-unconsumed) OTP id on success; throws the same opaque
+ * UNAUTHORIZED on any failure (unknown/expired/wrong) so callers can't
+ * distinguish cases, and TOO_MANY_REQUESTS once the attempt cap is hit. The
+ * caller is responsible for marking the returned OTP consumed.
+ */
+async function assertOtpValid(
+  userId: string,
+  code: string,
+  purpose: EmailOtpPurpose,
+): Promise<string> {
+  const invalid = new TRPCError({
+    code: "UNAUTHORIZED",
+    message: "Invalid or expired code",
+  });
+  const otp = await prisma.emailOtp.findFirst({
+    where: { userId, purpose, consumedAt: null },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!otp || otp.expiresAt < new Date()) throw invalid;
+  if (otp.attempts >= OTP_MAX_ATTEMPTS) {
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: "Too many incorrect attempts — request a new code",
+    });
+  }
+  if (!verifyOtp(code, otp.codeHash)) {
+    await prisma.emailOtp.update({
+      where: { id: otp.id },
+      data: { attempts: { increment: 1 } },
+    });
+    throw invalid;
+  }
+  return otp.id;
 }
 
 function identifierFilter(email?: string, phone?: string) {
@@ -344,13 +384,10 @@ export async function verifyEmailOtp(input: {
   email: string;
   code: string;
 }): Promise<AuthSession> {
-  const invalid = new TRPCError({
-    code: "UNAUTHORIZED",
-    message: "Invalid or expired code",
-  });
-
   const user = await prisma.user.findUnique({ where: { email: input.email } });
-  if (!user) throw invalid;
+  if (!user) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired code" });
+  }
   if (!user.isActive) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -358,33 +395,15 @@ export async function verifyEmailOtp(input: {
     });
   }
 
-  const otp = await prisma.emailOtp.findFirst({
-    where: {
-      userId: user.id,
-      purpose: "EMAIL_VERIFICATION",
-      consumedAt: null,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  if (!otp || otp.expiresAt < new Date()) throw invalid;
-  if (otp.attempts >= OTP_MAX_ATTEMPTS) {
-    throw new TRPCError({
-      code: "TOO_MANY_REQUESTS",
-      message: "Too many incorrect attempts — request a new code",
-    });
-  }
-
-  if (!verifyOtp(input.code, otp.codeHash)) {
-    await prisma.emailOtp.update({
-      where: { id: otp.id },
-      data: { attempts: { increment: 1 } },
-    });
-    throw invalid;
-  }
+  const otpId = await assertOtpValid(
+    user.id,
+    input.code,
+    EmailOtpPurpose.EMAIL_VERIFICATION,
+  );
 
   const [, verifiedUser] = await prisma.$transaction([
     prisma.emailOtp.update({
-      where: { id: otp.id },
+      where: { id: otpId },
       data: { consumedAt: new Date() },
     }),
     prisma.user.update({
@@ -610,4 +629,96 @@ export async function resetPassword(input: {
       data: { revokedAt: new Date() },
     }),
   ]);
+}
+
+/**
+ * Result of an account-deletion request. `DEMO_BLOCKED` is returned for the
+ * seeded demo/test accounts (they can never be deleted); every other case —
+ * real account, unknown email, or an already-deactivated account — returns
+ * `OTP_SENT` with no distinguishing detail, so the endpoint can't be used to
+ * probe which emails have accounts. A code is only actually emailed for a real,
+ * active account.
+ */
+export type AccountDeletionRequestResult =
+  | { status: "OTP_SENT"; devCode?: string }
+  | { status: "DEMO_BLOCKED" };
+
+/**
+ * Begin account deletion: email a one-time code that `confirmAccountDeletion`
+ * exchanges for the actual deletion. Demo/test accounts are refused up front.
+ */
+export async function requestAccountDeletion(input: {
+  email: string;
+}): Promise<AccountDeletionRequestResult> {
+  const user = await prisma.user.findUnique({ where: { email: input.email } });
+
+  if (isTestAccount(input.email)) {
+    return { status: "DEMO_BLOCKED" };
+  }
+
+  if (user && user.isActive) {
+    const code = await issueEmailOtp(user, EmailOtpPurpose.ACCOUNT_DELETION);
+    if (otpDevEcho()) return { status: "OTP_SENT", devCode: code };
+  }
+  // Unknown or already-deactivated account: report success without sending
+  // anything, so the response is indistinguishable from the real case.
+  return { status: "OTP_SENT" };
+}
+
+/**
+ * Confirm and perform account deletion after the emailed OTP. We soft-delete:
+ * the row is kept (to preserve foreign keys on notices/tickets/visitors the user
+ * authored) but deactivated and stripped of all personal data, and every session
+ * is revoked. The freed email/phone can be used to register a new account.
+ */
+export async function confirmAccountDeletion(input: {
+  email: string;
+  code: string;
+}): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { email: input.email } });
+  if (!user) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired code" });
+  }
+  if (isTestAccount(user.email)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Demo accounts cannot be deleted.",
+    });
+  }
+
+  const otpId = await assertOtpValid(
+    user.id,
+    input.code,
+    EmailOtpPurpose.ACCOUNT_DELETION,
+  );
+
+  await prisma.$transaction([
+    prisma.emailOtp.update({
+      where: { id: otpId },
+      data: { consumedAt: new Date() },
+    }),
+    // Anonymize + deactivate. Nulling email/phone/googleId releases those unique
+    // identifiers for reuse; the account can never authenticate again.
+    prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: "Deleted user",
+        email: null,
+        phone: null,
+        passwordHash: null,
+        googleId: null,
+        avatarUrl: null,
+        emergencyContactName: null,
+        emergencyContactPhone: null,
+        emailVerified: false,
+        isActive: false,
+      },
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
+
+  logger.info("Account deleted (soft)", { userId: user.id });
 }
