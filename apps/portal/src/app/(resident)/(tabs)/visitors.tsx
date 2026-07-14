@@ -1,0 +1,224 @@
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { View } from "react-native";
+
+import { EmptyState, ErrorState, Loading } from "@/components/ListState";
+import { VisitorRow } from "@/components/VisitorRow";
+import {
+  Badge,
+  Button,
+  Card,
+  Screen,
+  SegmentedControl,
+  Text,
+} from "@/components/ui";
+import { trpc } from "@/lib/trpc";
+import { useUIStore } from "@/stores/uiStore";
+import { preApprovalStatusTone } from "@/utils/domain";
+import { formatDateTime } from "@/utils/format";
+import QRCode from "react-native-qrcode-svg";
+
+type Tab = "pending" | "history" | "passes";
+type Period = "TODAY" | "WEEK" | "MONTH" | "ALL";
+
+function PendingList() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const q = trpc.visitor.listPending.useQuery(undefined, {
+    refetchInterval: 30_000,
+  });
+
+  if (q.isLoading) return <Loading />;
+  if (q.error) return <ErrorState message={q.error.message} onRetry={q.refetch} />;
+  if (!q.data?.length)
+    return (
+      <EmptyState
+        icon="shield-checkmark-outline"
+        title={t("visitors.noPending")}
+        body={t("visitors.noPendingBody")}
+      />
+    );
+
+  return (
+    <View className="gap-3">
+      {q.data.map((v) => (
+        <VisitorRow
+          key={v.id}
+          visitor={v}
+          onPress={() => router.push(`/(resident)/visitors/${v.id}`)}
+        />
+      ))}
+    </View>
+  );
+}
+
+function HistoryList() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [period, setPeriod] = useState<Period>("TODAY");
+  const q = trpc.visitor.history.useInfiniteQuery(
+    { period, limit: 20 },
+    { getNextPageParam: (last) => last.nextCursor ?? undefined },
+  );
+
+  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+
+  return (
+    <View className="gap-4">
+      <SegmentedControl
+        value={period}
+        onChange={setPeriod}
+        options={[
+          { value: "TODAY", label: t("visitors.today") },
+          { value: "WEEK", label: t("visitors.week") },
+          { value: "MONTH", label: t("visitors.month") },
+          { value: "ALL", label: t("visitors.all") },
+        ]}
+      />
+      {q.isLoading ? (
+        <Loading />
+      ) : q.error ? (
+        <ErrorState message={q.error.message} onRetry={q.refetch} />
+      ) : items.length === 0 ? (
+        <EmptyState icon="time-outline" title={t("visitors.noHistory")} />
+      ) : (
+        <View className="gap-3">
+          {items.map((v) => (
+            <VisitorRow
+              key={v.id}
+              visitor={v}
+              onPress={() => router.push(`/(resident)/visitors/${v.id}`)}
+            />
+          ))}
+          {q.hasNextPage && (
+            <Button
+              label={t("common.loadMore")}
+              variant="ghost"
+              size="sm"
+              loading={q.isFetchingNextPage}
+              onPress={() => q.fetchNextPage()}
+            />
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+function PassesList() {
+  const { t } = useTranslation();
+  const showToast = useUIStore((s) => s.showToast);
+  const utils = trpc.useUtils();
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const q = trpc.guestPreApproval.list.useQuery({ limit: 50 });
+
+  const cancel = trpc.guestPreApproval.cancel.useMutation({
+    onSuccess: () => {
+      showToast(t("passes.cancelledToast"), "info");
+      void utils.guestPreApproval.list.invalidate();
+    },
+    onError: (e) => showToast(e.message, "error"),
+  });
+
+  if (q.isLoading) return <Loading />;
+  if (q.error) return <ErrorState message={q.error.message} onRetry={q.refetch} />;
+  if (!q.data?.items.length)
+    return (
+      <EmptyState
+        icon="qr-code-outline"
+        title={t("passes.empty")}
+        body={t("passes.emptyBody")}
+      />
+    );
+
+  return (
+    <View className="gap-3">
+      {q.data.items.map((p) => {
+        const open = expanded === p.id;
+        return (
+          <Card
+            key={p.id}
+            onPress={() => setExpanded(open ? null : p.id)}
+            className="gap-3"
+          >
+            <View className="flex-row items-center justify-between gap-3">
+              <View className="flex-1 gap-0.5">
+                <Text variant="title" numberOfLines={1}>
+                  {p.guestName}
+                </Text>
+                <Text variant="bodySmall" color="secondary" numberOfLines={2}>
+                  {formatDateTime(p.validFrom)} → {formatDateTime(p.validTo)}
+                </Text>
+              </View>
+              <Badge
+                label={t(`enums.preApprovalStatus.${p.status}`)}
+                tone={preApprovalStatusTone[p.status] ?? "neutral"}
+                uppercase
+                size="sm"
+              />
+            </View>
+            {open && p.status === "ACTIVE" && (
+              <View className="items-center gap-4 pt-2">
+                <View className="rounded-2xl bg-white p-4">
+                  <QRCode value={p.qrCode} size={180} />
+                </View>
+                <Text variant="caption" color="secondary" align="center">
+                  {t("passes.qrHint")}
+                </Text>
+                <Button
+                  label={t("passes.cancel")}
+                  variant="dangerSoft"
+                  size="sm"
+                  loading={cancel.isPending}
+                  onPress={() => cancel.mutate({ preApprovalId: p.id })}
+                />
+              </View>
+            )}
+          </Card>
+        );
+      })}
+    </View>
+  );
+}
+
+export default function VisitorsTab() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [tab, setTab] = useState<Tab>("pending");
+
+  return (
+    <Screen scroll contentClassName="gap-4 py-3 pb-8">
+      <View className="flex-row items-center justify-between">
+        <View>
+          <Text variant="h1">{t("visitors.title")}</Text>
+          <Text variant="body" color="secondary">
+            {t("visitors.subtitle")}
+          </Text>
+        </View>
+      </View>
+
+      <Button
+        label={t("dashboard.preApproveGuest")}
+        variant="primary"
+        leftIcon="person-add-outline"
+        onPress={() => router.push("/(resident)/visitors/pre-approve")}
+        fullWidth
+      />
+
+      <SegmentedControl
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "pending", label: t("visitors.pending") },
+          { value: "history", label: t("visitors.history") },
+          { value: "passes", label: t("visitors.passes") },
+        ]}
+      />
+
+      {tab === "pending" && <PendingList />}
+      {tab === "history" && <HistoryList />}
+      {tab === "passes" && <PassesList />}
+    </Screen>
+  );
+}
