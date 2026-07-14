@@ -168,6 +168,29 @@ export async function verifyPreApproval(
   return { preApproval: toPreApprovalInfo(used), visitor: toVisitorInfo(visitor) };
 }
 
+export async function listMyPreApprovals(
+  actor: User,
+  input: { status?: PreApprovalStatus; limit: number; cursor?: string },
+): Promise<{ items: PreApprovalInfo[]; nextCursor: string | null }> {
+  const profile = await actorResidentProfile(actor);
+
+  const rows = await prisma.guestPreApproval.findMany({
+    where: {
+      flatId: profile.flatId,
+      ...(input.status ? { status: input.status } : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: input.limit + 1,
+    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+  });
+
+  const hasMore = rows.length > input.limit;
+  const items = (hasMore ? rows.slice(0, input.limit) : rows).map(
+    toPreApprovalInfo,
+  );
+  return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
+}
+
 export async function cancelPreApproval(
   actor: User,
   input: { preApprovalId: string },

@@ -3460,6 +3460,113 @@
             }
           }
         }
+      },
+      "get": {
+        "operationId": "staff-list",
+        "summary": "List the society's staff",
+        "description": "Lists active guards and admins of the calling admin's society — used to pick a ticket assignee. Errors: 403 if not an admin, 412 if the account is not linked to a society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "User id"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Full name"
+                      },
+                      "email": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Email, if set"
+                      },
+                      "phone": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Phone, if set"
+                      },
+                      "role": {
+                        "type": "string",
+                        "enum": [
+                          "GUARD",
+                          "ADMIN"
+                        ],
+                        "description": "Staff role for the new account"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "email",
+                      "phone",
+                      "role"
+                    ],
+                    "additionalProperties": false,
+                    "description": "An active guard or admin of the society"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/profile/me": {
@@ -6836,6 +6943,254 @@
         }
       }
     },
+    "/v1/visitors/{visitorId}": {
+      "get": {
+        "operationId": "visitor-get",
+        "summary": "Get one visitor request",
+        "description": "Role-aware fetch: residents can read visitors of their own flat only; guards and admins any visitor in their society. Errors: 401 if not authenticated, 404 if the visitor is not accessible to the caller.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "visitorId",
+            "schema": {
+              "type": "string",
+              "description": "Id of the visitor request"
+            },
+            "required": true,
+            "description": "Id of the visitor request"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Visitor id"
+                    },
+                    "name": {
+                      "type": "string",
+                      "description": "Visitor's full name"
+                    },
+                    "phone": {
+                      "type": "string",
+                      "description": "Visitor phone number"
+                    },
+                    "photoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Photo URL taken at the gate, if any"
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "GUEST",
+                        "DELIVERY",
+                        "CAB",
+                        "SERVICE_STAFF",
+                        "OTHER"
+                      ],
+                      "description": "Reason for the visit"
+                    },
+                    "vehicleNumber": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Vehicle registration number, if any"
+                    },
+                    "flatId": {
+                      "type": "string",
+                      "description": "Id of the flat being visited"
+                    },
+                    "flatNumber": {
+                      "type": "string",
+                      "description": "Number of the flat being visited"
+                    },
+                    "towerName": {
+                      "type": "string",
+                      "description": "Tower of the flat being visited"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "APPROVED",
+                        "DENIED",
+                        "EXPIRED"
+                      ],
+                      "description": "Approval status of the visitor request"
+                    },
+                    "registeredByGuard": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Guard who registered the visitor"
+                    },
+                    "actionedByResident": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "User id"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Full name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident who approved or denied the request; null while PENDING/EXPIRED"
+                    },
+                    "entryTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor entered, if marked"
+                    },
+                    "exitTime": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the visitor exited, if marked"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the request was registered"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "phone",
+                    "photoUrl",
+                    "purpose",
+                    "vehicleNumber",
+                    "flatId",
+                    "flatNumber",
+                    "towerName",
+                    "status",
+                    "registeredByGuard",
+                    "actionedByResident",
+                    "entryTime",
+                    "exitTime",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A visitor request at the gate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/pre-approvals": {
       "post": {
         "operationId": "guestPreApproval-create",
@@ -7007,6 +7362,217 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "guestPreApproval-list",
+        "summary": "List the caller's guest pre-approvals",
+        "description": "The resident's own flat's pre-approvals, newest first, optionally filtered by status. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "USED",
+                "EXPIRED",
+                "CANCELLED"
+              ],
+              "description": "Only this status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size (max 100)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "description": "Id of the last pre-approval from the previous page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Pre-approval id"
+                          },
+                          "guestName": {
+                            "type": "string",
+                            "description": "Expected guest's name"
+                          },
+                          "guestPhone": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Expected guest's phone"
+                          },
+                          "validFrom": {
+                            "type": "string",
+                            "description": "ISO start of the validity window"
+                          },
+                          "validTo": {
+                            "type": "string",
+                            "description": "ISO end of the validity window"
+                          },
+                          "vehicleNumber": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Expected vehicle number, if any"
+                          },
+                          "qrCode": {
+                            "type": "string",
+                            "description": "Opaque token the guest presents (rendered as a QR on mobile)"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "ACTIVE",
+                              "USED",
+                              "EXPIRED",
+                              "CANCELLED"
+                            ],
+                            "description": "Lifecycle status of the pre-approval"
+                          },
+                          "flatId": {
+                            "type": "string",
+                            "description": "Flat the guest is pre-approved for"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO time the pre-approval was created"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "guestName",
+                          "guestPhone",
+                          "validFrom",
+                          "validTo",
+                          "vehicleNumber",
+                          "qrCode",
+                          "status",
+                          "flatId",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A resident-issued guest pre-approval"
+                      },
+                      "description": "Pre-approvals on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page; null when this is the last page"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
                 }
               }
             }
@@ -7498,6 +8064,141 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/gate/flats": {
+      "get": {
+        "operationId": "gate-searchFlats",
+        "summary": "Search flats at the gate",
+        "description": "Society-scoped flat lookup for a guard registering a visitor: matches the term against flat number, tower name, or a resident's name. Errors: 403 if not a guard, 412 if the account is not linked to a society.",
+        "tags": [
+          "Visitors"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string",
+              "description": "Match against flat number, tower name, or a resident's name"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Max results (max 50)",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Flat id"
+                      },
+                      "flatNumber": {
+                        "type": "string",
+                        "description": "Flat number"
+                      },
+                      "towerName": {
+                        "type": "string",
+                        "description": "Tower name"
+                      },
+                      "floor": {
+                        "type": "number",
+                        "description": "Floor the flat is on"
+                      },
+                      "residentNames": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Names of residents linked to the flat"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "flatNumber",
+                      "towerName",
+                      "floor",
+                      "residentNames"
+                    ],
+                    "additionalProperties": false,
+                    "description": "A flat as seen from the gate (guard/admin lookup)"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
                 }
               }
             }

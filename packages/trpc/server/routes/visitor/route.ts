@@ -6,6 +6,7 @@ import { generatePath } from "../../utils/path-generator";
 
 const visitorPath = generatePath("v1/visitors");
 const preApprovalPath = generatePath("v1/pre-approvals");
+const gatePath = generatePath("v1/gate");
 
 /**
  * Visitor state machine (documented on every endpoint that moves it):
@@ -267,6 +268,65 @@ export const visitorRouter = router({
       }),
     )
     .query(({ ctx, input }) => visitorService.history(ctx.user, input)),
+
+  // Registered after the static /pending and /history paths so the REST
+  // matcher never swallows them as a {visitorId}.
+  get: protectedProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: visitorPath("{visitorId}"),
+        tags: ["Visitors"],
+        summary: "Get one visitor request",
+        description:
+          "Role-aware fetch: residents can read visitors of their own flat only; guards and " +
+          "admins any visitor in their society. Errors: 401 if not authenticated, 404 if the " +
+          "visitor is not accessible to the caller.",
+        protect: true,
+      },
+    })
+    .input(VisitorIdInput)
+    .output(VisitorModel)
+    .query(({ ctx, input }) => visitorService.getVisitor(ctx.user, input)),
+});
+
+const GateFlatModel = z
+  .object({
+    id: z.string().describe("Flat id"),
+    flatNumber: z.string().describe("Flat number"),
+    towerName: z.string().describe("Tower name"),
+    floor: z.number().describe("Floor the flat is on"),
+    residentNames: z.array(z.string()).describe("Names of residents linked to the flat"),
+  })
+  .describe("A flat as seen from the gate (guard/admin lookup)");
+
+const SearchFlatsInput = z.object({
+  search: z
+    .string()
+    .describe("Match against flat number, tower name, or a resident's name")
+    .optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20).describe("Max results (max 50)"),
+});
+
+/** Gate-side flat lookup so guards can find the target flat before registering. */
+export const gateRouter = router({
+  searchFlats: guardProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: gatePath("flats"),
+        tags: ["Visitors"],
+        summary: "Search flats at the gate",
+        description:
+          "Society-scoped flat lookup for a guard registering a visitor: matches the term " +
+          "against flat number, tower name, or a resident's name. Errors: 403 if not a guard, " +
+          "412 if the account is not linked to a society.",
+        protect: true,
+      },
+    })
+    .input(SearchFlatsInput)
+    .output(z.array(GateFlatModel))
+    .query(({ ctx, input }) => visitorService.searchFlats(ctx.user, input)),
 });
 
 export const guestPreApprovalRouter = router({
@@ -288,6 +348,48 @@ export const guestPreApprovalRouter = router({
     .input(CreatePreApprovalInput)
     .output(PreApprovalModel)
     .mutation(({ ctx, input }) => preApprovalService.createPreApproval(ctx.user, input)),
+
+  list: residentProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: preApprovalPath(""),
+        tags: ["Visitors"],
+        summary: "List the caller's guest pre-approvals",
+        description:
+          "The resident's own flat's pre-approvals, newest first, optionally filtered by " +
+          "status. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        protect: true,
+      },
+    })
+    .input(
+      z.object({
+        status: PreApprovalStatusEnum.describe("Only this status").optional(),
+        limit: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(20)
+          .describe("Page size (max 100)"),
+        cursor: z
+          .string()
+          .describe("Id of the last pre-approval from the previous page")
+          .optional(),
+      }),
+    )
+    .output(
+      z.object({
+        items: z.array(PreApprovalModel).describe("Pre-approvals on this page"),
+        nextCursor: z
+          .string()
+          .nullable()
+          .describe("Cursor for the next page; null when this is the last page"),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      preApprovalService.listMyPreApprovals(ctx.user, input),
+    ),
 
   verify: guardProcedure
     .meta({

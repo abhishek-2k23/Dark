@@ -228,6 +228,29 @@ export async function markExit(
   return toVisitorInfo(updated);
 }
 
+/**
+ * Role-aware single-visitor fetch: residents can read visitors of their own
+ * flat only; guards/admins any visitor in their society.
+ */
+export async function getVisitor(
+  actor: User,
+  input: { visitorId: string },
+): Promise<VisitorInfo> {
+  const scope =
+    actor.role === "RESIDENT"
+      ? { flatId: await actorFlatId(actor) }
+      : { flat: { tower: { societyId: actorSocietyId(actor) } } };
+
+  const visitor = await prisma.visitor.findFirst({
+    where: { id: input.visitorId, ...scope },
+    include: visitorInclude,
+  });
+  if (!visitor) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Visitor not found" });
+  }
+  return toVisitorInfo(visitor);
+}
+
 /** The resident's live approval queue for their own flat. */
 export async function listPending(actor: User): Promise<VisitorInfo[]> {
   const flatId = await actorFlatId(actor);
@@ -294,6 +317,58 @@ export async function history(
   const hasMore = visitors.length > input.limit;
   const items = (hasMore ? visitors.slice(0, input.limit) : visitors).map(toVisitorInfo);
   return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
+}
+
+export interface GateFlatInfo {
+  id: string;
+  flatNumber: string;
+  towerName: string;
+  floor: number;
+  residentNames: string[];
+}
+
+/**
+ * Society-scoped flat lookup for the gate (guards/admins). Matches the search
+ * term against flat number, tower name, or a resident's name so a guard can
+ * find the target flat before registering a visitor. Returns a light shape
+ * ordered by tower then flat number; no cursor — the search is expected to
+ * narrow results to a handful.
+ */
+export async function searchFlats(
+  actor: User,
+  input: { search?: string; limit: number },
+): Promise<GateFlatInfo[]> {
+  const societyId = actorSocietyId(actor);
+  const term = input.search?.trim();
+
+  const flats = await prisma.flat.findMany({
+    where: {
+      tower: { societyId },
+      ...(term
+        ? {
+            OR: [
+              { flatNumber: { contains: term, mode: "insensitive" } },
+              { tower: { name: { contains: term, mode: "insensitive" } } },
+              { residents: { some: { user: { name: { contains: term, mode: "insensitive" } } } } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: [{ tower: { name: "asc" } }, { flatNumber: "asc" }],
+    take: input.limit,
+    include: {
+      tower: { select: { name: true } },
+      residents: { include: { user: { select: { name: true } } } },
+    },
+  });
+
+  return flats.map((flat) => ({
+    id: flat.id,
+    flatNumber: flat.flatNumber,
+    towerName: flat.tower.name,
+    floor: flat.floor,
+    residentNames: flat.residents.map((r) => r.user.name),
+  }));
 }
 
 /**

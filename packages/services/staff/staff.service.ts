@@ -16,6 +16,36 @@ export interface StaffInfo {
   role: "GUARD" | "ADMIN";
 }
 
+/**
+ * Lists the active guards and admins of the actor's society — used by the admin
+ * app to pick a ticket assignee. Society-scoped; role gating (adminProcedure)
+ * happens in the router.
+ */
+export async function listStaff(actor: User): Promise<StaffInfo[]> {
+  if (!actor.societyId) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Your account is not linked to a society",
+    });
+  }
+  const staff = await prisma.user.findMany({
+    where: {
+      societyId: actor.societyId,
+      role: { in: ["GUARD", "ADMIN"] },
+      isActive: true,
+    },
+    orderBy: [{ role: "asc" }, { name: "asc" }],
+    select: { id: true, name: true, email: true, phone: true, role: true },
+  });
+  return staff.map((s) => ({
+    id: s.id,
+    name: s.name,
+    email: s.email,
+    phone: s.phone,
+    role: s.role as "GUARD" | "ADMIN",
+  }));
+}
+
 export async function createStaffAccount(
   actor: User,
   input: {

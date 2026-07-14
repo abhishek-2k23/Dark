@@ -6,7 +6,7 @@ import { societyRouter, towerRouter, flatRouter } from "./routes/society/route";
 import { residentRouter } from "./routes/resident/route";
 import { staffRouter } from "./routes/staff/route";
 import { profileRouter, familyMemberRouter, vehicleRouter } from "./routes/profile/route";
-import { visitorRouter, guestPreApprovalRouter } from "./routes/visitor/route";
+import { visitorRouter, guestPreApprovalRouter, gateRouter } from "./routes/visitor/route";
 import { ticketRouter } from "./routes/helpdesk/route";
 import { noticeRouter } from "./routes/notice/route";
 import { pollRouter } from "./routes/poll/route";
@@ -29,6 +29,7 @@ export const serverRouter = router({
   vehicle: vehicleRouter,
   visitor: visitorRouter,
   guestPreApproval: guestPreApprovalRouter,
+  gate: gateRouter,
   ticket: ticketRouter,
   notice: noticeRouter,
   poll: pollRouter,
