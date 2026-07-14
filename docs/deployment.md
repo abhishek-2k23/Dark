@@ -74,15 +74,19 @@ New → **Web Service** → connect this repo.
 | **Start Command** | `pnpm --filter @repo/api start` |
 | **Health Check Path** | `/health` |
 
-**Build Command:**
+**Build Command** (paste as a single line — Render's build-command box doesn't
+handle `\` line continuations):
 
 ```sh
-corepack enable && pnpm install --frozen-lockfile --prod=false && \
-pnpm --filter @repo/database db:generate && \
-pnpm --filter @repo/database exec prisma migrate deploy && \
-pnpm --filter @repo/api build
+npm i -g pnpm@9 && pnpm install --frozen-lockfile --prod=false && pnpm --filter @repo/database db:generate && pnpm --filter @repo/database exec prisma migrate deploy && pnpm --filter @repo/api build
 ```
 
+- `npm i -g pnpm@9` — installs pnpm to npm's writable global prefix. **Do not use
+  `corepack enable`**: Render's current images already ship pnpm at `/usr/bin/pnpm`
+  on a read-only filesystem, so `corepack enable` dies with
+  `EROFS: read-only file system, unlink '/usr/bin/pnpm'`. Pinning `@9` keeps the
+  CLI in lockstep with the committed `pnpm-lock.yaml` (`packageManager: pnpm@9.0.0`)
+  so `--frozen-lockfile` can't drift.
 - `--prod=false` — forces devDependencies (tsup, the Prisma CLI) to install even
   if `NODE_ENV` is set at build time, so the build tools are available. (pnpm
   only auto-skips devDeps when `NODE_ENV=production` exactly; this app uses
@@ -101,8 +105,12 @@ reads it automatically.
 
 ### Node version
 
-argon2 and Prisma ship prebuilt binaries for `linux-x64`, so any Node ≥18 works.
-To pin it, add a `NODE_VERSION` env var (e.g. `22`).
+**Pin Node to 22 (LTS).** The repo ships a committed `.node-version` file
+(`22`) that Render honors, so builds don't drift onto whatever is newest. Leaving
+it unpinned lets Render pick the latest (e.g. Node 26), for which `argon2` and
+Prisma don't yet publish prebuilt binaries — the build then fails or falls back
+to a slow source compile. `engines.node` stays `>=18` as a floor; `.node-version`
+(or a `NODE_VERSION` env var) is what actually selects the build's Node.
 
 ## 3. Environment variables
 
