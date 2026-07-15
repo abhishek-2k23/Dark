@@ -22,6 +22,15 @@ const AuthUserModel = z
     phone: z.string().nullable().describe("Phone number, if set"),
     role: RoleEnum,
     avatarUrl: z.string().nullable().describe("Profile photo URL, if set"),
+    societyId: z
+      .string()
+      .nullable()
+      .describe(
+        "Society the user belongs to. Null for a Google account created before " +
+          "any invite existed for its email — such a user can sign in but has no " +
+          "society data, and clients should hold them at a 'waiting for an invite' " +
+          "gate. Set automatically once an admin invites the email.",
+      ),
   })
   .describe("Public shape of the authenticated user");
 
@@ -347,6 +356,7 @@ export const authRouter = router({
       phone: ctx.user.phone,
       role: ctx.user.role,
       avatarUrl: ctx.user.avatarUrl,
+      societyId: ctx.user.societyId,
     })),
 
   requestPasswordReset: publicProcedure

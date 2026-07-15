@@ -1,15 +1,15 @@
 import { Redirect, Stack } from "expo-router";
 
-import { roleHome } from "@/lib/roles";
+import { homeFor } from "@/lib/roles";
 import { useAuthStore } from "@/stores/authStore";
 
-/** Auth stack — bounces already-signed-in users to their role home. */
+/** Auth stack — bounces already-signed-in users to their home. */
 export default function AuthLayout() {
   const status = useAuthStore((s) => s.status);
-  const role = useAuthStore((s) => s.user?.role);
+  const user = useAuthStore((s) => s.user);
 
   if (status === "authenticated") {
-    return <Redirect href={roleHome(role)} />;
+    return <Redirect href={homeFor(user ?? undefined)} />;
   }
 
   return <Stack screenOptions={{ headerShown: false }} />;

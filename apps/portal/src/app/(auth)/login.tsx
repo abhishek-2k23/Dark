@@ -54,7 +54,10 @@ export default function LoginScreen() {
     onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
-  const google = useGoogleSignIn((idToken) => googleLogin.mutate({ idToken }));
+  const google = useGoogleSignIn(
+    (idToken) => googleLogin.mutate({ idToken }),
+    (key) => showToast(t(key), "error"),
+  );
 
   const onSubmit = () => {
     if (!identifier.trim() || !password) {

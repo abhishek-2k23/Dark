@@ -70,6 +70,8 @@
     "orContinueWith": "OR CONTINUE WITH",
     "continueWithGoogle": "Continue with Google",
     "googleUnavailable": "Google sign-in isn't configured yet.",
+    "googleFailed": "Google sign-in didn't complete. Please try again.",
+    "googlePlayServices": "Google Play services are unavailable or need updating.",
     "welcomeToast": "Welcome back!",
     "otpSentToast": "We sent a code to {{email}}",
     "missingFields": "Enter your email/phone and password.",
@@ -410,7 +412,6 @@
     "invite": "Invite",
     "searchResidents": "Search by name, email or phone",
     "noResidents": "No residents found",
-    "inviteResident": "Invite Resident",
     "inviteHint": "Invite by the email or phone the resident will sign up with — they're auto-linked to the flat.",
     "tower": "Tower",
     "flat": "Flat",
@@ -678,5 +679,13 @@
     "sampleCardTitle": "Visitor Approval",
     "sampleCardBody": "A delivery partner is at the Main Gate waiting for your approval.",
     "learnMore": "Learn more"
+  },
+  "noSociety": {
+    "title": "No invite for this email",
+    "body": "{{email}} hasn't been invited to a society yet. Ask your society admin to add you, then check again.",
+    "checkAgain": "Check again",
+    "tryAnother": "Use a different account",
+    "hint": "Your admin invites you using the email on your flat record — that may be a different address to this one.",
+    "stillNoInvite": "Still no invite for this email yet."
   }
 }

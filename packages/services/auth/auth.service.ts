@@ -32,6 +32,14 @@ export interface AuthUser {
   phone: string | null;
   role: User["role"];
   avatarUrl: string | null;
+  /**
+   * Null for a Google user who signed in before any invite existed for their
+   * email. They have an account but no society, so there is nothing in the app
+   * for them to see — clients must hold them at a "waiting for an invite" gate
+   * rather than routing into a role stack. Resolves itself on their next
+   * sign-in or refresh once an admin invites them (see `claimPendingInvite`).
+   */
+  societyId: string | null;
 }
 
 export interface AuthSession {
@@ -64,7 +72,50 @@ function toAuthUser(user: User): AuthUser {
     phone: user.phone,
     role: user.role,
     avatarUrl: user.avatarUrl,
+    societyId: user.societyId,
   };
+}
+
+/**
+ * Attach a society-less user to a PENDING invite matching their email, if one
+ * exists now, and mark that invite CLAIMED.
+ *
+ * Google sign-in creates an account even when nobody has invited that email yet
+ * (the user then sits at the app's "waiting for an invite" gate). This is what
+ * lets them out of it: called on every sign-in and refresh, so the moment an
+ * admin adds the invite their next session picks up the society and flat. Users
+ * who already have a society are returned untouched, so this is a cheap no-op
+ * on the overwhelmingly common path.
+ */
+async function claimPendingInvite(user: User): Promise<User> {
+  if (user.societyId || !user.email) return user;
+
+  const invite = await prisma.pendingResidentInvite.findFirst({
+    where: { status: "PENDING", email: user.email },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!invite) return user;
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.user.update({
+      where: { id: user.id },
+      // No residentProfile can exist yet: it's created with the flat below, and
+      // only ever alongside a societyId.
+      data: {
+        societyId: invite.societyId,
+        residentProfile: { create: { flatId: invite.flatId } },
+      },
+    });
+    await tx.pendingResidentInvite.update({
+      where: { id: invite.id },
+      data: { status: "CLAIMED", claimedAt: new Date() },
+    });
+    logger.info("Society-less Google user claimed a pending invite", {
+      userId: user.id,
+      societyId: invite.societyId,
+    });
+    return updated;
+  });
 }
 
 async function issueSession(user: User): Promise<AuthSession> {
@@ -473,7 +524,9 @@ export async function googleLogin(input: {
         message: "This account has been deactivated — contact your society admin",
       });
     }
-    return issueSession(byGoogleId);
+    // They may have been invited since last time — this is how a user who
+    // signed in early gets out of the app's "waiting for an invite" gate.
+    return issueSession(await claimPendingInvite(byGoogleId));
   }
 
   const byEmail = await prisma.user.findUnique({
@@ -492,12 +545,28 @@ export async function googleLogin(input: {
     where: { status: "PENDING", email: payload.email },
     orderBy: { createdAt: "desc" },
   });
+
+  // Nobody has invited this email yet. Create the account anyway, without a
+  // society — signing in is allowed, but there's no society data to show, so
+  // clients hold these users at a "waiting for an invite" gate. They're picked
+  // up by `claimPendingInvite` on their next sign-in/refresh once an admin adds
+  // them, which is why this isn't a dead end. No residentProfile: that needs a
+  // flat, and the flat only comes from an invite.
   if (!invite) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message:
-        "No invite found for this email — ask your society admin to add you first",
+    const user = await prisma.user.create({
+      data: {
+        name: payload.name ?? payload.email,
+        email: payload.email,
+        authProvider: "GOOGLE",
+        googleId: payload.sub,
+        avatarUrl: payload.picture,
+        role: "RESIDENT",
+      },
     });
+    logger.info("Created society-less Google user (no matching invite)", {
+      userId: user.id,
+    });
+    return issueSession(user);
   }
 
   const user = await prisma.$transaction(async (tx) => {
@@ -564,7 +633,9 @@ export async function refreshSession(input: {
     where: { id: stored.id },
     data: { revokedAt: new Date() },
   });
-  return issueSession(stored.user);
+  // Lets the "waiting for an invite" gate clear on a plain refresh, without
+  // making the user sign out and back in.
+  return issueSession(await claimPendingInvite(stored.user));
 }
 
 export async function logout(input: { refreshToken: string }): Promise<void> {

@@ -5,14 +5,29 @@ interface Extra {
   apiUrl?: string;
   webUrl?: string;
   googleClientId?: string | null;
+  googleIosClientId?: string | null;
 }
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
 
 const rawApiUrl = extra.apiUrl ?? "http://localhost:8000";
 
-/** Google OAuth web client id, or null when Google sign-in isn't configured. */
+/**
+ * Google OAuth **web** client id, or null when Google sign-in isn't configured.
+ *
+ * Web, despite this being a native sign-in: the native SDK takes it as its
+ * `serverClientID`, which is what lands in the ID token's `aud` claim. The API
+ * verifies that claim against its own `GOOGLE_CLIENT_ID`, so this must be the
+ * same web client id the server has, or every login fails with a 401.
+ */
 export const GOOGLE_CLIENT_ID = extra.googleClientId ?? null;
+
+/**
+ * Google OAuth **iOS** client id — required on iOS only, and unrelated to the
+ * token audience above. Android needs no client id here: Google identifies that
+ * client from the package name + signing certificate on the request itself.
+ */
+export const GOOGLE_IOS_CLIENT_ID = extra.googleIosClientId ?? null;
 
 /**
  * The Android emulator can't reach the host via `localhost` — it maps the host

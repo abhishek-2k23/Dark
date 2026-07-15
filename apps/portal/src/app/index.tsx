@@ -1,17 +1,18 @@
 import { Redirect } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 
-import { roleHome } from "@/lib/roles";
+import { homeFor } from "@/lib/roles";
 import { useAuthStore } from "@/stores/authStore";
 import { useTheme } from "@/theme";
 
 /**
  * Launch gate. Waits for the auth store to hydrate, then routes to the auth
- * stack or the signed-in user's role-specific stack.
+ * stack or the signed-in user's home (their role stack, or the waiting screen
+ * if they have no society yet).
  */
 export default function Index() {
   const status = useAuthStore((s) => s.status);
-  const role = useAuthStore((s) => s.user?.role);
+  const user = useAuthStore((s) => s.user);
   const { colors } = useTheme();
 
   if (status === "loading") {
@@ -26,5 +27,5 @@ export default function Index() {
     return <Redirect href="/(auth)/login" />;
   }
 
-  return <Redirect href={roleHome(role)} />;
+  return <Redirect href={homeFor(user ?? undefined)} />;
 }
