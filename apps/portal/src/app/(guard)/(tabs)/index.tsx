@@ -14,7 +14,7 @@ import {
   Text,
   type IconName,
 } from "@/components/ui";
-import { type NeonHue } from "@/theme";
+import { hueFor, type NeonHue } from "@/theme";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { visitorPurposeIcon } from "@/utils/domain";
@@ -156,13 +156,13 @@ export default function GuardDashboard() {
       <View className="flex-row flex-wrap gap-3">
         <QuickAction
           icon="person-add-outline"
-          hue="green"
+          hue={hueFor("visitors")}
           label={t("guard.registerVisitor")}
           onPress={() => router.push("/(guard)/register")}
         />
         <QuickAction
           icon="qr-code-outline"
-          hue="pink"
+          hue={hueFor("guests")}
           label={t("guard.verifyPass")}
           onPress={() => router.push("/(guard)/verify")}
         />

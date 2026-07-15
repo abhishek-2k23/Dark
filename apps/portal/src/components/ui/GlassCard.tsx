@@ -7,10 +7,8 @@ import {
   type ViewStyle,
 } from "react-native";
 
-import { glow, radius as radiusTokens, useTheme, type NeonHue } from "@/theme";
+import { radius as radiusTokens, useTheme, type NeonHue } from "@/theme";
 import { cn } from "@/utils/cn";
-import { withAlpha } from "@/utils/color";
-import { GradientBorder } from "./GradientBorder";
 
 export type GlassCardVariant = "glass" | "glassStrong" | "neon" | "hero";
 
@@ -23,17 +21,21 @@ const PADDING = {
 
 export interface GlassCardProps {
   /**
-   * `glass` — translucent fill + white hairline (the workhorse).
+   * `glass` — translucent fill + luminous hairline (the workhorse).
    * `glassStrong` — heavier fill for emphasized surfaces.
-   * `neon` — glass fill with a single-hue neon border.
-   * `hero` — multi-hue gradient border over a near-opaque fill.
+   * `neon` — brighter hairline for emphasis. No longer hue-tinted.
+   * `hero` — brightest hairline over a near-opaque fill.
    */
   variant?: GlassCardVariant;
-  /** Accent hue for `neon` borders / glows. Defaults to the brand blue. */
+  /**
+   * @deprecated Cards no longer tint themselves — their color comes from the
+   * animated aurora backdrop showing through the translucent fill. Accepted so
+   * existing call sites keep compiling; ignored. Tint the card's icon instead.
+   */
   hue?: NeonHue;
-  /** Override the `hero` gradient stops. */
+  /** @deprecated Ignored — `hero` borders are neutral now. */
   gradientBorder?: [string, string, ...string[]];
-  /** Colored halo shadow (visible on iOS; Android relies on borders). */
+  /** @deprecated Ignored — colored halos are gone; the backdrop is the color. */
   withGlow?: boolean;
   padding?: keyof typeof PADDING;
   /** Corner radius token. Defaults to the 24px card radius. */
@@ -49,12 +51,14 @@ export interface GlassCardProps {
  * The glassmorphic surface primitive. "Glass" here is a translucent fill over
  * the aurora backdrop plus a luminous hairline — deliberately no BlurView, so
  * a screen can hold a dozen cards at 60fps (blur is reserved for nav chrome).
+ *
+ * Cards are intentionally colorless: every variant is the same neutral glass,
+ * differing only in how much fill and hairline they carry. The color you see in
+ * a card is the animated aurora behind it, showing through the fill — which is
+ * why the fills stay translucent even for the emphasized variants.
  */
 export function GlassCard({
   variant = "glass",
-  hue = "blue",
-  gradientBorder,
-  withGlow = false,
   padding = "md",
   radius = "2xl",
   onPress,
@@ -65,49 +69,15 @@ export function GlassCard({
 }: GlassCardProps) {
   const { colors } = useTheme();
   const r = radiusTokens[radius];
-  const hueColor = colors.neon[hue];
 
-  const glowStyle = withGlow ? glow(hueColor, "md") : undefined;
-
-  // Hero: gradient hairline wrapping a near-opaque surface.
-  if (variant === "hero") {
-    const stops: [string, string, ...string[]] = gradientBorder ?? [
-      colors.neon.violet,
-      colors.neon.blue,
-      colors.neon.gold,
-    ];
-    const inner = (
-      <View className={cn(PADDING[padding], className)}>{children}</View>
-    );
-    return (
-      <GradientBorder
-        colors={stops}
-        radius={r}
-        innerFill={colors.glassHeavy}
-        style={[glowStyle, style]}
-      >
-        {onPress ? (
-          <Pressable
-            onPress={onPress}
-            className="active:opacity-90"
-            {...pressableProps}
-          >
-            {inner}
-          </Pressable>
-        ) : (
-          inner
-        )}
-      </GradientBorder>
-    );
-  }
+  const heavyFill = variant === "glassStrong" || variant === "hero";
+  const brightEdge = variant === "neon" || variant === "hero";
 
   const surface: ViewStyle = {
     borderRadius: r,
     borderWidth: 1,
-    backgroundColor:
-      variant === "glassStrong" ? colors.glassFillStrong : colors.glassFill,
-    borderColor:
-      variant === "neon" ? withAlpha(hueColor, 0.45) : colors.glassBorder,
+    backgroundColor: heavyFill ? colors.glassFillStrong : colors.glassFill,
+    borderColor: brightEdge ? colors.glassBorderStrong : colors.glassBorder,
   };
 
   const classes = cn(
@@ -116,7 +86,7 @@ export function GlassCard({
     onPress && "active:opacity-90",
     className,
   );
-  const merged = [surface, glowStyle, style];
+  const merged = [surface, style];
 
   if (onPress) {
     return (

@@ -12,14 +12,15 @@ import {
   Icon,
   IconCircle,
   NeonTile,
+  resolveIconColor,
   Screen,
   Text,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
-import { useTheme } from "@/theme";
+import { hueFor, useTheme } from "@/theme";
 import { useUIStore } from "@/stores/uiStore";
-import { noticeCategoryHue, noticeCategoryIcon } from "@/utils/domain";
+import { noticeCategoryAccent, noticeCategoryIcon } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
 function greetingKey(): string {
@@ -121,7 +122,7 @@ export default function ResidentDashboard() {
 
       {/* Pending visitor banner */}
       {firstPending && (
-        <GlassCard variant="neon" hue="gold" withGlow className="gap-4">
+        <GlassCard variant="neon" className="gap-4">
           <Pressable
             className="flex-row items-start gap-3 active:opacity-80"
             onPress={() => router.push(`/(resident)/visitors/${firstPending.id}`)}
@@ -162,25 +163,25 @@ export default function ResidentDashboard() {
         <View className="flex-row justify-between">
           <NeonTile
             name="person-add-outline"
-            hue="blue"
+            hue={hueFor("guests")}
             label={t("dashboard.preApproveGuest")}
             onPress={() => router.push("/(resident)/visitors/pre-approve")}
           />
           <NeonTile
             name="construct-outline"
-            hue="pink"
+            hue={hueFor("tickets")}
             label={t("dashboard.raiseTicket")}
             onPress={() => router.push("/(resident)/tickets/create")}
           />
           <NeonTile
             name="calendar-outline"
-            hue="green"
+            hue={hueFor("amenities")}
             label={t("dashboard.bookAmenity")}
             onPress={() => router.push("/(resident)/amenities")}
           />
           <NeonTile
             name="wallet-outline"
-            hue="gold"
+            hue={hueFor("payments")}
             label={t("dashboard.payDues")}
             onPress={() => router.push("/(resident)/(tabs)/payments")}
           />
@@ -200,12 +201,11 @@ export default function ResidentDashboard() {
           className="-mx-5 px-5"
         >
           {notices.data?.items.map((n) => {
-            const hue = noticeCategoryHue[n.category] ?? "cyan";
+            const accent = noticeCategoryAccent[n.category] ?? "neonBlue";
             return (
               <GlassCard
                 key={n.id}
                 variant="neon"
-                hue={hue}
                 onPress={() => router.push(`/(resident)/notices/${n.id}`)}
                 padding="lg"
                 className="w-72 gap-1"
@@ -214,11 +214,11 @@ export default function ResidentDashboard() {
                   <Icon
                     name={noticeCategoryIcon[n.category] ?? "megaphone-outline"}
                     size={14}
-                    color={colors.neon[hue]}
+                    color={accent}
                   />
                   <Text
                     variant="overline"
-                    style={{ color: colors.neon[hue] }}
+                    style={{ color: resolveIconColor(colors, accent) }}
                   >
                     {t(`enums.noticeCategory.${n.category}`)}
                   </Text>

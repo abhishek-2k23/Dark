@@ -1,5 +1,12 @@
 export { Text, type TextProps, type TextColor } from "./Text";
-export { Icon, type IconProps, type IconName, type IconColor } from "./Icon";
+export {
+  Icon,
+  resolveIconColor,
+  type IconProps,
+  type IconName,
+  type IconColor,
+  type StringColorKey,
+} from "./Icon";
 export {
   IconCircle,
   type IconCircleProps,

@@ -10,7 +10,7 @@ import {
   Text,
   type IconName,
 } from "@/components/ui";
-import { type NeonHue } from "@/theme";
+import { hueFor, type NeonHue } from "@/theme";
 
 interface Entry {
   icon: IconName;
@@ -23,42 +23,42 @@ interface Entry {
 const ENTRIES: Entry[] = [
   {
     icon: "business-outline",
-    hue: "blue",
+    hue: hueFor("home"),
     titleKey: "admin.property",
     bodyKey: "admin.propertyBody",
     href: "/(admin)/towers",
   },
   {
     icon: "people-outline",
-    hue: "violet",
+    hue: hueFor("community"),
     titleKey: "admin.residents",
     bodyKey: "admin.residentsBody",
     href: "/(admin)/residents",
   },
   {
     icon: "shield-outline",
-    hue: "green",
+    hue: hueFor("staff"),
     titleKey: "admin.staffAccounts",
     bodyKey: "admin.staffAccountsBody",
     href: "/(admin)/staff",
   },
   {
     icon: "construct-outline",
-    hue: "pink",
+    hue: hueFor("directory"),
     titleKey: "directory.title",
     bodyKey: "admin.directoryBody",
     href: "/(admin)/directory",
   },
   {
     icon: "tennisball-outline",
-    hue: "gold",
+    hue: hueFor("amenities"),
     titleKey: "amenities.title",
     bodyKey: "admin.amenitiesBody",
     href: "/(admin)/amenities",
   },
   {
     icon: "bar-chart-outline",
-    hue: "cyan",
+    hue: hueFor("reports"),
     titleKey: "admin.reports",
     bodyKey: "admin.reportsBody",
     href: "/(admin)/reports",

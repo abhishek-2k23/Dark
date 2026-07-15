@@ -74,9 +74,9 @@ export default function Showcase() {
 
       {/* Glass surfaces */}
       <Section title="Glass Cards">
-        <GlassCard variant="hero" withGlow padding="lg" className="gap-1.5">
+        <GlassCard variant="hero" padding="lg" className="gap-1.5">
           <Text variant="overline" color="secondary">
-            Hero · gradient border
+            Hero · bright hairline
           </Text>
           <Text variant="h2">Find Your Dream Home</Text>
           <Text variant="body" color="secondary">
@@ -98,21 +98,16 @@ export default function Showcase() {
           </GlassCard>
         </View>
         <View className="flex-row gap-3">
-          <GlassCard variant="neon" hue="violet" className="flex-1 gap-1">
-            <Text variant="title">Neon violet</Text>
+          <GlassCard variant="neon" className="flex-1 gap-1">
+            <Text variant="title">Neon</Text>
             <Text variant="caption" color="secondary">
-              Hue border
+              Bright hairline
             </Text>
           </GlassCard>
-          <GlassCard
-            variant="neon"
-            hue="gold"
-            withGlow
-            className="flex-1 gap-1"
-          >
-            <Text variant="title">Neon gold</Text>
+          <GlassCard variant="hero" className="flex-1 gap-1">
+            <Text variant="title">Hero</Text>
             <Text variant="caption" color="secondary">
-              Hue border + glow
+              Bright hairline + heavy fill
             </Text>
           </GlassCard>
         </View>
@@ -123,11 +118,11 @@ export default function Showcase() {
         <View className="flex-row flex-wrap justify-between gap-y-4">
           <NeonTile name="qr-code-outline" hue="blue" label="Digital ID" />
           <NeonTile name="lock-closed-outline" hue="violet" label="Pre-Approve" />
-          <NeonTile name="document-text-outline" hue="cyan" label="Notice Board" />
-          <NeonTile name="calendar-outline" hue="gold" label="Events" />
-          <NeonTile name="construct-outline" hue="pink" label="Handyman" />
-          <NeonTile name="key-outline" hue="green" label="Rentals" />
-          <NeonTile name="sparkles-outline" hue="gold" label="Salon & Spa" />
+          <NeonTile name="document-text-outline" hue="blue" label="Notice Board" />
+          <NeonTile name="calendar-outline" hue="violet" label="Events" />
+          <NeonTile name="construct-outline" hue="violet" label="Handyman" />
+          <NeonTile name="key-outline" hue="blue" label="Rentals" />
+          <NeonTile name="sparkles-outline" hue="violet" label="Salon & Spa" />
           <NeonTile name="cart-outline" hue="blue" label="Market" />
         </View>
       </Section>

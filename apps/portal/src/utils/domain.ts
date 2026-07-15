@@ -1,6 +1,5 @@
 import type { BadgeTone } from "@/components/ui";
-import type { IconName } from "@/components/ui";
-import type { NeonHue } from "@/theme";
+import type { IconColor, IconName } from "@/components/ui";
 
 /**
  * Domain enum → presentation maps shared across the resident screens.
@@ -77,12 +76,16 @@ export const noticeCategoryCard: Record<string, string> = {
   GENERAL: "bg-primary",
 };
 
-/** Neon accent hue per notice category (glass carousel cards). */
-export const noticeCategoryHue: Record<string, NeonHue> = {
-  MAINTENANCE: "blue",
-  EVENT: "green",
-  EMERGENCY: "pink",
-  GENERAL: "cyan",
+/**
+ * Accent token per notice category (glass carousel cards). `EMERGENCY` keeps
+ * the semantic danger red — an urgent notice has to look urgent — while the
+ * rest split across the two decorative hues.
+ */
+export const noticeCategoryAccent: Record<string, IconColor> = {
+  MAINTENANCE: "neonBlue",
+  EVENT: "neonViolet",
+  EMERGENCY: "danger",
+  GENERAL: "neonBlue",
 };
 
 export const serviceCategoryIcon: Record<string, IconName> = {

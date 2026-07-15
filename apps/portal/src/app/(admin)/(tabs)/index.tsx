@@ -17,7 +17,7 @@ import {
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
-import { radius, useTheme, type NeonHue } from "@/theme";
+import { hueFor, radius, useTheme, type NeonHue } from "@/theme";
 import { withAlpha } from "@/utils/color";
 import { ticketCategoryIcon, ticketStatusTone } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
@@ -35,7 +35,7 @@ function Kpi({
   label: string;
   onPress: () => void;
 }) {
-  const { colors, scheme } = useTheme();
+  const { scheme } = useTheme();
   const dark = scheme === "dark";
   return (
     <GlassCard
@@ -44,15 +44,11 @@ function Kpi({
       padding="none"
       className="w-[47%] grow"
     >
-      {/* Hue wash + top sheen — the "glass layer" over the card. Explicit
-          borderRadius keeps corners rounded like every other card even where
-          overflow clipping of the overlays is unreliable. */}
-      <LinearGradient
-        colors={[withAlpha(colors.neon[hue], dark ? 0.14 : 0.12), "transparent"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[StyleSheet.absoluteFill, { borderRadius: radius["2xl"] }]}
-      />
+      {/* Neutral top sheen — the "glass layer" over the card. There is no hue
+          wash under it: the card's color is the aurora showing through the
+          translucent fill. Explicit borderRadius keeps corners rounded like
+          every other card even where overflow clipping of the overlay is
+          unreliable. */}
       <LinearGradient
         colors={[withAlpha("#FFFFFF", dark ? 0.09 : 0.45), "transparent"]}
         start={{ x: 0, y: 0 }}
@@ -159,28 +155,28 @@ export default function AdminDashboard() {
       <View className="flex-row flex-wrap gap-3">
         <Kpi
           icon="walk-outline"
-          hue="blue"
+          hue={hueFor("visitors")}
           value={withPlus(visitors.data?.items.length ?? 0, 100)}
           label={t("admin.kpiVisitorsToday")}
           onPress={() => router.push("/(admin)/reports")}
         />
         <Kpi
           icon="construct-outline"
-          hue="pink"
+          hue={hueFor("tickets")}
           value={withPlus(openTickets.data?.items.length ?? 0, 100)}
           label={t("admin.kpiOpenComplaints")}
           onPress={() => router.push("/(admin)/tickets")}
         />
         <Kpi
           icon="stats-chart-outline"
-          hue="violet"
+          hue={hueFor("polls")}
           value={withPlus(polls.data?.items.length ?? 0, 100)}
           label={t("admin.kpiActivePolls")}
           onPress={() => router.push("/(admin)/polls")}
         />
         <Kpi
           icon="wallet-outline"
-          hue="gold"
+          hue={hueFor("payments")}
           value={withPlus(overdue.data?.items.length ?? 0, 100)}
           label={t("admin.kpiOverdueDues")}
           onPress={() => router.push("/(admin)/reports")}

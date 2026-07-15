@@ -70,7 +70,7 @@ function DuesList() {
   return (
     <View className="gap-3">
       {outstanding > 0 && (
-        <GlassCard variant="neon" hue="gold" withGlow padding="lg" className="gap-1">
+        <GlassCard variant="neon" padding="lg" className="gap-1">
           <Text variant="overline" color="secondary">
             {t("payments.dues")}
           </Text>

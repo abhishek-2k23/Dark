@@ -9,8 +9,15 @@
 
 export type ColorScheme = "light" | "dark";
 
-/** Pastel-neon feature hues. Registry mapping features → hues: `hues.ts`. */
-export type NeonHue = "blue" | "violet" | "gold" | "green" | "pink" | "cyan";
+/**
+ * Pastel-neon feature hues. Deliberately just two: decorative color in this app
+ * comes from the animated aurora backdrop showing through the glass surfaces,
+ * not from the surfaces themselves, so the accent palette stays narrow enough
+ * that the backdrop never fights it. Registry mapping features → hues:
+ * `hues.ts`. Status meaning (success/warning/danger) is carried by the semantic
+ * tokens below, never by these.
+ */
+export type NeonHue = "blue" | "violet";
 
 export interface ThemeColors {
   background: string;
@@ -24,6 +31,9 @@ export interface ThemeColors {
   glassFillStrong: string;
   /** 1px luminous hairline for glass borders (rgba). */
   glassBorder: string;
+  /** Brighter hairline for emphasized glass (rgba). Carries emphasis that
+   *  used to come from a colored neon border. */
+  glassBorderStrong: string;
   /** Near-opaque inner fill for neon-gradient-border cards (rgba). */
   glassHeavy: string;
 
@@ -59,7 +69,13 @@ export interface ThemeColors {
   /** Pastel-neon accent hues for icons, tints and gradient borders. */
   neon: Record<NeonHue, string>;
 
-  /** Ambient background glow blob colors (AuroraBackground). */
+  /**
+   * Ambient background glow colors (AuroraBackground) — one drifting cloud per
+   * entry. Three deliberately contrasting hues: two cool, one warm, so wherever
+   * two clouds overlap the blend actually shifts instead of muddying into a
+   * single tint. Independent of `neon` (which stays narrow) — this is the app's
+   * only decorative color, and it is always in motion.
+   */
   aurora: string[];
 }
 
@@ -72,6 +88,7 @@ export const lightColors: ThemeColors = {
   glassFill: "rgba(255,255,255,0.65)",
   glassFillStrong: "rgba(255,255,255,0.8)",
   glassBorder: "rgba(255,255,255,0.75)",
+  glassBorderStrong: "rgba(255,255,255,0.95)",
   glassHeavy: "rgba(255,255,255,0.92)",
 
   border: "#E0E4F2",
@@ -106,14 +123,10 @@ export const lightColors: ThemeColors = {
   neon: {
     blue: "#2563EB",
     violet: "#7C3AED",
-    gold: "#CA6C02",
-    green: "#059669",
-    pink: "#DB2777",
-    cyan: "#0891B2",
   },
 
-  // Soft pastel blobs — quiet frosted interpretation for light mode.
-  aurora: ["#BFD4FE", "#DDD1FE", "#FDE9C0"],
+  // Soft pastel clouds — quiet frosted interpretation for light mode.
+  aurora: ["#BFD4FE", "#BFEAF5", "#FDE9C0"],
 };
 
 export const darkColors: ThemeColors = {
@@ -125,6 +138,7 @@ export const darkColors: ThemeColors = {
   glassFill: "rgba(255,255,255,0.06)",
   glassFillStrong: "rgba(255,255,255,0.1)",
   glassBorder: "rgba(255,255,255,0.1)",
+  glassBorderStrong: "rgba(255,255,255,0.24)",
   glassHeavy: "rgba(13,13,20,0.92)",
 
   border: "#2A2C3E",
@@ -159,14 +173,10 @@ export const darkColors: ThemeColors = {
   neon: {
     blue: "#60A5FA",
     violet: "#A78BFA",
-    gold: "#FBBF24",
-    green: "#34D399",
-    pink: "#F472B6",
-    cyan: "#22D3EE",
   },
 
-  // Neon glow blobs bleeding through the near-black canvas.
-  aurora: ["#7C3AED", "#2563EB", "#B45309"],
+  // Neon glow clouds bleeding through the near-black canvas.
+  aurora: ["#2563EB", "#0891B2", "#B45309"],
 };
 
 export const palettes: Record<ColorScheme, ThemeColors> = {

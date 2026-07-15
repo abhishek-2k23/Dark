@@ -3,7 +3,7 @@ import { View } from "react-native";
 import { useTheme, type NeonHue } from "@/theme";
 import { cn } from "@/utils/cn";
 import { withAlpha } from "@/utils/color";
-import { Icon, type IconName } from "./Icon";
+import { Icon, type IconName, type StringColorKey } from "./Icon";
 
 export type IconCircleTone =
   | "primary"
@@ -14,14 +14,18 @@ export type IconCircleTone =
   | "peach"
   | "neutral";
 
-/** Legacy tones re-pointed at the neon hue system. */
-const TONE_HUE: Record<Exclude<IconCircleTone, "neutral">, NeonHue> = {
-  primary: "blue",
-  success: "green",
-  accent: "cyan",
-  warning: "gold",
-  danger: "pink",
-  peach: "gold",
+/**
+ * Tone → theme color key. Status tones resolve to the semantic tokens (which
+ * keep their green/amber/red meaning) rather than to the two-hue decorative
+ * neon palette; the purely decorative tones resolve into that palette.
+ */
+const TONE_COLOR: Record<Exclude<IconCircleTone, "neutral">, StringColorKey> = {
+  primary: "primary",
+  success: "success",
+  accent: "accent",
+  warning: "warning",
+  danger: "danger",
+  peach: "warning",
 };
 
 export interface IconCircleProps {
@@ -48,10 +52,11 @@ export function IconCircle({
   const { colors, scheme } = useTheme();
   const dark = scheme === "dark";
 
-  const resolvedHue = hue ?? (tone === "neutral" ? undefined : TONE_HUE[tone]);
-  const accent = resolvedHue
-    ? colors.neon[resolvedHue]
-    : colors.contentSecondary;
+  const accent = hue
+    ? colors.neon[hue]
+    : tone === "neutral"
+      ? colors.contentSecondary
+      : colors[TONE_COLOR[tone]];
 
   return (
     <View
