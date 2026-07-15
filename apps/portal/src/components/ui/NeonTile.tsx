@@ -2,7 +2,6 @@ import { Pressable, View } from "react-native";
 
 import { useTheme, type NeonHue } from "@/theme";
 import { cn } from "@/utils/cn";
-import { withAlpha } from "@/utils/color";
 import { Icon, type IconName } from "./Icon";
 import { Text } from "./Text";
 
@@ -19,37 +18,35 @@ export interface NeonTileProps {
 }
 
 /**
- * Squircle glass icon tile for quick-action grids (the 4-column layouts in
- * the reference design): dark glass chip, faint hue wash, thin luminous
- * border and a neon-stroke Ionicon, with an optional caption below.
+ * Squircle glass icon tile for quick-action grids (the 4-column "Quick
+ * Access" layouts in the reference design): neutral dark glass chip with a
+ * thin luminous hairline — the neon-stroke Ionicon is the only colored
+ * element — and an optional caption below.
  */
 export function NeonTile({
   name,
   hue = "blue",
   label,
-  size = 60,
+  size = 64,
   onPress,
   className,
 }: NeonTileProps) {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
   const hueColor = colors.neon[hue];
-  const dark = scheme === "dark";
 
   const tile = (
     <View
       style={{
         width: size,
         height: size,
-        borderRadius: 20,
+        borderRadius: 16,
         borderWidth: 1,
-        backgroundColor: dark
-          ? withAlpha(hueColor, 0.08)
-          : withAlpha(hueColor, 0.1),
-        borderColor: withAlpha(hueColor, dark ? 0.28 : 0.32),
+        backgroundColor: colors.glassFill,
+        borderColor: colors.glassBorder,
       }}
       className="items-center justify-center"
     >
-      <Icon name={name} size={Math.round(size * 0.44)} color={hueColor} />
+      <Icon name={name} size={Math.round(size * 0.42)} color={hueColor} />
     </View>
   );
 

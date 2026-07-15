@@ -21,7 +21,7 @@ export default function NoticeDetail() {
     <Screen scroll contentClassName="gap-4 pb-8">
       <StackHeader title={t("notices.detailTitle")} />
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : notice ? (

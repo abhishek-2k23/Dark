@@ -24,6 +24,7 @@ export {
   type AuroraVariant,
 } from "./AuroraBackground";
 export { NeonTile, type NeonTileProps } from "./NeonTile";
+export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { Badge, type BadgeProps, type BadgeTone } from "./Badge";
 export { Input, type InputProps } from "./Input";
 export { PasswordInput, type PasswordInputProps } from "./PasswordInput";

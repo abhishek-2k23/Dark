@@ -66,7 +66,7 @@ export default function AmenityDetail() {
       <StackHeader title={amenity?.name ?? t("amenities.title")} />
 
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : amenity ? (

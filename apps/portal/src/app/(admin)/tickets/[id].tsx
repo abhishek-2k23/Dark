@@ -70,7 +70,7 @@ export default function AdminTicketDetail() {
       <StackHeader title={t("admin.complaint")} />
 
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : tk ? (

@@ -39,11 +39,19 @@ function LinkRow({
 }
 
 /**
- * Legal/support links and the account-deletion entry point, shared by every
- * role's Profile tab. The links and the deletion flow all live in the web app,
- * so each opens the corresponding page in an in-app browser.
+ * Legal/support links plus the logout and account-deletion actions, shared by
+ * every role's Profile tab. Logout sits directly above delete so the two
+ * account-level actions read as one group. The links and the deletion flow
+ * live in the web app, so each opens the corresponding page in an in-app
+ * browser.
  */
-export function AccountLegalActions() {
+export function AccountLegalActions({
+  onLogout,
+  loggingOut = false,
+}: {
+  onLogout?: () => void;
+  loggingOut?: boolean;
+}) {
   const { t } = useTranslation();
   const showToast = useUIStore((s) => s.showToast);
 
@@ -80,7 +88,17 @@ export function AccountLegalActions() {
 
       <Divider />
 
-      <View className="gap-2">
+      <View className="gap-2.5">
+        {onLogout && (
+          <Button
+            label={t("profile.logout")}
+            variant="outline"
+            leftIcon="log-out-outline"
+            loading={loggingOut}
+            onPress={onLogout}
+            fullWidth
+          />
+        )}
         <Button
           label={t("profile.deleteAccount")}
           variant="danger"

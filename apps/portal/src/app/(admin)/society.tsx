@@ -49,7 +49,7 @@ export default function EditSociety() {
     <Screen scroll contentClassName="gap-5 pb-8">
       <StackHeader title={t("admin.societyDetails")} />
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : (

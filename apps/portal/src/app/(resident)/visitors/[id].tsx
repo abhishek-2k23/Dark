@@ -95,7 +95,7 @@ export default function VisitorDetail() {
       <StackHeader title={t("visitors.requestTitle")} />
 
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : v ? (

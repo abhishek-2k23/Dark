@@ -10,7 +10,6 @@ import { AccountLegalActions } from "@/components/AccountLegalActions";
 import {
   Avatar,
   Badge,
-  Button,
   Card,
   Divider,
   Icon,
@@ -61,20 +60,21 @@ export default function AdminProfileTab() {
   return (
     <Screen scroll contentClassName="gap-5 py-3 pb-8">
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="profile" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : me ? (
         <>
           <View className="items-center gap-3 pt-2">
-            <Avatar uri={me.avatarUrl} name={me.name} size={88} />
-            <View className="items-center gap-1.5">
-              <Text variant="h1" align="center">
+            <Avatar uri={me.avatarUrl} name={me.name} size={88} ring="blue" />
+            <View className="w-full items-center gap-1.5">
+              <Text variant="h1" align="center" className="px-3">
                 {me.name}
               </Text>
               <Badge
                 label={me.adminProfile?.designation ?? t("admin.roleBadge")}
                 tone="primary"
+                className="self-center"
               />
             </View>
           </View>
@@ -116,22 +116,14 @@ export default function AdminProfileTab() {
 
           <Divider />
 
-          <Button
-            label={t("profile.logout")}
-            variant="outline"
-            leftIcon="log-out-outline"
-            loading={busy}
-            onPress={async () => {
+          <AccountLegalActions
+            loggingOut={busy}
+            onLogout={async () => {
               setBusy(true);
               await logout();
               showToast(t("profile.loggedOut"), "info");
             }}
-            fullWidth
           />
-
-          <Divider />
-
-          <AccountLegalActions />
         </>
       ) : null}
     </Screen>

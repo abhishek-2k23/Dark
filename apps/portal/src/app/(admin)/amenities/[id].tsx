@@ -51,7 +51,7 @@ export default function AmenityCalendar() {
       />
 
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={toErrorMessage(q.error, t)} onRetry={q.refetch} />
       ) : groups.length === 0 ? (

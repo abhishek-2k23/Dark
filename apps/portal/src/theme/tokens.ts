@@ -17,11 +17,11 @@ export const spacing = {
 export const radius = {
   none: 0,
   sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  "2xl": 24,
-  "3xl": 28,
+  md: 10,
+  lg: 12,
+  xl: 14,
+  "2xl": 16,
+  "3xl": 20,
   full: 999,
 } as const;
 
@@ -80,9 +80,7 @@ export function glow(color: string, intensity: "sm" | "md" | "lg" = "md") {
   } as const;
 }
 
-/** Shared geometry for the floating glass tab bar + Screen bottom insets. */
+/** Shared geometry for the docked glass tab bar + Screen bottom insets. */
 export const tabBar = {
-  height: 64,
-  margin: 16,
-  bottomOffset: 12,
+  height: 60,
 } as const;

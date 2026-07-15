@@ -23,7 +23,7 @@ export default function PollResults() {
       <StackHeader title={t("polls.results")} />
 
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : r ? (

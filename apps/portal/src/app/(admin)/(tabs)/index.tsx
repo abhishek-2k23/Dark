@@ -1,6 +1,7 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { SectionHeader } from "@/components/SectionHeader";
 import {
@@ -8,6 +9,7 @@ import {
   Badge,
   Card,
   GlassCard,
+  Icon,
   IconCircle,
   Screen,
   Text,
@@ -15,7 +17,8 @@ import {
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
-import { type NeonHue } from "@/theme";
+import { radius, useTheme, type NeonHue } from "@/theme";
+import { withAlpha } from "@/utils/color";
 import { ticketCategoryIcon, ticketStatusTone } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
@@ -32,18 +35,44 @@ function Kpi({
   label: string;
   onPress: () => void;
 }) {
+  const { colors, scheme } = useTheme();
+  const dark = scheme === "dark";
   return (
     <GlassCard
       onPress={onPress}
-      variant="neon"
-      hue={hue}
-      className="w-[47%] grow gap-2"
+      variant="glassStrong"
+      padding="none"
+      className="w-[47%] grow"
     >
-      <IconCircle name={icon} hue={hue} size={40} />
-      <Text variant="h1">{value}</Text>
-      <Text variant="caption" color="secondary" numberOfLines={2}>
-        {label}
-      </Text>
+      {/* Hue wash + top sheen — the "glass layer" over the card. Explicit
+          borderRadius keeps corners rounded like every other card even where
+          overflow clipping of the overlays is unreliable. */}
+      <LinearGradient
+        colors={[withAlpha(colors.neon[hue], dark ? 0.14 : 0.12), "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[StyleSheet.absoluteFill, { borderRadius: radius["2xl"] }]}
+      />
+      <LinearGradient
+        colors={[withAlpha("#FFFFFF", dark ? 0.09 : 0.45), "transparent"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            height: "55%",
+            borderTopLeftRadius: radius["2xl"],
+            borderTopRightRadius: radius["2xl"],
+          },
+        ]}
+      />
+      <View className="gap-2 p-4">
+        <IconCircle name={icon} hue={hue} size={40} />
+        <Text variant="h1">{value}</Text>
+        <Text variant="caption" color="secondary" numberOfLines={2}>
+          {label}
+        </Text>
+      </View>
     </GlassCard>
   );
 }
@@ -86,22 +115,44 @@ export default function AdminDashboard() {
   const openTickets = trpc.ticket.list.useQuery({ status: "OPEN", limit: 100 });
   const polls = trpc.poll.list.useQuery({ state: "ACTIVE", limit: 100 });
   const overdue = trpc.due.list.useQuery({ status: "OVERDUE", limit: 100 });
+  const unread = trpc.notification.list.useQuery({ limit: 1 });
 
   const recent = tickets.data?.items.slice(0, 5) ?? [];
+  const unreadCount = unread.data?.unreadCount ?? 0;
+  const { colors: themeColors } = useTheme();
 
   return (
     <Screen scroll contentClassName="gap-6 py-3 pb-8">
       {/* Header */}
-      <View className="flex-row items-center gap-3">
-        <Avatar uri={user?.avatarUrl} name={user?.name} size={44} />
-        <View className="shrink">
-          <Text variant="caption" color="secondary" numberOfLines={1}>
-            {me.data?.society?.name ?? t("admin.roleBadge")}
-          </Text>
-          <Text variant="h3" color="primary" numberOfLines={1}>
-            {t("admin.dashboardTitle")}
-          </Text>
+      <View className="flex-row items-center justify-between gap-3">
+        <View className="flex-1 flex-row items-center gap-3">
+          <Avatar uri={user?.avatarUrl} name={user?.name} size={44} />
+          <View className="shrink">
+            <Text variant="caption" color="secondary" numberOfLines={1}>
+              {me.data?.society?.name ?? t("admin.roleBadge")}
+            </Text>
+            <Text variant="h3" color="primary" numberOfLines={1}>
+              {t("admin.dashboardTitle")}
+            </Text>
+          </View>
         </View>
+        <Pressable
+          onPress={() => router.push("/(admin)/notifications" as never)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={t("notifications.title")}
+          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+          style={{
+            backgroundColor: themeColors.glassFill,
+            borderWidth: 1,
+            borderColor: themeColors.glassBorder,
+          }}
+        >
+          <Icon name="notifications-outline" size={22} color="content" />
+          {unreadCount > 0 && (
+            <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
+          )}
+        </Pressable>
       </View>
 
       {/* KPIs */}

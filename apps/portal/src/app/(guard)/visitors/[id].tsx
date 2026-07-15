@@ -85,7 +85,7 @@ export default function GuardVisitorDetail() {
       <StackHeader title={t("guard.visitorDetail")} />
 
       {q.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : q.error ? (
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : v ? (

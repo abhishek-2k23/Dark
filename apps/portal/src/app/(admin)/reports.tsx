@@ -95,7 +95,7 @@ export default function Reports() {
       <StackHeader title={t("admin.reports")} />
 
       {loading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : error ? (
         <ErrorState message={error.message} />
       ) : (

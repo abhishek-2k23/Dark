@@ -82,7 +82,7 @@ export default function PollDetail() {
       <StackHeader title={t("polls.detailTitle")} />
 
       {list.isLoading || results.isLoading ? (
-        <Loading />
+        <Loading variant="detail" />
       ) : list.error ? (
         <ErrorState message={list.error.message} onRetry={list.refetch} />
       ) : poll ? (
