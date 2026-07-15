@@ -22,6 +22,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ToastHost } from "@/components/ToastHost";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
+import { useOTAUpdates } from "@/lib/useOTAUpdates";
 import { TRPCProvider } from "@/providers/TRPCProvider";
 import { useAuthStore } from "@/stores/authStore";
 import { ThemeProvider, useTheme } from "@/theme";
@@ -46,6 +47,9 @@ export default function RootLayout() {
     Nunito_600SemiBold,
     Nunito_700Bold,
   });
+
+  // Check for and apply OTA (EAS) updates on launch / foreground.
+  useOTAUpdates();
 
   // Restore any persisted session as soon as the app starts.
   useEffect(() => {
