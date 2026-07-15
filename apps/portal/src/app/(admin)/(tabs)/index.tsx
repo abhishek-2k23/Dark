@@ -7,39 +7,44 @@ import {
   Avatar,
   Badge,
   Card,
-  Icon,
+  GlassCard,
   IconCircle,
   Screen,
   Text,
-  type IconCircleTone,
   type IconName,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
+import { type NeonHue } from "@/theme";
 import { ticketCategoryIcon, ticketStatusTone } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
 function Kpi({
   icon,
-  tone,
+  hue,
   value,
   label,
   onPress,
 }: {
   icon: IconName;
-  tone: IconCircleTone;
+  hue: NeonHue;
   value: number | string;
   label: string;
   onPress: () => void;
 }) {
   return (
-    <Card onPress={onPress} className="w-[47%] grow gap-2" variant="elevated">
-      <IconCircle name={icon} tone={tone} size={40} />
+    <GlassCard
+      onPress={onPress}
+      variant="neon"
+      hue={hue}
+      className="w-[47%] grow gap-2"
+    >
+      <IconCircle name={icon} hue={hue} size={40} />
       <Text variant="h1">{value}</Text>
       <Text variant="caption" color="secondary" numberOfLines={2}>
         {label}
       </Text>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -103,28 +108,28 @@ export default function AdminDashboard() {
       <View className="flex-row flex-wrap gap-3">
         <Kpi
           icon="walk-outline"
-          tone="primary"
+          hue="blue"
           value={withPlus(visitors.data?.items.length ?? 0, 100)}
           label={t("admin.kpiVisitorsToday")}
           onPress={() => router.push("/(admin)/reports")}
         />
         <Kpi
           icon="construct-outline"
-          tone="warning"
+          hue="pink"
           value={withPlus(openTickets.data?.items.length ?? 0, 100)}
           label={t("admin.kpiOpenComplaints")}
           onPress={() => router.push("/(admin)/tickets")}
         />
         <Kpi
           icon="stats-chart-outline"
-          tone="accent"
+          hue="violet"
           value={withPlus(polls.data?.items.length ?? 0, 100)}
           label={t("admin.kpiActivePolls")}
           onPress={() => router.push("/(admin)/polls")}
         />
         <Kpi
           icon="wallet-outline"
-          tone="danger"
+          hue="gold"
           value={withPlus(overdue.data?.items.length ?? 0, 100)}
           label={t("admin.kpiOverdueDues")}
           onPress={() => router.push("/(admin)/reports")}

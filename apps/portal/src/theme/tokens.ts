@@ -60,3 +60,29 @@ export const elevation = {
 } as const;
 
 export type ElevationToken = keyof typeof elevation;
+
+/**
+ * Neon glow shadow for glass surfaces. iOS renders the colored halo; Android
+ * elevation shadows can't be tinted reliably, so depth there is carried by
+ * the aurora backdrop + hairline borders (elevation stays 0 on purpose).
+ */
+export function glow(color: string, intensity: "sm" | "md" | "lg" = "md") {
+  const preset = {
+    sm: { shadowOpacity: 0.25, shadowRadius: 8 },
+    md: { shadowOpacity: 0.4, shadowRadius: 14 },
+    lg: { shadowOpacity: 0.55, shadowRadius: 22 },
+  }[intensity];
+  return {
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 0 },
+    ...preset,
+    elevation: 0,
+  } as const;
+}
+
+/** Shared geometry for the floating glass tab bar + Screen bottom insets. */
+export const tabBar = {
+  height: 64,
+  margin: 16,
+  bottomOffset: 12,
+} as const;

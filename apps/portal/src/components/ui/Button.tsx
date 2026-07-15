@@ -1,7 +1,15 @@
-import { ActivityIndicator, Pressable, type PressableProps } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  type PressableProps,
+  type ViewStyle,
+} from "react-native";
 
-import { useTheme } from "@/theme";
+import { glow, useTheme } from "@/theme";
 import { cn } from "@/utils/cn";
+import { withAlpha } from "@/utils/color";
 import { Icon, type IconName } from "./Icon";
 import { Text, type TextColor } from "./Text";
 
@@ -23,12 +31,10 @@ interface VariantStyle {
 }
 
 const VARIANTS: Record<ButtonVariant, VariantStyle> = {
-  primary: { container: "bg-primary-strong active:opacity-90", fg: "onPrimary" },
+  // primary/success render a gradient fill + glow via inline styles below.
+  primary: { container: "active:opacity-90", fg: "onPrimary" },
   success: { container: "bg-success active:opacity-90", fg: "onPrimary" },
-  secondary: {
-    container: "bg-primary-soft active:opacity-80",
-    fg: "primary",
-  },
+  secondary: { container: "active:opacity-80", fg: "primary" },
   outline: {
     container:
       "bg-transparent border border-border-strong active:bg-surface-muted",
@@ -95,6 +101,19 @@ export function Button({
     onPress?.(e);
   };
 
+  // Electric-blue gradient CTA with a soft neon halo (iOS renders the glow;
+  // Android keeps the gradient). Secondary is a translucent glass chip.
+  const inlineStyle: ViewStyle | undefined =
+    variant === "primary" && !isDisabled
+      ? glow(colors.primary, "sm")
+      : variant === "secondary"
+        ? {
+            backgroundColor: colors.glassFillStrong,
+            borderWidth: 1,
+            borderColor: withAlpha(colors.primary, 0.35),
+          }
+        : undefined;
+
   return (
     <Pressable
       {...rest}
@@ -103,7 +122,7 @@ export function Button({
       disabled={isDisabled}
       onPress={handlePress}
       className={cn(
-        "flex-row items-center justify-center rounded-[9px]",
+        "flex-row items-center justify-center overflow-hidden rounded-2xl",
         s.pad,
         s.gap,
         v.container,
@@ -111,7 +130,16 @@ export function Button({
         isDisabled && "opacity-50",
         className,
       )}
+      style={inlineStyle}
     >
+      {variant === "primary" && (
+        <LinearGradient
+          colors={[colors.primary, colors.primaryStrong]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       {loading ? (
         <ActivityIndicator size="small" color={spinnerColor} />
       ) : (

@@ -54,7 +54,7 @@ export default function SignupScreen() {
   };
 
   return (
-    <Screen scroll contentClassName="gap-5 pb-6">
+    <Screen scroll aurora="hero" contentClassName="gap-5 pb-6">
       <StackHeader title={t("signup.title")} />
 
       <Card variant="tonal" className="flex-row items-start gap-3">

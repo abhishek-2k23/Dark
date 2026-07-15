@@ -68,10 +68,13 @@ export function Input({
 
       <View
         className={cn(
-          "flex-row items-center gap-2.5 rounded-[9px] border bg-surface-muted px-3.5",
+          "flex-row items-center gap-2.5 rounded-lg border px-3.5",
           borderClass,
           !editable && "opacity-60",
         )}
+        style={{
+          backgroundColor: focused ? colors.glassFillStrong : colors.glassFill,
+        }}
       >
         {leftIcon && (
           <Icon name={leftIcon} size={20} color={focused ? "primary" : "tertiary"} />

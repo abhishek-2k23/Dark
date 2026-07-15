@@ -77,7 +77,7 @@ export default function ProfileTab() {
         <>
           {/* Identity */}
           <View className="items-center gap-3 pt-2">
-            <Avatar uri={me.avatarUrl} name={me.name} size={88} />
+            <Avatar uri={me.avatarUrl} name={me.name} size={88} ring="blue" />
             <View className="items-center gap-1.5">
               <Text variant="h1" align="center">
                 {me.name}

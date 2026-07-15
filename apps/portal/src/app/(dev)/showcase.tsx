@@ -10,10 +10,12 @@ import {
   Button,
   Card,
   Divider,
+  GlassCard,
   Icon,
   IconCircle,
   Input,
   Link,
+  NeonTile,
   Screen,
   SegmentedControl,
   Text,
@@ -69,6 +71,66 @@ export default function Showcase() {
           <LanguageSwitcher />
         </Section>
       </View>
+
+      {/* Glass surfaces */}
+      <Section title="Glass Cards">
+        <GlassCard variant="hero" withGlow padding="lg" className="gap-1.5">
+          <Text variant="overline" color="secondary">
+            Hero · gradient border
+          </Text>
+          <Text variant="h2">Find Your Dream Home</Text>
+          <Text variant="body" color="secondary">
+            Explore our listings for the perfect place to call your own.
+          </Text>
+        </GlassCard>
+        <View className="flex-row gap-3">
+          <GlassCard className="flex-1 gap-1">
+            <Text variant="title">Glass</Text>
+            <Text variant="caption" color="secondary">
+              Translucent + hairline
+            </Text>
+          </GlassCard>
+          <GlassCard variant="glassStrong" className="flex-1 gap-1">
+            <Text variant="title">Strong</Text>
+            <Text variant="caption" color="secondary">
+              Heavier fill
+            </Text>
+          </GlassCard>
+        </View>
+        <View className="flex-row gap-3">
+          <GlassCard variant="neon" hue="violet" className="flex-1 gap-1">
+            <Text variant="title">Neon violet</Text>
+            <Text variant="caption" color="secondary">
+              Hue border
+            </Text>
+          </GlassCard>
+          <GlassCard
+            variant="neon"
+            hue="gold"
+            withGlow
+            className="flex-1 gap-1"
+          >
+            <Text variant="title">Neon gold</Text>
+            <Text variant="caption" color="secondary">
+              Hue border + glow
+            </Text>
+          </GlassCard>
+        </View>
+      </Section>
+
+      {/* Neon tiles — quick-action grid */}
+      <Section title="Neon Tiles">
+        <View className="flex-row flex-wrap justify-between gap-y-4">
+          <NeonTile name="qr-code-outline" hue="blue" label="Digital ID" />
+          <NeonTile name="lock-closed-outline" hue="violet" label="Pre-Approve" />
+          <NeonTile name="document-text-outline" hue="cyan" label="Notice Board" />
+          <NeonTile name="calendar-outline" hue="gold" label="Events" />
+          <NeonTile name="construct-outline" hue="pink" label="Handyman" />
+          <NeonTile name="key-outline" hue="green" label="Rentals" />
+          <NeonTile name="sparkles-outline" hue="gold" label="Salon & Spa" />
+          <NeonTile name="cart-outline" hue="blue" label="Market" />
+        </View>
+      </Section>
 
       {/* Typography */}
       <Section title={t("showcase.typography")}>

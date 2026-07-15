@@ -7,13 +7,14 @@ import {
   Avatar,
   Badge,
   Card,
+  GlassCard,
   Icon,
   IconCircle,
   Screen,
   Text,
-  type IconCircleTone,
   type IconName,
 } from "@/components/ui";
+import { type NeonHue } from "@/theme";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { visitorPurposeIcon } from "@/utils/domain";
@@ -41,26 +42,27 @@ function Stat({ value, label, tone }: { value: number; label: string; tone: stri
 
 function QuickAction({
   icon,
-  tone,
+  hue,
   label,
   onPress,
 }: {
   icon: IconName;
-  tone: IconCircleTone;
+  hue: NeonHue;
   label: string;
   onPress: () => void;
 }) {
   return (
-    <Card
+    <GlassCard
       onPress={onPress}
+      variant="neon"
+      hue={hue}
       className="w-[47%] grow items-center gap-2 py-5"
-      variant="elevated"
     >
-      <IconCircle name={icon} tone={tone} />
-      <Text variant="subtitle" color="primary" align="center" numberOfLines={2}>
+      <IconCircle name={icon} hue={hue} />
+      <Text variant="subtitle" align="center" numberOfLines={2}>
         {label}
       </Text>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -154,13 +156,13 @@ export default function GuardDashboard() {
       <View className="flex-row flex-wrap gap-3">
         <QuickAction
           icon="person-add-outline"
-          tone="primary"
+          hue="green"
           label={t("guard.registerVisitor")}
           onPress={() => router.push("/(guard)/register")}
         />
         <QuickAction
           icon="qr-code-outline"
-          tone="accent"
+          hue="pink"
           label={t("guard.verifyPass")}
           onPress={() => router.push("/(guard)/verify")}
         />

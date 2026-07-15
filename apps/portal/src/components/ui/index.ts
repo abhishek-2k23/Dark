@@ -12,6 +12,18 @@ export {
   type ButtonSize,
 } from "./Button";
 export { Card, type CardProps, type CardVariant } from "./Card";
+export {
+  GlassCard,
+  type GlassCardProps,
+  type GlassCardVariant,
+} from "./GlassCard";
+export { GradientBorder, type GradientBorderProps } from "./GradientBorder";
+export {
+  AuroraBackground,
+  type AuroraBackgroundProps,
+  type AuroraVariant,
+} from "./AuroraBackground";
+export { NeonTile, type NeonTileProps } from "./NeonTile";
 export { Badge, type BadgeProps, type BadgeTone } from "./Badge";
 export { Input, type InputProps } from "./Input";
 export { PasswordInput, type PasswordInputProps } from "./PasswordInput";

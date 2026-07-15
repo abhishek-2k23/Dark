@@ -6,6 +6,7 @@ import { View } from "react-native";
 import {
   Button,
   Divider,
+  GlassCard,
   IconCircle,
   Input,
   Link,
@@ -72,7 +73,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <Screen scroll contentClassName="gap-6 py-6">
+    <Screen scroll aurora="hero" contentClassName="gap-6 py-6">
       {/* Brand */}
       <View className="items-center gap-3 pt-4">
         <IconCircle name="business" tone="primary" size={64} />
@@ -93,7 +94,7 @@ export default function LoginScreen() {
         </Text>
       </View>
 
-      <View className="gap-4">
+      <GlassCard variant="hero" padding="lg" className="gap-5">
         <Input
           label={t("auth.identifier")}
           leftIcon="person-outline"
@@ -113,17 +114,16 @@ export default function LoginScreen() {
           onSubmitEditing={onSubmit}
           returnKeyType="go"
         />
-      </View>
-
-      <Button
-        label={t("auth.logIn")}
-        variant="primary"
-        size="lg"
-        rightIcon="arrow-forward"
-        loading={login.isPending}
-        onPress={onSubmit}
-        fullWidth
-      />
+        <Button
+          label={t("auth.logIn")}
+          variant="primary"
+          size="lg"
+          rightIcon="arrow-forward"
+          loading={login.isPending}
+          onPress={onSubmit}
+          fullWidth
+        />
+      </GlassCard>
 
       {/* Divider */}
       <View className="flex-row items-center gap-3">

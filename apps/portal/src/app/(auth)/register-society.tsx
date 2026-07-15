@@ -85,7 +85,7 @@ export default function RegisterSocietyScreen() {
   };
 
   return (
-    <Screen scroll contentClassName="gap-6 py-6">
+    <Screen scroll aurora="hero" contentClassName="gap-6 py-6">
       <View className="items-center gap-3 pt-2">
         <IconCircle name="business" tone="primary" size={64} />
         <View className="items-center gap-1">

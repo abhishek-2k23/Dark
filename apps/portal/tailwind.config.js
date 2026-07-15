@@ -17,6 +17,20 @@ module.exports = {
           muted: withVar("--color-surface-muted"),
           elevated: withVar("--color-surface-elevated"),
         },
+        // Glass fill channels — always use with alpha (bg-glass/10, border-glass/10).
+        glass: {
+          DEFAULT: withVar("--color-glass"),
+          heavy: withVar("--color-glass-heavy"),
+        },
+        // Pastel-neon feature hues (see src/theme/hues.ts for the registry).
+        neon: {
+          blue: withVar("--color-neon-blue"),
+          violet: withVar("--color-neon-violet"),
+          gold: withVar("--color-neon-gold"),
+          green: withVar("--color-neon-green"),
+          pink: withVar("--color-neon-pink"),
+          cyan: withVar("--color-neon-cyan"),
+        },
         border: {
           DEFAULT: withVar("--color-border"),
           strong: withVar("--color-border-strong"),
@@ -67,12 +81,12 @@ module.exports = {
         display: ["Poppins_700Bold"],
       },
       borderRadius: {
-        sm: "5px",
-        md: "8px",
-        lg: "10px",
-        xl: "12px",
-        "2xl": "14px",
-        "3xl": "16px",
+        sm: "10px",
+        md: "14px",
+        lg: "16px",
+        xl: "20px",
+        "2xl": "24px",
+        "3xl": "28px",
       },
     },
   },

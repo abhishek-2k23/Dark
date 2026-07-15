@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
- * Semantic design tokens.
+ * Semantic design tokens — premium glass theme.
  *
  * Values are space-separated RGB channels so Tailwind's `<alpha-value>`
  * opacity modifier keeps working (see tailwind.config.js).
@@ -11,79 +11,111 @@
  * NativeWind drives `prefers-color-scheme` from its own runtime colorScheme,
  * so `colorScheme.set("dark" | "light" | "system")` flips these variables —
  * that's what powers the app's auto / light / dark modes.
+ *
+ * Glass conventions:
+ *  - `glass` is a fill CHANNEL — always use it with alpha (`bg-glass/10`,
+ *    `border-glass/10`). Dark scheme: white channel (luminous glass);
+ *    light scheme: white too (frosted white cards over a tinted canvas).
+ *  - `glass-heavy` is the near-opaque inner fill for neon-gradient-border
+ *    cards (`bg-glass-heavy/95`).
+ *  - `neon-*` are the feature accent hues (see src/theme/hues.ts).
  */
 @layer base {
   :root {
-    --color-background: 245 246 250; /* #F5F6FA app canvas */
-    --color-surface: 255 255 255; /* cards */
-    --color-surface-muted: 240 241 248; /* inputs, subtle fills */
+    /* ---- Frosted light scheme ---- */
+    --color-background: 240 243 250; /* #F0F3FA cool tinted canvas */
+    --color-surface: 255 255 255; /* opaque fallback cards */
+    --color-surface-muted: 243 245 251; /* inputs, subtle fills */
     --color-surface-elevated: 255 255 255;
 
-    --color-border: 226 228 240; /* #E2E4F0 hairlines */
-    --color-border-strong: 209 213 225;
+    --color-glass: 255 255 255; /* frosted fills via /60–80 */
+    --color-glass-heavy: 255 255 255; /* inner fill for neon cards */
 
-    --color-content: 26 29 46; /* #1A1D2E primary text */
-    --color-content-secondary: 107 114 128; /* #6B7280 muted */
-    --color-content-tertiary: 156 163 175; /* #9CA3AF placeholder */
+    --color-border: 224 228 242; /* #E0E4F2 hairlines */
+    --color-border-strong: 205 211 230;
+
+    --color-content: 23 26 43; /* #171A2B primary text */
+    --color-content-secondary: 100 108 130; /* muted */
+    --color-content-tertiary: 152 159 178; /* placeholder */
     --color-content-inverse: 255 255 255;
 
-    --color-primary: 30 58 138; /* #1E3A8A brand navy */
-    --color-primary-strong: 15 42 107; /* #0F2A6B deep navy (CTAs) */
-    --color-primary-soft: 232 234 251; /* #E8EAFB lavender surfaces/icons */
+    --color-primary: 37 99 235; /* #2563EB electric blue */
+    --color-primary-strong: 29 78 216; /* #1D4ED8 CTAs */
+    --color-primary-soft: 219 234 254; /* #DBEAFE washes */
     --color-on-primary: 255 255 255;
 
-    --color-success: 15 122 77; /* #0F7A4D approve/green */
-    --color-success-soft: 207 245 228; /* #CFF5E4 */
+    --color-success: 4 120 87; /* #047857 */
+    --color-success-soft: 209 250 229; /* #D1FAE5 */
     --color-on-success: 255 255 255;
 
-    --color-accent: 52 211 153; /* #34D399 mint */
-    --color-accent-strong: 5 95 70; /* #065F46 mint text */
+    --color-accent: 13 148 136; /* #0D9488 teal */
+    --color-accent-strong: 15 118 110;
 
-    --color-warning: 217 119 6; /* #D97706 */
-    --color-warning-soft: 254 243 214; /* #FEF3D6 */
+    --color-warning: 202 108 2; /* #CA6C02 */
+    --color-warning-soft: 254 243 214;
 
-    --color-danger: 220 38 38; /* #DC2626 deny */
-    --color-danger-soft: 252 233 233; /* #FCE9E9 */
+    --color-danger: 220 38 38; /* #DC2626 */
+    --color-danger-soft: 254 226 226;
 
-    --color-info: 37 52 140;
-    --color-peach-soft: 252 231 206; /* #FCE7CE */
+    --color-info: 37 99 235;
+    --color-peach-soft: 253 230 205;
+
+    /* Pastel-neon hues, deepened for AA contrast on light surfaces */
+    --color-neon-blue: 37 99 235; /* #2563EB */
+    --color-neon-violet: 124 58 237; /* #7C3AED */
+    --color-neon-gold: 202 108 2; /* #CA6C02 */
+    --color-neon-green: 5 150 105; /* #059669 */
+    --color-neon-pink: 219 39 119; /* #DB2777 */
+    --color-neon-cyan: 8 145 178; /* #0891B2 */
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --color-background: 14 17 23; /* #0E1117 */
-      --color-surface: 23 28 41; /* #171C29 */
-      --color-surface-muted: 32 38 54; /* #202636 */
-      --color-surface-elevated: 30 36 52;
+      /* ---- Neon glass dark scheme (flagship) ---- */
+      --color-background: 5 5 8; /* #050508 near-black canvas */
+      --color-surface: 17 17 26; /* #11111A opaque fallback cards */
+      --color-surface-muted: 24 24 36; /* #181824 inputs, subtle fills */
+      --color-surface-elevated: 22 22 34; /* #161622 sheets, menus */
 
-      --color-border: 44 50 66; /* #2C3242 */
-      --color-border-strong: 60 68 88;
+      --color-glass: 255 255 255; /* luminous fills via /5–12 */
+      --color-glass-heavy: 13 13 20; /* #0D0D14 inner fill for neon cards */
 
-      --color-content: 243 244 246; /* #F3F4F6 */
-      --color-content-secondary: 154 163 178; /* #9AA3B2 */
-      --color-content-tertiary: 107 114 128;
-      --color-content-inverse: 15 18 25;
+      --color-border: 42 44 62; /* ≈white/12 flattened, hairlines */
+      --color-border-strong: 62 66 92;
 
-      --color-primary: 120 148 240; /* #7894F0 brighter navy for contrast */
-      --color-primary-strong: 84 116 220; /* #5474DC */
-      --color-primary-soft: 30 40 70; /* #1E2846 */
-      --color-on-primary: 255 255 255;
+      --color-content: 245 245 250; /* #F5F5FA */
+      --color-content-secondary: 163 168 190; /* #A3A8BE */
+      --color-content-tertiary: 110 115 140; /* #6E738C */
+      --color-content-inverse: 10 10 16;
 
-      --color-success: 52 197 138; /* #34C58A */
-      --color-success-soft: 18 46 36; /* #122E24 */
-      --color-on-success: 255 255 255;
+      --color-primary: 96 165 250; /* #60A5FA electric blue */
+      --color-primary-strong: 59 130 246; /* #3B82F6 */
+      --color-primary-soft: 22 35 63; /* #16233F opaque wash */
+      --color-on-primary: 6 12 26; /* near-black on neon blue */
+
+      --color-success: 52 211 153; /* #34D399 neon green */
+      --color-success-soft: 8 44 32; /* #082C20 */
+      --color-on-success: 4 20 14;
 
       --color-accent: 52 211 153;
       --color-accent-strong: 110 231 183; /* #6EE7B7 */
 
-      --color-warning: 245 176 66; /* #F5B042 */
-      --color-warning-soft: 58 44 20;
+      --color-warning: 251 191 36; /* #FBBF24 neon gold */
+      --color-warning-soft: 56 42 12;
 
-      --color-danger: 248 113 113; /* #F87171 */
-      --color-danger-soft: 60 30 30;
+      --color-danger: 251 113 133; /* #FB7185 neon rose */
+      --color-danger-soft: 58 22 30;
 
-      --color-info: 120 148 240;
-      --color-peach-soft: 58 44 28;
+      --color-info: 96 165 250;
+      --color-peach-soft: 56 42 26;
+
+      /* Pastel-neon hues (legible on #050508) */
+      --color-neon-blue: 96 165 250; /* #60A5FA */
+      --color-neon-violet: 167 139 250; /* #A78BFA */
+      --color-neon-gold: 251 191 36; /* #FBBF24 */
+      --color-neon-green: 52 211 153; /* #34D399 */
+      --color-neon-pink: 244 114 182; /* #F472B6 */
+      --color-neon-cyan: 34 211 238; /* #22D3EE */
     }
   }
 }

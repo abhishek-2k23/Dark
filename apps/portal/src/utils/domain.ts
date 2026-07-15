@@ -1,5 +1,6 @@
 import type { BadgeTone } from "@/components/ui";
 import type { IconName } from "@/components/ui";
+import type { NeonHue } from "@/theme";
 
 /**
  * Domain enum → presentation maps shared across the resident screens.
@@ -74,6 +75,14 @@ export const noticeCategoryCard: Record<string, string> = {
   EVENT: "bg-success",
   EMERGENCY: "bg-danger",
   GENERAL: "bg-primary",
+};
+
+/** Neon accent hue per notice category (glass carousel cards). */
+export const noticeCategoryHue: Record<string, NeonHue> = {
+  MAINTENANCE: "blue",
+  EVENT: "green",
+  EMERGENCY: "pink",
+  GENERAL: "cyan",
 };
 
 export const serviceCategoryIcon: Record<string, IconName> = {

@@ -8,17 +8,18 @@ import {
   Badge,
   Button,
   Card,
+  GlassCard,
   Icon,
   IconCircle,
+  NeonTile,
   Screen,
   Text,
-  type IconCircleTone,
-  type IconName,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
+import { useTheme } from "@/theme";
 import { useUIStore } from "@/stores/uiStore";
-import { noticeCategoryCard, noticeCategoryIcon } from "@/utils/domain";
+import { noticeCategoryHue, noticeCategoryIcon } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
 function greetingKey(): string {
@@ -28,30 +29,6 @@ function greetingKey(): string {
   return "dashboard.goodEvening";
 }
 
-function QuickAction({
-  icon,
-  tone,
-  label,
-  onPress,
-}: {
-  icon: IconName;
-  tone: IconCircleTone;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <Card
-      onPress={onPress}
-      className="w-[47%] grow items-center gap-2 py-5"
-      variant="elevated"
-    >
-      <IconCircle name={icon} tone={tone} />
-      <Text variant="subtitle" color="primary" align="center" numberOfLines={2}>
-        {label}
-      </Text>
-    </Card>
-  );
-}
 
 export default function ResidentDashboard() {
   const { t } = useTranslation();
@@ -96,6 +73,7 @@ export default function ResidentDashboard() {
     onError: (e) => showToast(e.message, "error"),
   });
 
+  const { colors } = useTheme();
   const flat = me.data?.residentProfile;
   const firstPending = pending.data?.[0];
   const activePoll = polls.data?.items[0];
@@ -127,7 +105,12 @@ export default function ResidentDashboard() {
         <Pressable
           onPress={() => router.push("/(resident)/notifications")}
           hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-full bg-surface active:opacity-70"
+          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+          style={{
+            backgroundColor: colors.glassFill,
+            borderWidth: 1,
+            borderColor: colors.glassBorder,
+          }}
         >
           <Icon name="notifications-outline" size={22} color="content" />
           {unreadCount > 0 && (
@@ -138,7 +121,7 @@ export default function ResidentDashboard() {
 
       {/* Pending visitor banner */}
       {firstPending && (
-        <Card className="gap-4 border border-warning/30 bg-warning-soft">
+        <GlassCard variant="neon" hue="gold" withGlow className="gap-4">
           <Pressable
             className="flex-row items-start gap-3 active:opacity-80"
             onPress={() => router.push(`/(resident)/visitors/${firstPending.id}`)}
@@ -170,34 +153,34 @@ export default function ResidentDashboard() {
               onPress={() => deny.mutate({ visitorId: firstPending.id })}
             />
           </View>
-        </Card>
+        </GlassCard>
       )}
 
       {/* Quick actions */}
       <View className="gap-3">
         <SectionHeader title={t("dashboard.quickActions")} />
-        <View className="flex-row flex-wrap gap-3">
-          <QuickAction
-            icon="person-add-outline"
-            tone="primary"
+        <View className="flex-row justify-between">
+          <NeonTile
+            name="person-add-outline"
+            hue="blue"
             label={t("dashboard.preApproveGuest")}
             onPress={() => router.push("/(resident)/visitors/pre-approve")}
           />
-          <QuickAction
-            icon="construct-outline"
-            tone="accent"
+          <NeonTile
+            name="construct-outline"
+            hue="pink"
             label={t("dashboard.raiseTicket")}
             onPress={() => router.push("/(resident)/tickets/create")}
           />
-          <QuickAction
-            icon="calendar-outline"
-            tone="peach"
+          <NeonTile
+            name="calendar-outline"
+            hue="green"
             label={t("dashboard.bookAmenity")}
             onPress={() => router.push("/(resident)/amenities")}
           />
-          <QuickAction
-            icon="wallet-outline"
-            tone="primary"
+          <NeonTile
+            name="wallet-outline"
+            hue="gold"
             label={t("dashboard.payDues")}
             onPress={() => router.push("/(resident)/(tabs)/payments")}
           />
@@ -216,36 +199,43 @@ export default function ResidentDashboard() {
           contentContainerClassName="gap-3"
           className="-mx-5 px-5"
         >
-          {notices.data?.items.map((n) => (
-            <Card
-              key={n.id}
-              onPress={() => router.push(`/(resident)/notices/${n.id}`)}
-              padding="lg"
-              className={`w-72 gap-1 ${noticeCategoryCard[n.category] ?? "bg-primary"}`}
-            >
-              <View className="flex-row items-center gap-1.5">
-                <Icon
-                  name={noticeCategoryIcon[n.category] ?? "megaphone-outline"}
-                  size={14}
-                  color="onPrimary"
-                />
-                <Text variant="overline" color="onPrimary">
-                  {t(`enums.noticeCategory.${n.category}`)}
-                </Text>
-              </View>
-              <Text variant="h3" color="onPrimary" numberOfLines={2}>
-                {n.title}
-              </Text>
-              <Text
-                variant="bodySmall"
-                color="onPrimary"
-                className="opacity-80"
-                numberOfLines={1}
+          {notices.data?.items.map((n) => {
+            const hue = noticeCategoryHue[n.category] ?? "cyan";
+            return (
+              <GlassCard
+                key={n.id}
+                variant="neon"
+                hue={hue}
+                onPress={() => router.push(`/(resident)/notices/${n.id}`)}
+                padding="lg"
+                className="w-72 gap-1"
               >
-                {formatDateTime(n.scheduledAt ?? n.createdAt)}
-              </Text>
-            </Card>
-          ))}
+                <View className="flex-row items-center gap-1.5">
+                  <Icon
+                    name={noticeCategoryIcon[n.category] ?? "megaphone-outline"}
+                    size={14}
+                    color={colors.neon[hue]}
+                  />
+                  <Text
+                    variant="overline"
+                    style={{ color: colors.neon[hue] }}
+                  >
+                    {t(`enums.noticeCategory.${n.category}`)}
+                  </Text>
+                </View>
+                <Text variant="h3" numberOfLines={2}>
+                  {n.title}
+                </Text>
+                <Text
+                  variant="bodySmall"
+                  color="secondary"
+                  numberOfLines={1}
+                >
+                  {formatDateTime(n.scheduledAt ?? n.createdAt)}
+                </Text>
+              </GlassCard>
+            );
+          })}
           {notices.data && notices.data.items.length === 0 && (
             <Card variant="outlined" className="w-72 items-center py-6">
               <Text variant="bodySmall" color="secondary">

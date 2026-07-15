@@ -2,24 +2,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
 
-import { fontFamily, useTheme } from "@/theme";
+import { GlassTabBar } from "@/components/navigation/GlassTabBar";
 
 /** Resident bottom tabs: Home · Visitors · Community · Payments · Profile. */
 export default function ResidentTabs() {
   const { t } = useTranslation();
-  const { colors } = useTheme();
 
   return (
     <Tabs
+      tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.contentSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-        },
-        tabBarLabelStyle: { fontFamily: fontFamily.bodySemibold, fontSize: 11 },
+        sceneStyle: { backgroundColor: "transparent" },
       }}
     >
       <Tabs.Screen

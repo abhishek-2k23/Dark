@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
   });
 
   return (
-    <Screen scroll contentClassName="gap-5 pb-6">
+    <Screen scroll aurora="hero" contentClassName="gap-5 pb-6">
       <StackHeader title={t("reset.title")} />
 
       {step === "request" ? (

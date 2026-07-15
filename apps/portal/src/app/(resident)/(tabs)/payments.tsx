@@ -7,6 +7,7 @@ import {
   Badge,
   Button,
   Card,
+  GlassCard,
   Icon,
   IconCircle,
   Screen,
@@ -62,8 +63,23 @@ function DuesList() {
       />
     );
 
+  const outstanding = items
+    .filter((d) => d.status === "PENDING" || d.status === "OVERDUE")
+    .reduce((sum, d) => sum + Number(d.amount), 0);
+
   return (
     <View className="gap-3">
+      {outstanding > 0 && (
+        <GlassCard variant="neon" hue="gold" withGlow padding="lg" className="gap-1">
+          <Text variant="overline" color="secondary">
+            {t("payments.dues")}
+          </Text>
+          <Text variant="h1">{formatMoney(outstanding)}</Text>
+          <Text variant="bodySmall" color="secondary">
+            {t("payments.subtitle")}
+          </Text>
+        </GlassCard>
+      )}
       {items.map((d) => {
         const payable = d.status === "PENDING" || d.status === "OVERDUE";
         const paying = payingId === d.id;

@@ -3,23 +3,13 @@ import {
   View,
   type PressableProps,
   type ViewProps,
+  type ViewStyle,
 } from "react-native";
 
-import { elevation as elevationTokens, type ElevationToken } from "@/theme";
+import { useTheme } from "@/theme";
 import { cn } from "@/utils/cn";
 
 export type CardVariant = "elevated" | "outlined" | "filled" | "tonal";
-
-const VARIANTS: Record<
-  CardVariant,
-  { className: string; elevation: ElevationToken }
-> = {
-  elevated: { className: "bg-surface", elevation: "md" },
-  outlined: { className: "bg-surface border border-border", elevation: "none" },
-  filled: { className: "bg-surface-muted", elevation: "none" },
-  // tonal defaults to a soft primary wash; override bg via className for others.
-  tonal: { className: "bg-primary-soft", elevation: "none" },
-};
 
 const PADDING = {
   none: "",
@@ -42,7 +32,13 @@ export interface CardProps extends BaseProps, Omit<ViewProps, "className"> {
   pressableProps?: Omit<PressableProps, "onPress" | "children" | "className">;
 }
 
-/** A rounded surface. Pass `onPress` to make it tappable. */
+/**
+ * A rounded glass surface. The legacy variants are remapped onto the glass
+ * language so every existing call site re-skins automatically:
+ * elevated/outlined → translucent glass + hairline, filled → stronger glass,
+ * tonal → soft primary wash. Pass `onPress` to make it tappable.
+ * For neon/gradient borders reach for `GlassCard` instead.
+ */
 export function Card({
   variant = "elevated",
   padding = "md",
@@ -53,15 +49,29 @@ export function Card({
   children,
   ...rest
 }: CardProps) {
-  const v = VARIANTS[variant];
+  const { colors } = useTheme();
+
+  const surface: ViewStyle =
+    variant === "tonal"
+      ? {
+          borderWidth: 1,
+          backgroundColor: colors.primarySoft,
+          borderColor: colors.glassBorder,
+        }
+      : {
+          borderWidth: 1,
+          backgroundColor:
+            variant === "filled" ? colors.glassFillStrong : colors.glassFill,
+          borderColor: colors.glassBorder,
+        };
+
   const classes = cn(
-    "rounded-2xl",
-    v.className,
+    "overflow-hidden rounded-2xl",
     PADDING[padding],
     onPress && "active:opacity-90",
     className,
   );
-  const mergedStyle = [elevationTokens[v.elevation], style];
+  const mergedStyle = [surface, style];
 
   if (onPress) {
     return (

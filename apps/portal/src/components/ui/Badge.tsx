@@ -12,9 +12,14 @@ export type BadgeTone =
   | "danger"
   | "mint";
 
+/** Theme color keys that resolve to plain color strings. */
+type StringColorKey = {
+  [K in keyof ThemeColors]: ThemeColors[K] extends string ? K : never;
+}[keyof ThemeColors];
+
 const TONES: Record<
   BadgeTone,
-  { bg: string; fg: TextColor; dot: keyof ThemeColors }
+  { bg: string; fg: TextColor; dot: StringColorKey }
 > = {
   neutral: { bg: "bg-surface-muted", fg: "secondary", dot: "contentSecondary" },
   primary: { bg: "bg-primary-soft", fg: "primary", dot: "primary" },

@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: "com.prangan.app",
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#050508",
     },
     predictiveBackGestureEnabled: false,
   },
@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#208AEF",
+        backgroundColor: "#050508",
         image: "./assets/images/splash-icon.png",
         imageWidth: 76,
       },

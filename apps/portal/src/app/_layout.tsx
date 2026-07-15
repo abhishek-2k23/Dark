@@ -15,6 +15,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
+import * as SystemUI from "expo-system-ui";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -35,6 +36,27 @@ SplashScreen.preventAutoHideAsync();
 function ThemedStatusBar() {
   const { scheme } = useTheme();
   return <StatusBar style={scheme === "dark" ? "light" : "dark"} />;
+}
+
+/**
+ * Themed navigator: paints the native window and every stack scene with the
+ * theme background so route transitions never flash white.
+ */
+function ThemedStack() {
+  const { colors } = useTheme();
+
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    />
+  );
 }
 
 export default function RootLayout() {
@@ -75,7 +97,7 @@ export default function RootLayout() {
             <LanguageProvider>
               <ThemedStatusBar />
               <ErrorBoundary>
-                <Stack screenOptions={{ headerShown: false }} />
+                <ThemedStack />
               </ErrorBoundary>
               <ToastHost />
             </LanguageProvider>

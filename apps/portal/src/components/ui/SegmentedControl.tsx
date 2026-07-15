@@ -1,7 +1,8 @@
 import { Pressable, View } from "react-native";
 
-import { elevation } from "@/theme";
+import { useTheme } from "@/theme";
 import { cn } from "@/utils/cn";
+import { withAlpha } from "@/utils/color";
 import { Text } from "./Text";
 
 export interface SegmentOption<T extends string> {
@@ -26,12 +27,16 @@ export function SegmentedControl<T extends string>({
   onChange,
   className,
 }: SegmentedControlProps<T>) {
+  const { colors } = useTheme();
+
   return (
     <View
-      className={cn(
-        "flex-row rounded-[9px] bg-surface-muted p-1",
-        className,
-      )}
+      className={cn("flex-row rounded-full p-1", className)}
+      style={{
+        backgroundColor: colors.glassFill,
+        borderWidth: 1,
+        borderColor: colors.glassBorder,
+      }}
     >
       {options.map((opt) => {
         const active = opt.value === value;
@@ -42,10 +47,18 @@ export function SegmentedControl<T extends string>({
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
             className={cn(
-              "flex-1 items-center justify-center rounded-[7px] px-3 py-2.5",
-              active ? "bg-surface" : "active:opacity-70",
+              "flex-1 items-center justify-center rounded-full px-3 py-2.5",
+              !active && "active:opacity-70",
             )}
-            style={active ? elevation.sm : undefined}
+            style={
+              active
+                ? {
+                    backgroundColor: withAlpha(colors.primary, 0.16),
+                    borderWidth: 1,
+                    borderColor: withAlpha(colors.primary, 0.4),
+                  }
+                : undefined
+            }
           >
             <Text
               variant="subtitle"

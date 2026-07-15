@@ -45,7 +45,7 @@ export default function OtpScreen() {
   };
 
   return (
-    <Screen scroll contentClassName="gap-6 py-6">
+    <Screen scroll aurora="hero" contentClassName="gap-6 py-6">
       <View className="items-center pt-6">
         <IconCircle name="mail-unread-outline" tone="primary" size={64} />
       </View>
