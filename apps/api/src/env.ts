@@ -11,11 +11,11 @@ const envSchema = z.object({
    */
   ALLOWED_ORIGINS: z.string().optional(),
   /** Max requests per window on sensitive auth endpoints (login/signup/etc.). */
-  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(10),
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
   /** Rate-limit window for auth endpoints, in minutes. */
-  AUTH_RATE_LIMIT_WINDOW_MIN: z.coerce.number().int().positive().default(15),
+  AUTH_RATE_LIMIT_WINDOW_MIN: z.coerce.number().int().positive().default(50),
   /** Minutes before an unanswered PENDING visitor request auto-EXPIREs. */
-  VISITOR_PENDING_TTL_MIN: z.coerce.number().int().positive().default(15),
+  VISITOR_PENDING_TTL_MIN: z.coerce.number().int().positive().default(50),
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {
