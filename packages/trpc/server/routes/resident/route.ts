@@ -1,6 +1,6 @@
 import { residentService } from "@repo/services";
 
-import { z } from "../../schema";
+import { phoneSchema, z } from "../../schema";
 import { adminProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -45,7 +45,7 @@ const ResidentModel = z
 const InviteResidentInput = z.object({
   flatId: z.string().describe("Flat to link the future resident to"),
   email: z.email().describe("Invitee email (this or phone required)").optional(),
-  phone: z.string().min(8).describe("Invitee phone (this or email required)").optional(),
+  phone: phoneSchema.describe("Invitee's 10-digit phone (this or email required)").optional(),
 });
 
 const ListResidentsInput = z.object({

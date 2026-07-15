@@ -5,7 +5,15 @@ import { Pressable, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 
 import { StackHeader } from "@/components/StackHeader";
-import { Button, Card, IconCircle, Input, Screen, Text } from "@/components/ui";
+import {
+  Button,
+  Card,
+  IconCircle,
+  Input,
+  PhoneInput,
+  Screen,
+  Text,
+} from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 import { formatDateTime } from "@/utils/format";
@@ -141,11 +149,10 @@ export default function PreApproveScreen() {
           value={guestName}
           onChangeText={setGuestName}
         />
-        <Input
+        <PhoneInput
           label={t("visitors.phone")}
           leftIcon="call-outline"
-          placeholder="+91 98765 43210"
-          keyboardType="phone-pad"
+          placeholder="9876543210"
           value={guestPhone}
           onChangeText={setGuestPhone}
         />

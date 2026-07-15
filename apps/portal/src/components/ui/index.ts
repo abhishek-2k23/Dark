@@ -14,6 +14,8 @@ export {
 export { Card, type CardProps, type CardVariant } from "./Card";
 export { Badge, type BadgeProps, type BadgeTone } from "./Badge";
 export { Input, type InputProps } from "./Input";
+export { PasswordInput, type PasswordInputProps } from "./PasswordInput";
+export { PhoneInput, type PhoneInputProps } from "./PhoneInput";
 export { Avatar, type AvatarProps } from "./Avatar";
 export { Divider, type DividerProps } from "./Divider";
 export { Link, type LinkProps } from "./Link";

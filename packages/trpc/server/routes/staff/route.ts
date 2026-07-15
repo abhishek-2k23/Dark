@@ -1,6 +1,6 @@
 import { staffService } from "@repo/services";
 
-import { z, zodUndefinedModel } from "../../schema";
+import { phoneSchema, z, zodUndefinedModel } from "../../schema";
 import { adminProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -31,7 +31,7 @@ const StaffModel = z
 const CreateStaffInput = z.object({
   name: z.string().min(1).describe("Full name of the staff member"),
   email: z.email().describe("Email (this or phone required)").optional(),
-  phone: z.string().min(8).describe("Phone with country code (this or email required)").optional(),
+  phone: phoneSchema.describe("10-digit phone (this or email required)").optional(),
   temporaryPassword: z
     .string()
     .min(8)

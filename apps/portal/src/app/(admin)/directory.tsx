@@ -11,6 +11,7 @@ import {
   Icon,
   IconCircle,
   Input,
+  PhoneInput,
   Screen,
   Text,
 } from "@/components/ui";
@@ -46,10 +47,10 @@ function AddProviderForm({ onDone }: { onDone: () => void }) {
         value={name}
         onChangeText={setName}
       />
-      <Input
+      <PhoneInput
         label={t("directory.phoneLabel")}
         leftIcon="call-outline"
-        keyboardType="phone-pad"
+        placeholder="9876543210"
         value={phone}
         onChangeText={setPhone}
       />

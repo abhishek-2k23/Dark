@@ -15,19 +15,63 @@ export default function PollDetail() {
   const showToast = useUIStore((s) => s.showToast);
   const utils = trpc.useUtils();
 
-  const results = trpc.poll.results.useQuery(
-    { pollId: id ?? "" },
-    { enabled: !!id },
-  );
-  const list = trpc.poll.list.useQuery({ state: "ALL", limit: 100 });
+  const pollInput = { pollId: id ?? "" };
+  const listInput = { state: "ALL" as const, limit: 100 };
+
+  const results = trpc.poll.results.useQuery(pollInput, { enabled: !!id });
+  const list = trpc.poll.list.useQuery(listInput);
   const poll = list.data?.items.find((p) => p.id === id);
 
+  // Optimistically flip to the results view and bump the tally the instant the
+  // resident taps an option, so voting feels immediate instead of waiting on the
+  // round-trip. onSettled reconciles with the server; onError rolls back.
   const vote = trpc.poll.vote.useMutation({
-    onSuccess: () => {
-      showToast(t("polls.votedToast"), "success");
-      void utils.poll.invalidate();
+    onMutate: async ({ optionId }) => {
+      await Promise.all([
+        utils.poll.list.cancel(listInput),
+        utils.poll.results.cancel(pollInput),
+      ]);
+      const prevList = utils.poll.list.getData(listInput);
+      const prevResults = utils.poll.results.getData(pollInput);
+
+      utils.poll.list.setData(listInput, (old) =>
+        old
+          ? {
+              ...old,
+              items: old.items.map((p) =>
+                p.id === id
+                  ? { ...p, myOptionIds: [optionId], totalVotes: p.totalVotes + 1 }
+                  : p,
+              ),
+            }
+          : old,
+      );
+      utils.poll.results.setData(pollInput, (old) => {
+        if (!old) return old;
+        const totalVotes = old.totalVotes + 1;
+        return {
+          ...old,
+          totalVotes,
+          options: old.options.map((o) => {
+            const votes = o.id === optionId ? o.votes + 1 : o.votes;
+            return {
+              ...o,
+              votes,
+              percentage: Math.round((votes / totalVotes) * 100),
+            };
+          }),
+        };
+      });
+
+      return { prevList, prevResults };
     },
-    onError: (e) => showToast(e.message, "error"),
+    onError: (e, _vars, ctx) => {
+      if (ctx?.prevList) utils.poll.list.setData(listInput, ctx.prevList);
+      if (ctx?.prevResults) utils.poll.results.setData(pollInput, ctx.prevResults);
+      showToast(e.message, "error");
+    },
+    onSuccess: () => showToast(t("polls.votedToast"), "success"),
+    onSettled: () => void utils.poll.invalidate(),
   });
 
   const hasVoted = (poll?.myOptionIds.length ?? 0) > 0;

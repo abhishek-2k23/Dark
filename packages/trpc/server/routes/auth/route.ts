@@ -1,6 +1,6 @@
 import { authService } from "@repo/services";
 
-import { z, zodUndefinedModel } from "../../schema";
+import { phoneSchema, z, zodUndefinedModel } from "../../schema";
 import { publicProcedure, protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -75,10 +75,8 @@ const LoginResultModel = z
 const SignupInput = z.object({
   name: z.string().min(1).describe("Full name of the new resident"),
   email: z.email().describe("Email address (this or phone required)").optional(),
-  phone: z
-    .string()
-    .min(8)
-    .describe("Phone number with country code (this or email required)")
+  phone: phoneSchema
+    .describe("10-digit phone number (this or email required)")
     .optional(),
   password: z.string().min(8).describe("Password, minimum 8 characters"),
 });
@@ -102,10 +100,8 @@ const RegisterSocietyInput = z.object({
     .object({
       name: z.string().min(1).describe("Full name of the founding admin"),
       email: z.email().describe("Admin email (this or phone required)").optional(),
-      phone: z
-        .string()
-        .min(8)
-        .describe("Admin phone with country code (this or email required)")
+      phone: phoneSchema
+        .describe("Admin's 10-digit phone number (this or email required)")
         .optional(),
       password: z.string().min(8).describe("Admin password, minimum 8 characters"),
       designation: z

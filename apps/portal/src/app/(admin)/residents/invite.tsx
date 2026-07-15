@@ -5,7 +5,7 @@ import { Pressable, View } from "react-native";
 
 import { Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
-import { Button, Card, Input, Screen, Text } from "@/components/ui";
+import { Button, Card, Input, PhoneInput, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -123,12 +123,11 @@ export default function InviteResident() {
           value={email}
           onChangeText={setEmail}
         />
-        <Input
+        <PhoneInput
           label={t("signup.phone")}
           labelHint={t("signup.oneRequired")}
           leftIcon="call-outline"
-          placeholder="+91 98765 43210"
-          keyboardType="phone-pad"
+          placeholder="9876543210"
           value={phone}
           onChangeText={setPhone}
         />

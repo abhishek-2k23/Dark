@@ -1,15 +1,15 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 
 import {
   Button,
   Divider,
-  Icon,
   IconCircle,
   Input,
   Link,
+  PasswordInput,
   Screen,
   Text,
 } from "@/components/ui";
@@ -27,7 +27,6 @@ export default function LoginScreen() {
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   const login = trpc.auth.login.useMutation({
     onSuccess: async (res) => {
@@ -105,29 +104,14 @@ export default function LoginScreen() {
           value={identifier}
           onChangeText={setIdentifier}
         />
-        <Input
+        <PasswordInput
           label={t("auth.password")}
           leftIcon="lock-closed-outline"
           placeholder={t("auth.passwordPlaceholder")}
-          secureTextEntry={!showPassword}
-          autoCapitalize="none"
           value={password}
           onChangeText={setPassword}
           onSubmitEditing={onSubmit}
           returnKeyType="go"
-          rightSlot={
-            <Pressable
-              onPress={() => setShowPassword((v) => !v)}
-              hitSlop={8}
-              accessibilityRole="button"
-            >
-              <Icon
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color="tertiary"
-              />
-            </Pressable>
-          }
         />
       </View>
 

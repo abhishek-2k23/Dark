@@ -4,7 +4,16 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { StackHeader } from "@/components/StackHeader";
-import { Button, Card, Icon, Input, Screen, Text } from "@/components/ui";
+import {
+  Button,
+  Card,
+  Icon,
+  Input,
+  PasswordInput,
+  PhoneInput,
+  Screen,
+  Text,
+} from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { toErrorMessage } from "@/utils/errors";
 import { useAuthStore } from "@/stores/authStore";
@@ -74,21 +83,18 @@ export default function SignupScreen() {
           value={email}
           onChangeText={setEmail}
         />
-        <Input
+        <PhoneInput
           label={t("signup.phone")}
           labelHint={t("signup.oneRequired")}
           leftIcon="call-outline"
-          placeholder="+91 98765 43210"
-          keyboardType="phone-pad"
+          placeholder="9876543210"
           value={phone}
           onChangeText={setPhone}
         />
-        <Input
+        <PasswordInput
           label={t("auth.password")}
           leftIcon="lock-closed-outline"
           placeholder={t("signup.passwordHint")}
-          secureTextEntry
-          autoCapitalize="none"
           value={password}
           onChangeText={setPassword}
           helperText={t("signup.passwordHint")}

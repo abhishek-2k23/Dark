@@ -4,7 +4,15 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { StackHeader } from "@/components/StackHeader";
-import { Button, Card, Icon, Input, Screen, Text } from "@/components/ui";
+import {
+  Button,
+  Card,
+  Icon,
+  Input,
+  PasswordInput,
+  Screen,
+  Text,
+} from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { toErrorMessage } from "@/utils/errors";
 import { useUIStore } from "@/stores/uiStore";
@@ -89,12 +97,10 @@ export default function ForgotPasswordScreen() {
               value={token}
               onChangeText={setToken}
             />
-            <Input
+            <PasswordInput
               label={t("reset.newPassword")}
               leftIcon="lock-closed-outline"
               placeholder={t("signup.passwordHint")}
-              secureTextEntry
-              autoCapitalize="none"
               value={newPassword}
               onChangeText={setNewPassword}
             />

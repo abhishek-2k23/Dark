@@ -1,6 +1,6 @@
 import { visitorService, preApprovalService } from "@repo/services";
 
-import { z, zodUndefinedModel } from "../../schema";
+import { phoneSchema, z, zodUndefinedModel } from "../../schema";
 import { guardProcedure, protectedProcedure, residentProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -84,7 +84,7 @@ const PreApprovalModel = z
 
 const RegisterVisitorInput = z.object({
   name: z.string().min(1).describe("Visitor's full name"),
-  phone: z.string().min(8).describe("Visitor phone number, with country code"),
+  phone: phoneSchema.describe("Visitor's 10-digit phone number"),
   purpose: VisitorPurposeEnum,
   flatId: z.string().describe("Target flat the visitor is heading to"),
   photoUrl: z.url().describe("Photo URL of the visitor (Cloudinary, Phase 9)").optional(),
@@ -111,7 +111,7 @@ const HistoryInput = z.object({
 
 const CreatePreApprovalInput = z.object({
   guestName: z.string().min(1).describe("Expected guest's full name"),
-  guestPhone: z.string().min(8).describe("Expected guest's phone, with country code"),
+  guestPhone: phoneSchema.describe("Expected guest's 10-digit phone"),
   validFrom: z.iso.datetime().describe("ISO start of the validity window"),
   validTo: z.iso.datetime().describe("ISO end of the validity window"),
   vehicleNumber: z.string().describe("Expected vehicle number, if known").optional(),

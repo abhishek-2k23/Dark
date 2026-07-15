@@ -1,6 +1,6 @@
 import { directoryService } from "@repo/services";
 
-import { z } from "../../schema";
+import { phoneSchema, z } from "../../schema";
 import { adminProcedure, protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -24,7 +24,7 @@ const ServiceProviderModel = z
 const CreateProviderInput = z.object({
   name: z.string().min(1).describe("Full name"),
   category: ServiceCategoryEnum,
-  phone: z.string().min(8).describe("Contact phone number"),
+  phone: phoneSchema.describe("Contact's 10-digit phone number"),
   photoUrl: z.url().describe("Photo URL (Cloudinary, Phase 9)").optional(),
   isVerified: z.boolean().describe("Mark as admin-verified (default false)").optional(),
 });
@@ -33,7 +33,7 @@ const UpdateProviderInput = z.object({
   serviceProviderId: z.string().describe("Id of the provider to update"),
   name: z.string().min(1).describe("New name").optional(),
   category: ServiceCategoryEnum.optional(),
-  phone: z.string().min(8).describe("New phone").optional(),
+  phone: phoneSchema.describe("New 10-digit phone").optional(),
   photoUrl: z.url().describe("New photo URL").optional(),
   isVerified: z.boolean().describe("New verification state").optional(),
 });

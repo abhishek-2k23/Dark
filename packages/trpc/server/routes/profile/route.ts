@@ -1,6 +1,6 @@
 import { profileService } from "@repo/services";
 
-import { z, zodUndefinedModel } from "../../schema";
+import { phoneSchema, z, zodUndefinedModel } from "../../schema";
 import { protectedProcedure, residentProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -86,7 +86,7 @@ const UpdateProfileInput = z.object({
   name: z.string().min(1).describe("New display name").optional(),
   avatarUrl: z.url().describe("New profile photo URL (Cloudinary, Phase 9)").optional(),
   emergencyContactName: z.string().min(1).describe("Emergency contact name").optional(),
-  emergencyContactPhone: z.string().min(8).describe("Emergency contact phone").optional(),
+  emergencyContactPhone: phoneSchema.describe("Emergency contact's 10-digit phone").optional(),
 });
 
 const AddFamilyMemberInput = z.object({

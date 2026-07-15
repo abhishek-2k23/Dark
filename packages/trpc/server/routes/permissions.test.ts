@@ -77,7 +77,7 @@ const adminOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   caller.amenity.create({ name: "X" }),
   caller.amenityBooking.calendar({ amenityId: "x" }),
   caller.due.generateMonthly({ month: 1, year: 2030, amount: 100 }),
-  caller.serviceProvider.create({ name: "X", category: "OTHER", phone: "+910000000000" }),
+  caller.serviceProvider.create({ name: "X", category: "OTHER", phone: "9000000000" }),
   caller.serviceProvider.delete({ serviceProviderId: "x" }),
 ];
 
@@ -91,7 +91,7 @@ const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   caller.visitor.listPending(),
   caller.guestPreApproval.create({
     guestName: "X",
-    guestPhone: "+910000000000",
+    guestPhone: "9000000000",
     validFrom: new Date().toISOString(),
     validTo: new Date(Date.now() + 3600_000).toISOString(),
   }),
@@ -112,7 +112,7 @@ const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
 const guardOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   caller.visitor.register({
     name: "X",
-    phone: "+910000000000",
+    phone: "9000000000",
     purpose: "GUEST",
     flatId: "x",
   }),

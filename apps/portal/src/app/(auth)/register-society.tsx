@@ -9,6 +9,8 @@ import {
   IconCircle,
   Input,
   Link,
+  PasswordInput,
+  PhoneInput,
   Screen,
   Text,
 } from "@/components/ui";
@@ -158,21 +160,17 @@ export default function RegisterSocietyScreen() {
           value={email}
           onChangeText={setEmail}
         />
-        <Input
+        <PhoneInput
           label={t("auth.mobileNumber")}
           leftIcon="call-outline"
-          placeholder="+91…"
-          autoCapitalize="none"
-          keyboardType="phone-pad"
+          placeholder="9876543210"
           value={phone}
           onChangeText={setPhone}
         />
-        <Input
+        <PasswordInput
           label={t("auth.password")}
           leftIcon="lock-closed-outline"
           placeholder={t("auth.passwordPlaceholder")}
-          secureTextEntry
-          autoCapitalize="none"
           value={password}
           onChangeText={setPassword}
         />

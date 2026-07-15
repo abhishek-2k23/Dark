@@ -8,6 +8,8 @@ import {
   Button,
   Card,
   Input,
+  PasswordInput,
+  PhoneInput,
   Screen,
   SegmentedControl,
   Text,
@@ -104,20 +106,18 @@ export default function CreateStaff() {
           value={email}
           onChangeText={setEmail}
         />
-        <Input
+        <PhoneInput
           label={t("signup.phone")}
           labelHint={t("signup.oneRequired")}
           leftIcon="call-outline"
-          placeholder="+91 98765 43210"
-          keyboardType="phone-pad"
+          placeholder="9876543210"
           value={phone}
           onChangeText={setPhone}
         />
-        <Input
+        <PasswordInput
           label={t("admin.tempPassword")}
           leftIcon="key-outline"
           helperText={t("admin.tempPasswordHint")}
-          secureTextEntry
           value={password}
           onChangeText={setPassword}
         />

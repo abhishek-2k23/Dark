@@ -4,7 +4,15 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { StackHeader } from "@/components/StackHeader";
-import { Avatar, Button, Input, Link, Screen, Text } from "@/components/ui";
+import {
+  Avatar,
+  Button,
+  Input,
+  Link,
+  PhoneInput,
+  Screen,
+  Text,
+} from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -74,11 +82,10 @@ export default function ProfileSetupScreen() {
           value={contactName}
           onChangeText={setContactName}
         />
-        <Input
+        <PhoneInput
           label={t("profileSetup.contactPhone")}
           leftIcon="call-outline"
-          placeholder="+91 98765 43210"
-          keyboardType="phone-pad"
+          placeholder="9876543210"
           value={contactPhone}
           onChangeText={setContactPhone}
         />

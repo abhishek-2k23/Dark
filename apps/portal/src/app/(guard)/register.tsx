@@ -11,6 +11,7 @@ import {
   Icon,
   IconCircle,
   Input,
+  PhoneInput,
   Screen,
   Text,
 } from "@/components/ui";
@@ -204,11 +205,10 @@ export default function RegisterVisitor() {
             value={name}
             onChangeText={setName}
           />
-          <Input
+          <PhoneInput
             label={t("visitors.phone")}
             leftIcon="call-outline"
-            placeholder="+91 98765 43210"
-            keyboardType="phone-pad"
+            placeholder="9876543210"
             value={phone}
             onChangeText={setPhone}
           />
