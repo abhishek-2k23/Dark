@@ -8,8 +8,8 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { ErrorState, Loading } from "@/components/ListState";
 import { AccountLegalActions } from "@/components/AccountLegalActions";
+import { ProfileAvatar } from "@/components/media";
 import {
-  Avatar,
   Badge,
   Card,
   Divider,
@@ -77,7 +77,7 @@ export default function ProfileTab() {
         <>
           {/* Identity */}
           <View className="items-center gap-3 pt-2">
-            <Avatar uri={me.avatarUrl} name={me.name} size={88} ring="blue" />
+            <ProfileAvatar uri={me.avatarUrl} name={me.name} size={88} />
             <View className="w-full items-center gap-1.5">
               <Text variant="h1" align="center" className="px-3">
                 {me.name}

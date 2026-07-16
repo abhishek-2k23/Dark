@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert } from "react-native";
 
 import {
   FileTooLargeError,
@@ -82,7 +81,11 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUpload {
         } else {
           // Everything else: a genuine transport failure, or a tRPC error from
           // getSignature (which carries httpStatus and a curated message).
-          showToast(toErrorMessage(err, t), "error");
+          const friendly = toErrorMessage(err, t);
+          // toErrorMessage exists to hide the raw cause from users — which is
+          // precisely wrong while debugging, so keep it on screen in dev.
+          if (__DEV__) console.log("[Upload] unhandled failure:", err);
+          showToast(__DEV__ ? `${friendly} · ${String(err)}` : friendly, "error");
         }
       } finally {
         setBusy(false);
@@ -91,6 +94,8 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUpload {
     [showToast, t],
   );
 
+  const showDialog = useUIStore((s) => s.showDialog);
+
   const start = useCallback(() => {
     if (busy) return;
     const { forceSource } = latest.current;
@@ -98,12 +103,15 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUpload {
       void run(forceSource);
       return;
     }
-    Alert.alert(t("media.sourceTitle"), undefined, [
-      { text: t("media.camera"), onPress: () => void run("camera") },
-      { text: t("media.gallery"), onPress: () => void run("library") },
-      { text: t("common.cancel"), style: "cancel" },
-    ]);
-  }, [busy, run, t]);
+    showDialog({
+      title: t("media.sourceTitle"),
+      actions: [
+        { label: t("media.camera"), tone: "primary", onPress: () => void run("camera") },
+        { label: t("media.gallery"), tone: "secondary", onPress: () => void run("library") },
+        { label: t("common.cancel"), tone: "neutral" },
+      ],
+    });
+  }, [busy, run, showDialog, t]);
 
   return { busy, start };
 }

@@ -1,4 +1,5 @@
 export { AvatarPicker, type AvatarPickerProps } from "./AvatarPicker";
+export { ProfileAvatar, type ProfileAvatarProps } from "./ProfileAvatar";
 export { PhotoGrid, type PhotoGridProps } from "./PhotoGrid";
 export { PhotoStrip, type PhotoStripProps } from "./PhotoStrip";
 export { ImageField, type ImageFieldProps } from "./ImageField";

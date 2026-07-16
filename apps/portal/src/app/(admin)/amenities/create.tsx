@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { PhotoGrid } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
@@ -15,6 +15,7 @@ export default function CreateAmenity() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const showToast = useUIStore((s) => s.showToast);
+  const showDialog = useUIStore((s) => s.showDialog);
   const utils = trpc.useUtils();
   const isEdit = !!id;
 
@@ -71,14 +72,18 @@ export default function CreateAmenity() {
   const busy = create.isPending || update.isPending || del.isPending;
 
   const onDelete = () => {
-    Alert.alert(t("admin.deleteAmenity"), t("admin.deleteAmenityConfirm"), [
-      { text: t("common.cancel"), style: "cancel" },
-      {
-        text: t("admin.confirmDelete"),
-        style: "destructive",
-        onPress: () => del.mutate({ amenityId: id! }),
-      },
-    ]);
+    showDialog({
+      title: t("admin.deleteAmenity"),
+      message: t("admin.deleteAmenityConfirm"),
+      actions: [
+        {
+          label: t("admin.confirmDelete"),
+          tone: "danger",
+          onPress: () => del.mutate({ amenityId: id! }),
+        },
+        { label: t("common.cancel"), tone: "neutral" },
+      ],
+    });
   };
 
   const onSubmit = () => {

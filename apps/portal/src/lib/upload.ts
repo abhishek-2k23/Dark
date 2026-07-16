@@ -1,3 +1,4 @@
+import * as FileSystem from "expo-file-system/legacy";
 import * as ImagePicker from "expo-image-picker";
 
 import { api } from "./trpc";
@@ -144,22 +145,14 @@ export async function pickImage(
 }
 
 /**
- * Cloudinary stores the extension from the filename we send, and its own
- * `resource_type: image` check keys off the mime type — so a wrong guess here
- * produces a file that 404s on delivery. Fall back to jpeg, which is what
- * every camera on both platforms actually produces.
+ * Cloudinary keys its `resource_type: image` check off the mime type, so a
+ * wrong guess produces a stored file that 404s on delivery. Fall back to jpeg,
+ * which is what the camera on both platforms actually produces.
  */
-function fileNameAndType(asset: ImagePicker.ImagePickerAsset): {
-  name: string;
-  type: string;
-} {
-  const fromMime = asset.mimeType?.split("/")[1];
-  const fromName = asset.fileName?.split(".").pop()?.toLowerCase();
-  const ext = fromMime ?? fromName ?? "jpg";
-  return {
-    name: asset.fileName ?? `upload.${ext}`,
-    type: asset.mimeType ?? `image/${ext === "jpg" ? "jpeg" : ext}`,
-  };
+function mimeTypeOf(asset: ImagePicker.ImagePickerAsset): string {
+  if (asset.mimeType) return asset.mimeType;
+  const ext = asset.fileName?.split(".").pop()?.toLowerCase();
+  return `image/${!ext || ext === "jpg" ? "jpeg" : ext}`;
 }
 
 interface CloudinaryUploadResponse {
@@ -172,50 +165,80 @@ interface CloudinaryUploadResponse {
  * The form fields must match the signed params exactly — folder and
  * transformation are echoed verbatim from the signature, because changing
  * either invalidates it.
+ *
+ * Uses expo-file-system's native multipart upload rather than fetch + FormData,
+ * for two reasons:
+ *
+ *  1. `global.fetch` here is Expo's WinterCG fetch, which builds the multipart
+ *     body itself in JS and accepts only string | Blob | File parts. React
+ *     Native's file convention — a `{uri, name, type}` object — is none of
+ *     those, so it throws "Unsupported FormDataPart implementation" before
+ *     anything is sent ("`uri` is not supported for React Native's FormData",
+ *     per expo/src/winter/fetch/convertFormData.ts).
+ *  2. Even where it works, that path reads the whole file into a JS Uint8Array
+ *     to assemble the body — a 10MB photo is then held in memory twice.
+ *
+ * uploadAsync hands the file path to native code, which streams it off disk and
+ * reports a real status and body.
  */
 export async function uploadImage(
   kind: UploadKind,
   asset: ImagePicker.ImagePickerAsset,
 ): Promise<string> {
   const sig = await api.upload.getSignature.mutate({ kind });
+  const mimeType = mimeTypeOf(asset);
 
-  const { name, type } = fileNameAndType(asset);
-  const form = new FormData();
-  // RN's FormData takes this {uri,name,type} shape for files; the cast is the
-  // long-standing RN/DOM typing mismatch, not a real Blob.
-  form.append("file", { uri: asset.uri, name, type } as unknown as Blob);
-  form.append("api_key", sig.apiKey);
-  form.append("timestamp", String(sig.timestamp));
-  form.append("folder", sig.folder);
-  form.append("transformation", sig.transformation);
-  form.append("signature", sig.signature);
-
-  const started = Date.now();
-  const res = await fetch(sig.uploadUrl, { method: "POST", body: form });
-
-  // Read as text first: a failing Cloudinary request does not always answer in
-  // JSON (a proxy or a WAF can return HTML), and res.json() would then throw
-  // and bury the only description of what went wrong.
-  const raw = await res.text();
-  let body: CloudinaryUploadResponse = {};
-  try {
-    body = JSON.parse(raw) as CloudinaryUploadResponse;
-  } catch {
-    // Leave body empty; `raw` is logged below.
-  }
-
-  const ok = res.ok && !!body.secure_url;
   if (__DEV__) {
     console.log(
-      `[Upload ${ok ? "←" : "✕"}] ${kind} ${res.status} ${Date.now() - started}ms`,
-      ok ? body.secure_url : raw.slice(0, 400),
+      `[Upload →] ${kind} ${sig.uploadUrl}`,
+      JSON.stringify({ uri: asset.uri, mimeType, fileSize: asset.fileSize }),
+    );
+  }
+
+  const started = Date.now();
+  let result: FileSystem.FileSystemUploadResult;
+  try {
+    result = await FileSystem.uploadAsync(sig.uploadUrl, asset.uri, {
+      httpMethod: "POST",
+      uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+      fieldName: "file",
+      mimeType,
+      // Every value Cloudinary verifies the signature against, echoed exactly
+      // as it was signed. Any drift here reads as "Invalid Signature".
+      parameters: {
+        api_key: sig.apiKey,
+        timestamp: String(sig.timestamp),
+        folder: sig.folder,
+        transformation: sig.transformation,
+        signature: sig.signature,
+      },
+    });
+  } catch (err) {
+    if (__DEV__) {
+      console.log(`[Upload ✕] ${kind} transport failure:`, String(err), "| uri:", asset.uri);
+    }
+    throw err;
+  }
+
+  let body: CloudinaryUploadResponse = {};
+  try {
+    body = JSON.parse(result.body) as CloudinaryUploadResponse;
+  } catch {
+    // Not JSON (a proxy or WAF can answer in HTML); `result.body` is logged below.
+  }
+
+  const ok = result.status >= 200 && result.status < 300 && !!body.secure_url;
+  if (__DEV__) {
+    console.log(
+      `[Upload ${ok ? "←" : "✕"}] ${kind} ${result.status} ${Date.now() - started}ms`,
+      ok ? body.secure_url : result.body.slice(0, 400),
     );
   }
 
   if (!ok) {
     throw new UploadFailedError(
-      body.error?.message ?? `Cloudinary returned ${res.status} without a secure_url`,
-      res.status,
+      body.error?.message ?? `Cloudinary returned ${result.status} without a secure_url`,
+      result.status,
       kind,
     );
   }
