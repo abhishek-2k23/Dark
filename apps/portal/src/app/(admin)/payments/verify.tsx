@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Alert, View } from "react-native";
+import { View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { PhotoStrip } from "@/components/media";
@@ -20,6 +20,7 @@ import { formatDateTime, formatMoney, MONTH_KEYS } from "@/utils/format";
 export default function VerifyPayments() {
   const { t } = useTranslation();
   const showToast = useUIStore((s) => s.showToast);
+  const showDialog = useUIStore((s) => s.showDialog);
   const utils = trpc.useUtils();
 
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -48,17 +49,18 @@ export default function VerifyPayments() {
   const onApprove = (paymentId: string, amount: number) => {
     // Approving marks a due paid on someone's word plus a photo — worth one
     // deliberate tap, since undoing it means a manual DB fix.
-    Alert.alert(
-      t("admin.verifyReceipt"),
-      t("admin.verifyReceiptConfirm", { amount: formatMoney(amount) }),
-      [
-        { text: t("common.cancel"), style: "cancel" },
+    showDialog({
+      title: t("admin.verifyReceipt"),
+      message: t("admin.verifyReceiptConfirm", { amount: formatMoney(amount) }),
+      actions: [
         {
-          text: t("admin.verify"),
+          label: t("admin.verify"),
+          tone: "primary",
           onPress: () => decide.mutate({ paymentId, approve: true }),
         },
+        { label: t("common.cancel"), tone: "neutral" },
       ],
-    );
+    });
   };
 
   return (

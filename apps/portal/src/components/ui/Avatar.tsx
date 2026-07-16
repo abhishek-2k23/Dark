@@ -64,7 +64,13 @@ export function Avatar({ uri, name, size = 40, ring, className }: AvatarProps) {
       <Text
         variant="subtitle"
         color="primary"
-        style={{ fontSize: Math.round(size * 0.38) }}
+        // The variant's fixed lineHeight survives the fontSize override, so at
+        // large sizes the glyphs overflow their line box and clip at the top.
+        // Both must scale together.
+        style={{
+          fontSize: Math.round(size * 0.38),
+          lineHeight: Math.round(size * 0.48),
+        }}
       >
         {initialsOf(name)}
       </Text>

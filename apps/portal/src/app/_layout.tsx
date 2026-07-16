@@ -22,6 +22,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsListener } from "@/components/NotificationsListener";
+import { DialogHost } from "@/components/DialogHost";
 import { ToastHost } from "@/components/ToastHost";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { useOTAUpdates } from "@/lib/useOTAUpdates";
@@ -101,6 +102,8 @@ export default function RootLayout() {
                 <ThemedStack />
               </ErrorBoundary>
               <NotificationsListener />
+              <DialogHost />
+              {/* After DialogHost so toasts stay visible above an open dialog. */}
               <ToastHost />
             </LanguageProvider>
           </ThemeProvider>
