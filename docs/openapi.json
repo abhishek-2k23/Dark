@@ -116,8 +116,8 @@
                   },
                   "phone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "Phone number with country code (this or email required)"
+                    "pattern": "^\\d{10}$",
+                    "description": "10-digit phone number (this or email required)"
                   },
                   "password": {
                     "type": "string",
@@ -201,6 +201,17 @@
                             }
                           ],
                           "description": "Profile photo URL, if set"
+                        },
+                        "societyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
                         }
                       },
                       "required": [
@@ -209,7 +220,8 @@
                         "email",
                         "phone",
                         "role",
-                        "avatarUrl"
+                        "avatarUrl",
+                        "societyId"
                       ],
                       "additionalProperties": false,
                       "description": "Public shape of the authenticated user"
@@ -344,8 +356,8 @@
                       },
                       "phone": {
                         "type": "string",
-                        "minLength": 8,
-                        "description": "Admin phone with country code (this or email required)"
+                        "pattern": "^\\d{10}$",
+                        "description": "Admin's 10-digit phone number (this or email required)"
                       },
                       "password": {
                         "type": "string",
@@ -440,6 +452,17 @@
                             }
                           ],
                           "description": "Profile photo URL, if set"
+                        },
+                        "societyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
                         }
                       },
                       "required": [
@@ -448,7 +471,8 @@
                         "email",
                         "phone",
                         "role",
-                        "avatarUrl"
+                        "avatarUrl",
+                        "societyId"
                       ],
                       "additionalProperties": false,
                       "description": "Public shape of the authenticated user"
@@ -625,6 +649,17 @@
                                     }
                                   ],
                                   "description": "Profile photo URL, if set"
+                                },
+                                "societyId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
                                 }
                               },
                               "required": [
@@ -633,7 +668,8 @@
                                 "email",
                                 "phone",
                                 "role",
-                                "avatarUrl"
+                                "avatarUrl",
+                                "societyId"
                               ],
                               "additionalProperties": false,
                               "description": "Public shape of the authenticated user"
@@ -843,6 +879,17 @@
                             }
                           ],
                           "description": "Profile photo URL, if set"
+                        },
+                        "societyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
                         }
                       },
                       "required": [
@@ -851,7 +898,8 @@
                         "email",
                         "phone",
                         "role",
-                        "avatarUrl"
+                        "avatarUrl",
+                        "societyId"
                       ],
                       "additionalProperties": false,
                       "description": "Public shape of the authenticated user"
@@ -1117,6 +1165,17 @@
                             }
                           ],
                           "description": "Profile photo URL, if set"
+                        },
+                        "societyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
                         }
                       },
                       "required": [
@@ -1125,7 +1184,8 @@
                         "email",
                         "phone",
                         "role",
-                        "avatarUrl"
+                        "avatarUrl",
+                        "societyId"
                       ],
                       "additionalProperties": false,
                       "description": "Public shape of the authenticated user"
@@ -1287,6 +1347,17 @@
                             }
                           ],
                           "description": "Profile photo URL, if set"
+                        },
+                        "societyId": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
                         }
                       },
                       "required": [
@@ -1295,7 +1366,8 @@
                         "email",
                         "phone",
                         "role",
-                        "avatarUrl"
+                        "avatarUrl",
+                        "societyId"
                       ],
                       "additionalProperties": false,
                       "description": "Public shape of the authenticated user"
@@ -1597,6 +1669,17 @@
                         }
                       ],
                       "description": "Profile photo URL, if set"
+                    },
+                    "societyId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
                     }
                   },
                   "required": [
@@ -1605,7 +1688,8 @@
                     "email",
                     "phone",
                     "role",
-                    "avatarUrl"
+                    "avatarUrl",
+                    "societyId"
                   ],
                   "additionalProperties": false,
                   "description": "Public shape of the authenticated user"
@@ -3181,8 +3265,8 @@
                   },
                   "phone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "Invitee phone (this or email required)"
+                    "pattern": "^\\d{10}$",
+                    "description": "Invitee's 10-digit phone (this or email required)"
                   }
                 },
                 "required": [
@@ -3770,8 +3854,8 @@
                   },
                   "phone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "Phone with country code (this or email required)"
+                    "pattern": "^\\d{10}$",
+                    "description": "10-digit phone (this or email required)"
                   },
                   "temporaryPassword": {
                     "type": "string",
@@ -4446,8 +4530,8 @@
                   },
                   "emergencyContactPhone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "Emergency contact phone"
+                    "pattern": "^\\d{10}$",
+                    "description": "Emergency contact's 10-digit phone"
                   }
                 }
               }
@@ -5655,8 +5739,8 @@
                   },
                   "phone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "Visitor phone number, with country code"
+                    "pattern": "^\\d{10}$",
+                    "description": "Visitor's 10-digit phone number"
                   },
                   "purpose": {
                     "type": "string",
@@ -7672,8 +7756,8 @@
                   },
                   "guestPhone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "Expected guest's phone, with country code"
+                    "pattern": "^\\d{10}$",
+                    "description": "Expected guest's 10-digit phone"
                   },
                   "validFrom": {
                     "type": "string",
@@ -13885,8 +13969,8 @@
                   },
                   "phone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "Contact phone number"
+                    "pattern": "^\\d{10}$",
+                    "description": "Contact's 10-digit phone number"
                   },
                   "photoUrl": {
                     "type": "string",
@@ -14206,8 +14290,8 @@
                   },
                   "phone": {
                     "type": "string",
-                    "minLength": 8,
-                    "description": "New phone"
+                    "pattern": "^\\d{10}$",
+                    "description": "New 10-digit phone"
                   },
                   "photoUrl": {
                     "type": "string",
@@ -14473,6 +14557,105 @@
                 "required": [
                   "token",
                   "deviceType"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Always true when the call succeeds"
+                    }
+                  },
+                  "required": [
+                    "success"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/push-tokens/unregister": {
+      "post": {
+        "operationId": "pushToken-unregister",
+        "summary": "Remove a device's Expo push token",
+        "description": "Called by the mobile app on sign-out so the next user on a shared device doesn't inherit the previous user's pushes. Idempotent — removing a token that isn't registered (or isn't the caller's) succeeds. Errors: 401 if not authenticated.",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "The Expo push token to remove"
+                  }
+                },
+                "required": [
+                  "token"
                 ]
               }
             }

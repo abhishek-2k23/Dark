@@ -44,6 +44,10 @@ const RegisterPushTokenInput = z.object({
   deviceType: z.enum(["IOS", "ANDROID"]).describe("Device platform"),
 });
 
+const UnregisterPushTokenInput = z.object({
+  token: z.string().min(1).describe("The Expo push token to remove"),
+});
+
 const ListNotificationsInput = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
   cursor: z.string().describe("Id of the last notification from the previous page").optional(),
@@ -76,6 +80,28 @@ export const pushTokenRouter = router({
     .output(SuccessModel)
     .mutation(async ({ ctx, input }) => {
       await notificationService.registerPushToken(ctx.user, input);
+      return { success: true as const };
+    }),
+
+  unregister: protectedProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: pushTokenPath("unregister"),
+        tags: ["Notifications"],
+        summary: "Remove a device's Expo push token",
+        description:
+          "Called by the mobile app on sign-out so the next user on a shared device " +
+          "doesn't inherit the previous user's pushes. Idempotent — removing a token " +
+          "that isn't registered (or isn't the caller's) succeeds. Errors: 401 if not " +
+          "authenticated.",
+        protect: true,
+      },
+    })
+    .input(UnregisterPushTokenInput)
+    .output(SuccessModel)
+    .mutation(async ({ ctx, input }) => {
+      await notificationService.unregisterPushToken(ctx.user, input);
       return { success: true as const };
     }),
 });

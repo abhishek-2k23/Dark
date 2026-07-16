@@ -134,6 +134,21 @@ describe("push token registration", () => {
     expect(tokens).toHaveLength(1);
     expect(tokens[0]!.deviceType).toBe("IOS");
   });
+
+  it("unregister removes only the given token, and is a no-op when absent", async () => {
+    const temp = "ExponentPushToken[unregister-temp-xxxxxxxxxx]";
+    await notificationService.registerPushToken(resident, {
+      token: temp,
+      deviceType: "ANDROID",
+    });
+    await notificationService.unregisterPushToken(resident, { token: temp });
+    expect(await prisma.pushToken.findMany({ where: { token: temp } })).toHaveLength(0);
+    // The resident's real token is untouched, and a repeat unregister is harmless.
+    await notificationService.unregisterPushToken(resident, { token: temp });
+    expect(
+      await prisma.pushToken.findMany({ where: { userId: resident.id, token: residentToken } }),
+    ).toHaveLength(1);
+  });
 });
 
 describe("trigger: visitor registered → flat residents", () => {

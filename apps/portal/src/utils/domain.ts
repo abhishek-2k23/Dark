@@ -1,5 +1,6 @@
 import type { BadgeTone } from "@/components/ui";
 import type { IconColor, IconName } from "@/components/ui";
+import type { Role } from "@/stores/authStore";
 
 /**
  * Domain enum → presentation maps shared across the resident screens.
@@ -108,6 +109,45 @@ export const notificationTypeIcon: Record<string, IconName> = {
   BOOKING_CONFIRMED: "calendar-outline",
   GENERAL: "notifications-outline",
 };
+
+/**
+ * Best-effort deep link for a notification, given the recipient's role. Used by
+ * both the in-app inbox (tap a card) and the OS push-tap handler, so a push and
+ * its inbox row always route to the same place. Returns null when there's no
+ * meaningful destination (the notification still shows; it just isn't tappable).
+ *
+ * The `data` payload is written by the server triggers (e.g. `{ visitorId }`);
+ * routes are role-specific because each role lives in its own expo-router group.
+ */
+export function notificationHref(
+  role: Role,
+  type: string,
+  data: unknown,
+): string | null {
+  const d = (data ?? {}) as Record<string, string>;
+
+  if (role === "RESIDENT") {
+    if (d.visitorId) return `/(resident)/visitors/${d.visitorId}`;
+    if (d.ticketId) return `/(resident)/tickets/${d.ticketId}`;
+    if (d.noticeId) return `/(resident)/notices/${d.noticeId}`;
+    if (d.pollId) return `/(resident)/polls/${d.pollId}`;
+    if (type === "DUE_GENERATED") return "/(resident)/(tabs)/payments";
+    return null;
+  }
+
+  if (role === "ADMIN") {
+    if (d.ticketId) return `/(admin)/tickets/${d.ticketId}`;
+    if (d.pollId) return `/(admin)/polls/${d.pollId}`;
+    if (d.noticeId) return "/(admin)/notices";
+    if (d.visitorId) return "/(admin)/reports";
+    if (type === "DUE_GENERATED") return "/(admin)/reports";
+    return null;
+  }
+
+  // GUARD — the only pushes guards receive today are visitor decisions.
+  if (d.visitorId) return `/(guard)/visitors/${d.visitorId}`;
+  return null;
+}
 
 /** Minutes a PENDING visitor request stays actionable (mirrors server TTL). */
 export const VISITOR_PENDING_TTL_MIN = 15;

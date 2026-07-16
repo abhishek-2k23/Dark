@@ -4,6 +4,7 @@ import { View } from "react-native";
 
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { sendTestNotification } from "@/lib/push";
 import {
   Avatar,
   Badge,
@@ -71,6 +72,57 @@ export default function Showcase() {
           <LanguageSwitcher />
         </Section>
       </View>
+
+      {/* Dev-only: local notification tester — no FCM / push build needed. */}
+      <Section title="Dev · Test Notifications">
+        <Text variant="caption" color="secondary">
+          Fires a local notification to exercise the handler + tap deep-link (no
+          push credentials needed). Background the app after tapping to see the
+          banner. Log in as the matching role first to see tap-routing; the demo
+          ids route to the screen but won&apos;t load real data.
+        </Text>
+        <View className="flex-row flex-wrap gap-3">
+          <Button
+            label="Visitor approved"
+            variant="outline"
+            size="sm"
+            leftIcon="checkmark-circle-outline"
+            onPress={() =>
+              void sendTestNotification({
+                title: "Visitor approved",
+                body: "Your guest has been approved at the gate.",
+                data: { type: "VISITOR_APPROVED", visitorId: "demo-visitor-id" },
+              })
+            }
+          />
+          <Button
+            label="New notice"
+            variant="outline"
+            size="sm"
+            leftIcon="megaphone-outline"
+            onPress={() =>
+              void sendTestNotification({
+                title: "New notice published",
+                body: "Water maintenance on the 15th, 9 AM – 5 PM.",
+                data: { type: "NOTICE_PUBLISHED", noticeId: "demo-notice-id" },
+              })
+            }
+          />
+          <Button
+            label="Generic"
+            variant="outline"
+            size="sm"
+            leftIcon="notifications-outline"
+            onPress={() =>
+              void sendTestNotification({
+                title: "Prangan",
+                body: "This is a test notification.",
+                data: { type: "GENERAL" },
+              })
+            }
+          />
+        </View>
+      </Section>
 
       {/* Glass surfaces */}
       <Section title="Glass Cards">

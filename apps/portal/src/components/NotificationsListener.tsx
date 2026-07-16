@@ -1,0 +1,71 @@
+import * as Notifications from "expo-notifications";
+import { useRouter } from "expo-router";
+import { useEffect, useRef } from "react";
+
+import { trpc } from "@/lib/trpc";
+import { useAuthStore } from "@/stores/authStore";
+import { notificationHref } from "@/utils/domain";
+
+/**
+ * Bridges OS-level notification events into the app. Renders nothing.
+ *
+ *  - A push received while the app is foregrounded refreshes the inbox + badge.
+ *  - Tapping a push deep-links to the relevant screen for the caller's role,
+ *    including the cold-start case where the tap launched the app from killed.
+ *
+ * Mounted once at the root, inside the tRPC + router providers.
+ */
+export function NotificationsListener() {
+  const router = useRouter();
+  const utils = trpc.useUtils();
+  const role = useAuthStore((s) => s.user?.role);
+
+  // Keep the newest role in a ref so the subscription effect can stay mounted
+  // once (no re-subscribe churn) and still read the current role when a tap
+  // fires. The push payload carries `type`; ids live alongside it in `data`.
+  const roleRef = useRef(role);
+  roleRef.current = role;
+
+  const routeTo = (response: Notifications.NotificationResponse) => {
+    const currentRole = roleRef.current;
+    if (!currentRole) return; // signed out — nowhere to route
+    const data = (response.notification.request.content.data ?? {}) as Record<
+      string,
+      unknown
+    >;
+    const type = typeof data.type === "string" ? data.type : "";
+    // The inbox is now (or soon) stale — the tapped push is at least read-worthy.
+    void utils.notification.list.invalidate();
+    const href = notificationHref(currentRole, type, data);
+    if (href) router.push(href as never);
+  };
+
+  // Foreground receipts + taps while the app is running or backgrounded.
+  useEffect(() => {
+    const receivedSub = Notifications.addNotificationReceivedListener(() => {
+      void utils.notification.list.invalidate();
+    });
+    const responseSub =
+      Notifications.addNotificationResponseReceivedListener(routeTo);
+    return () => {
+      receivedSub.remove();
+      responseSub.remove();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Cold start: a tap that launched the app from a killed state isn't delivered
+  // to the listener above. Read it once, but only after the role has hydrated so
+  // there's a destination to route to.
+  const handledColdStart = useRef(false);
+  useEffect(() => {
+    if (!role || handledColdStart.current) return;
+    handledColdStart.current = true;
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) routeTo(response);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [role]);
+
+  return null;
+}
