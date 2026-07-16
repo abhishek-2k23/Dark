@@ -58,6 +58,23 @@ export class FileTooLargeError extends Error {
 }
 
 /**
+ * Cloudinary took the request and refused it. Distinct from a transport
+ * failure on purpose: `message` is Cloudinary's own words ("Invalid Signature",
+ * "Stale request"), which the caller should show verbatim rather than collapse
+ * into generic network copy — that hides the one fact that explains the failure.
+ */
+export class UploadFailedError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly kind: UploadKind,
+  ) {
+    super(message);
+    this.name = "UploadFailedError";
+  }
+}
+
+/**
  * Quality is deliberately lossy at the source: it cuts upload time on the
  * patchy mobile data a guard has at a gate, and every kind gets re-encoded by
  * a Cloudinary transformation on arrival regardless. Receipts are the
@@ -175,18 +192,34 @@ export async function uploadImage(
 
   const started = Date.now();
   const res = await fetch(sig.uploadUrl, { method: "POST", body: form });
-  const body = (await res.json().catch(() => ({}))) as CloudinaryUploadResponse;
 
+  // Read as text first: a failing Cloudinary request does not always answer in
+  // JSON (a proxy or a WAF can return HTML), and res.json() would then throw
+  // and bury the only description of what went wrong.
+  const raw = await res.text();
+  let body: CloudinaryUploadResponse = {};
+  try {
+    body = JSON.parse(raw) as CloudinaryUploadResponse;
+  } catch {
+    // Leave body empty; `raw` is logged below.
+  }
+
+  const ok = res.ok && !!body.secure_url;
   if (__DEV__) {
     console.log(
-      `[Upload ${res.ok ? "←" : "✕"}] ${kind} ${res.status} ${Date.now() - started}ms`,
+      `[Upload ${ok ? "←" : "✕"}] ${kind} ${res.status} ${Date.now() - started}ms`,
+      ok ? body.secure_url : raw.slice(0, 400),
     );
   }
 
-  if (!res.ok || !body.secure_url) {
-    throw new Error(body.error?.message ?? `Upload failed (${res.status})`);
+  if (!ok) {
+    throw new UploadFailedError(
+      body.error?.message ?? `Cloudinary returned ${res.status} without a secure_url`,
+      res.status,
+      kind,
+    );
   }
-  return body.secure_url;
+  return body.secure_url!;
 }
 
 /** Pick then upload in one call. Null means the user cancelled. */

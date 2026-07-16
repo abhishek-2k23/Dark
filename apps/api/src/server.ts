@@ -15,6 +15,25 @@ import { openApiDocument } from "./openapi";
 
 export const app = express();
 
+/**
+ * In prod the app sits behind a reverse proxy (Render's load balancer), which
+ * terminates TLS and passes the caller's address in X-Forwarded-For. Without
+ * this, req.ip is the proxy's own address — so express-rate-limit counts every
+ * user as the same client and one busy caller locks everyone out of login. It
+ * also refuses to guess, logging ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+ *
+ * Deliberately 1 (trust exactly one hop) rather than `true`: trusting the whole
+ * chain lets a caller prepend their own X-Forwarded-For and mint a fresh
+ * rate-limit bucket per request, which defeats the limiter entirely. Raise this
+ * only if another proxy is genuinely added in front.
+ *
+ * Left off in development, where there is no proxy and a spoofed header should
+ * not be believed either.
+ */
+if (env.NODE_ENV === "prod") {
+  app.set("trust proxy", 1);
+}
+
 // Security headers. CSP is disabled because the Scalar docs UI at /docs needs
 // inline scripts/styles; every other route only ever serves JSON.
 app.use(helmet({ contentSecurityPolicy: false }));
