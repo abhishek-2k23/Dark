@@ -10,45 +10,47 @@ import {
   Icon,
   Input,
   PasswordInput,
-  PhoneInput,
   Screen,
   Text,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { toErrorMessage } from "@/utils/errors";
-import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
 
+/**
+ * Email-only account creation. No session is issued here: the server answers
+ * with an email-OTP challenge, and the OTP screen (flow=signup) completes the
+ * login once the code proves the address — so every account is verified at
+ * birth instead of at some random later login.
+ */
 export default function SignupScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const setSession = useAuthStore((s) => s.setSession);
   const showToast = useUIStore((s) => s.showToast);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
   const signup = trpc.auth.signup.useMutation({
-    onSuccess: async (session) => {
-      await setSession(session);
-      showToast(t("signup.welcome"), "success");
-      // First login → collect emergency contact before landing on the dashboard.
-      router.replace("/(resident)/profile-setup");
+    onSuccess: (res) => {
+      showToast(t("auth.otpSentToast", { email: res.email }), "info");
+      router.push({
+        pathname: "/(auth)/otp",
+        params: { email: res.email, devCode: res.devCode ?? "", flow: "signup" },
+      });
     },
     onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   const onSubmit = () => {
-    if (!name.trim() || (!email.trim() && !phone.trim()) || password.length < 8) {
+    if (!name.trim() || !email.trim().includes("@") || password.length < 8) {
       showToast(t("signup.missingFields"), "error");
       return;
     }
     signup.mutate({
       name: name.trim(),
-      email: email.trim() || undefined,
-      phone: phone.trim() || undefined,
+      email: email.trim(),
       password,
     });
   };
@@ -74,7 +76,6 @@ export default function SignupScreen() {
         />
         <Input
           label={t("signup.email")}
-          labelHint={t("signup.oneRequired")}
           leftIcon="mail-outline"
           placeholder="you@email.com"
           autoCapitalize="none"
@@ -82,14 +83,6 @@ export default function SignupScreen() {
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
-        />
-        <PhoneInput
-          label={t("signup.phone")}
-          labelHint={t("signup.oneRequired")}
-          leftIcon="call-outline"
-          placeholder="9876543210"
-          value={phone}
-          onChangeText={setPhone}
         />
         <PasswordInput
           label={t("auth.password")}

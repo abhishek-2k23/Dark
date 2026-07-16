@@ -15,16 +15,20 @@ const h = vi.hoisted(() => {
 });
 
 // Fake Google verifier: tokens of the form "valid:<email>" verify and carry
-// that email; anything else is rejected — mirrors google-auth-library's API.
+// that email (Google-attested); "unverified:<email>" carries an email Google
+// has NOT attested; anything else is rejected — mirrors google-auth-library.
 vi.mock("google-auth-library", () => ({
   OAuth2Client: class {
     async verifyIdToken({ idToken }: { idToken: string }) {
-      if (!idToken.startsWith("valid:")) throw new Error("invalid token");
-      const email = idToken.slice("valid:".length);
+      const [kind, email] = idToken.split(":");
+      if ((kind !== "valid" && kind !== "unverified") || !email) {
+        throw new Error("invalid token");
+      }
       return {
         getPayload: () => ({
           sub: `gsub-${email}`,
           email,
+          email_verified: kind === "valid",
           name: "Google Test User",
         }),
       };
@@ -142,46 +146,62 @@ afterAll(async () => {
 });
 
 describe("signup", () => {
-  it("rejects when neither email nor phone is given", async () => {
+  it("rejects when the email is missing", async () => {
     await expectTRPCError(
       authService.signup({ name: "X", password } as never),
       "BAD_REQUEST",
     );
   });
 
-  it("creates a society-less account when no invite matches", async () => {
+  it("creates a society-less unverified account when no invite matches, and challenges for the OTP", async () => {
     // The no-society gate: signing up is open; the society comes later via an
     // admin invite or an approved join request.
-    const session = await authService.signup({
+    const email = `uninvited-${h.runId}@test.local`;
+    const challenge = await authService.signup({
       name: "No Invite",
-      email: `uninvited-${h.runId}@test.local`,
+      email,
       password,
     });
-    expect(session.user.societyId).toBeNull();
+    expect(challenge.status).toBe("OTP_REQUIRED");
+    expect(challenge.email).toBe(email);
+    expect(challenge.devCode).toMatch(/^\d{6}$/);
+
     const created = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { email },
       include: { residentProfile: true },
     });
     expect(created?.role).toBe("RESIDENT");
+    expect(created?.societyId).toBeNull();
+    expect(created?.emailVerified).toBe(false);
     // No flat yet, so no resident profile either.
     expect(created?.residentProfile).toBeNull();
-  });
 
-  it("creates a resident linked to the invited flat and claims the invite", async () => {
-    const session = await authService.signup({
-      name: "Resident A",
-      email: emailA,
-      phone: phoneA,
-      password,
+    // The emailed code is what logs them in.
+    const session = await authService.verifyEmailOtp({
+      email,
+      code: challenge.devCode!,
     });
     expect(session.accessToken).toBeTruthy();
-    expect(session.refreshToken).toBeTruthy();
-    expect(session.user.role).toBe("RESIDENT");
+    expect(session.user.societyId).toBeNull();
+  });
 
-    const profile = await prisma.residentProfile.findUnique({
-      where: { userId: session.user.id },
+  it("creates a resident linked to the invited flat, claims the invite, and challenges for the OTP", async () => {
+    const challenge = await authService.signup({
+      name: "Resident A",
+      email: emailA,
+      password,
     });
-    expect(profile?.flatId).toBe(flatId);
+    expect(challenge.status).toBe("OTP_REQUIRED");
+    expect(challenge.email).toBe(emailA);
+
+    const created = await prisma.user.findUnique({
+      where: { email: emailA },
+      include: { residentProfile: true },
+    });
+    expect(created?.role).toBe("RESIDENT");
+    expect(created?.residentProfile?.flatId).toBe(flatId);
+    // Left unverified here: the login suite below exercises the OTP gate.
+    expect(created?.emailVerified).toBe(false);
 
     const invite = await prisma.pendingResidentInvite.findFirst({
       where: { email: emailA },
@@ -270,6 +290,12 @@ describe("registerSociety", () => {
 
 describe("login", () => {
   it("logs in with phone directly (no OTP gate)", async () => {
+    // Signup no longer takes a phone; attach one directly — the server-side
+    // phone login path still exists (e.g. staff accounts created with phones).
+    await prisma.user.update({
+      where: { email: emailA },
+      data: { phone: phoneA },
+    });
     const result = await authService.login({ identifier: phoneA, password });
     expect(result.status).toBe("SUCCESS");
     if (result.status !== "SUCCESS") return;
@@ -374,11 +400,28 @@ describe("google login", () => {
     expect(second.user.id).toBe(first.user.id);
   });
 
-  it("rejects a Google login whose email belongs to a password account", async () => {
+  // Must run before the linking case below: once emailA is Google-linked, its
+  // sub resolves by googleId and the email_verified guard is never reached.
+  it("refuses to link when Google has not verified the email", async () => {
     await expectTRPCError(
-      authService.googleLogin({ idToken: `valid:${emailA}` }),
+      authService.googleLogin({ idToken: `unverified:${emailA}` }),
       "CONFLICT",
     );
+  });
+
+  it("links Google onto an existing password account and logs it in", async () => {
+    const session = await authService.googleLogin({
+      idToken: `valid:${emailA}`,
+    });
+    expect(session.user.email).toBe(emailA);
+
+    const linked = await prisma.user.findUnique({ where: { email: emailA } });
+    expect(linked?.googleId).toBe(`gsub-${emailA}`);
+    expect(linked?.emailVerified).toBe(true);
+    // The password is untouched — both sign-in methods now work.
+    expect(linked?.passwordHash).toBeTruthy();
+    const viaPassword = await authService.login({ identifier: emailA, password });
+    expect(viaPassword.status).toBe("SUCCESS");
   });
 
   it("creates a society-less account for a Google login with no matching invite", async () => {

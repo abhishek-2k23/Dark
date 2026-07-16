@@ -139,7 +139,7 @@
   "signup": {
     "title": "Create account",
     "welcome": "Welcome to Prangan!",
-    "inviteHint": "You need an invite from your society admin. Sign up with the same email or phone the invite was sent to.",
+    "inviteHint": "Create your account with the email you gave your society admin — invites and join approvals are matched to that address.",
     "name": "Full name",
     "namePlaceholder": "Your full name",
     "email": "Email",
@@ -147,7 +147,7 @@
     "oneRequired": "One required",
     "passwordHint": "Minimum 8 characters",
     "cta": "Sign up",
-    "missingFields": "Fill in your name, email or phone, and a password of 8+ characters."
+    "missingFields": "Fill in your name, email, and a password of 8+ characters."
   },
   "reset": {
     "title": "Reset password",

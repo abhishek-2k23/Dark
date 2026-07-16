@@ -1,9 +1,19 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { prisma, type User } from "@repo/database";
 
 import * as residentService from "./resident.service";
 import * as authService from "../auth/auth.service";
+
+// Signup emails a verification OTP; stub the mailer so this suite never
+// touches SMTP (the repo .env may carry real credentials).
+vi.mock("@repo/mailer", () => ({
+  isMailerConfigured: () => false,
+  sendOtpEmail: vi.fn(async () => {}),
+  sendAccountDeletionOtpEmail: vi.fn(async () => {}),
+  sendPasswordResetEmail: vi.fn(async () => {}),
+  sendMail: vi.fn(async () => {}),
+}));
 
 const runId = `res-${Date.now().toString(36)}`;
 const inviteeEmail = `invitee-${runId}@test.local`;
@@ -90,6 +100,7 @@ afterAll(async () => {
     select: { id: true },
   });
   const userIds = users.map((u) => u.id);
+  await prisma.emailOtp.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.refreshToken.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.residentProfile.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.pendingResidentInvite.deleteMany({ where: { societyId: { in: societyIds } } });
@@ -136,25 +147,27 @@ describe("resident.invite", () => {
 
 describe("invite → signup auto-link (happy path)", () => {
   it("signs the invitee up as a RESIDENT linked to the invited flat", async () => {
-    const session = await authService.signup({
+    // Signup now answers with an email-OTP challenge instead of a session,
+    // but the account + flat link are created up front.
+    const challenge = await authService.signup({
       name: "Invited Resident",
       email: inviteeEmail,
       password,
     });
-    expect(session.user.role).toBe("RESIDENT");
+    expect(challenge.status).toBe("OTP_REQUIRED");
 
-    const profile = await prisma.residentProfile.findUnique({
-      where: { userId: session.user.id },
+    const created = await prisma.user.findUnique({
+      where: { email: inviteeEmail },
+      include: { residentProfile: true },
     });
-    expect(profile?.flatId).toBe(flatId);
+    expect(created?.role).toBe("RESIDENT");
+    expect(created?.residentProfile?.flatId).toBe(flatId);
+    expect(created?.societyId).toBe(societyId);
 
     const invite = await prisma.pendingResidentInvite.findFirst({
       where: { email: inviteeEmail },
     });
     expect(invite?.status).toBe("CLAIMED");
-
-    const created = await prisma.user.findUnique({ where: { id: session.user.id } });
-    expect(created?.societyId).toBe(societyId);
   });
 });
 

@@ -83,10 +83,7 @@ const LoginResultModel = z
 
 const SignupInput = z.object({
   name: z.string().min(1).describe("Full name of the new resident"),
-  email: z.email().describe("Email address (this or phone required)").optional(),
-  phone: phoneSchema
-    .describe("10-digit phone number (this or email required)")
-    .optional(),
+  email: z.email().describe("Email address the account is created under"),
   password: z.string().min(8).describe("Password, minimum 8 characters"),
 });
 
@@ -164,16 +161,17 @@ export const authRouter = router({
         method: "POST",
         path: path("signup"),
         tags: ["Auth"],
-        summary: "Sign up with email/phone and password",
+        summary: "Sign up with email and password (OTP-verified)",
         description:
-          "Creates a resident account. Requires a PendingResidentInvite matching the email or phone " +
-          "(created by a society admin); the account is auto-linked to the invited flat and the invite " +
-          "is marked CLAIMED. Errors: 400 if neither email nor phone is given, 403 if no invite is found, " +
-          "409 if an account already exists with the email/phone.",
+          "Creates a resident account and emails a verification OTP — no session is issued until the " +
+          "code is confirmed at /v1/auth/email-otp/verify. With a PendingResidentInvite matching the " +
+          "email the account is auto-linked to the invited flat and the invite is marked CLAIMED; " +
+          "without one the account is created society-less and held at the join-a-society gate. " +
+          "Errors: 409 if an account already exists with the email.",
       },
     })
     .input(SignupInput)
-    .output(AuthSessionModel)
+    .output(OtpRequiredModel)
     .mutation(({ input }) => authService.signup(input)),
 
   registerSociety: publicProcedure
@@ -267,9 +265,11 @@ export const authRouter = router({
         tags: ["Auth"],
         summary: "Log in with a Google ID token",
         description:
-          "Verifies the Google ID token server-side. Logs in an existing Google-linked account, or " +
-          "creates one when a PendingResidentInvite matches the Google email. Errors: 401 on an invalid " +
-          "token, 403 if no invite matches, 409 if a password account already uses the email, " +
+          "Verifies the Google ID token server-side. Logs in an existing Google-linked account; links " +
+          "Google onto an existing password account with the same (Google-verified) email and logs it " +
+          "in; or creates a new account — attached to the society when a PendingResidentInvite matches " +
+          "the email, society-less otherwise. Errors: 401 on an invalid token, 403 if the account is " +
+          "deactivated, 409 if the Google email is unverified and a password account uses it, " +
           "412 if Google login is not configured on the server.",
       },
     })

@@ -243,32 +243,43 @@ function identifierFilter(email?: string, phone?: string) {
   return or;
 }
 
+/**
+ * Result of a signup: the account exists, but no session yet — the email must
+ * first be proven via the OTP just sent to it (`verifyEmailOtp` issues the
+ * session and marks the email verified).
+ */
+export interface SignupChallenge {
+  status: "OTP_REQUIRED";
+  channel: "email";
+  /** The email the OTP was sent to (echoed so the client can prompt). */
+  email: string;
+  /** Present only when OTP_DEV_ECHO=true — never enable in production. */
+  devCode?: string;
+}
+
 export async function signup(input: {
   name: string;
-  email?: string;
-  phone?: string;
+  email: string;
   password: string;
-}): Promise<AuthSession> {
-  const { name, email, phone, password } = input;
-  if (!email && !phone) {
+}): Promise<SignupChallenge> {
+  const { name, email, password } = input;
+  if (!email) {
     throw new TRPCError({
       code: "BAD_REQUEST",
-      message: "Provide an email or a phone number",
+      message: "Provide an email address",
     });
   }
 
-  const existing = await prisma.user.findFirst({
-    where: { OR: identifierFilter(email, phone) },
-  });
+  const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     throw new TRPCError({
       code: "CONFLICT",
-      message: "An account already exists with this email or phone",
+      message: "An account already exists with this email",
     });
   }
 
   const invite = await prisma.pendingResidentInvite.findFirst({
-    where: { status: "PENDING", OR: identifierFilter(email, phone) },
+    where: { status: "PENDING", email },
     orderBy: { createdAt: "desc" },
   });
 
@@ -279,35 +290,42 @@ export async function signup(input: {
   // can send a join request; an admin invite or approval attaches the society
   // on their next refresh. No residentProfile yet: that needs a flat, and the
   // flat only comes with the invite/approval.
+  const user = invite
+    ? await prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            name,
+            email,
+            passwordHash,
+            role: "RESIDENT",
+            societyId: invite.societyId,
+            residentProfile: { create: { flatId: invite.flatId } },
+          },
+        });
+        await tx.pendingResidentInvite.update({
+          where: { id: invite.id },
+          data: { status: "CLAIMED", claimedAt: new Date() },
+        });
+        return created;
+      })
+    : await prisma.user.create({
+        data: { name, email, passwordHash, role: "RESIDENT" },
+      });
   if (!invite) {
-    const user = await prisma.user.create({
-      data: { name, email, phone, passwordHash, role: "RESIDENT" },
-    });
     logger.info("Created society-less user via signup (no matching invite)", {
       userId: user.id,
     });
-    return issueSession(user);
   }
-  const user = await prisma.$transaction(async (tx) => {
-    const created = await tx.user.create({
-      data: {
-        name,
-        email,
-        phone,
-        passwordHash,
-        role: "RESIDENT",
-        societyId: invite.societyId,
-        residentProfile: { create: { flatId: invite.flatId } },
-      },
-    });
-    await tx.pendingResidentInvite.update({
-      where: { id: invite.id },
-      data: { status: "CLAIMED", claimedAt: new Date() },
-    });
-    return created;
-  });
 
-  return issueSession(user);
+  // No session until the emailed code proves the address is theirs — the
+  // account is created unverified and `verifyEmailOtp` logs them in.
+  const code = await issueEmailOtp(user);
+  return {
+    status: "OTP_REQUIRED",
+    channel: "email",
+    email,
+    ...(otpDevEcho() ? { devCode: code } : {}),
+  };
 }
 
 /**
@@ -541,12 +559,37 @@ export async function googleLogin(input: {
     where: { email: payload.email },
   });
   if (byEmail) {
-    // MVP: no account linking (see plan "Open Items").
-    throw new TRPCError({
-      code: "CONFLICT",
-      message:
-        "An account already exists with this email — log in with your password",
+    // Link Google to the existing password account and log them in. Only when
+    // Google attests the address (`email_verified`) — that attestation is what
+    // makes it the same person and not someone who registered a lookalike
+    // Google account over an unverified mailbox.
+    if (!payload.email_verified) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message:
+          "An account already exists with this email — log in with your password",
+      });
+    }
+    if (!byEmail.isActive) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "This account has been deactivated — contact your society admin",
+      });
+    }
+    const linked = await prisma.user.update({
+      where: { id: byEmail.id },
+      data: {
+        googleId: payload.sub,
+        // Google has proven the mailbox, so the password-login OTP gate is
+        // satisfied too.
+        emailVerified: true,
+        avatarUrl: byEmail.avatarUrl ?? payload.picture ?? null,
+      },
     });
+    logger.info("Linked Google sign-in to existing password account", {
+      userId: linked.id,
+    });
+    return issueSession(await claimPendingInvite(linked));
   }
 
   const invite = await prisma.pendingResidentInvite.findFirst({

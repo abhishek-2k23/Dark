@@ -85,8 +85,8 @@
     "/v1/auth/signup": {
       "post": {
         "operationId": "auth-signup",
-        "summary": "Sign up with email/phone and password",
-        "description": "Creates a resident account. Requires a PendingResidentInvite matching the email or phone (created by a society admin); the account is auto-linked to the invited flat and the invite is marked CLAIMED. Errors: 400 if neither email nor phone is given, 403 if no invite is found, 409 if an account already exists with the email/phone.",
+        "summary": "Sign up with email and password (OTP-verified)",
+        "description": "Creates a resident account and emails a verification OTP — no session is issued until the code is confirmed at /v1/auth/email-otp/verify. With a PendingResidentInvite matching the email the account is auto-linked to the invited flat and the invite is marked CLAIMED; without one the account is created society-less and held at the join-a-society gate. Errors: 409 if an account already exists with the email.",
         "tags": [
           "Auth"
         ],
@@ -112,12 +112,7 @@
                     "type": "string",
                     "format": "email",
                     "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
-                    "description": "Email address (this or phone required)"
-                  },
-                  "phone": {
-                    "type": "string",
-                    "pattern": "^\\d{10}$",
-                    "description": "10-digit phone number (this or email required)"
+                    "description": "Email address the account is created under"
                   },
                   "password": {
                     "type": "string",
@@ -127,6 +122,7 @@
                 },
                 "required": [
                   "name",
+                  "email",
                   "password"
                 ]
               }
@@ -141,99 +137,31 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "accessToken": {
+                    "status": {
                       "type": "string",
-                      "description": "Short-lived JWT (~15 min); send as 'Authorization: Bearer <token>'"
+                      "const": "OTP_REQUIRED"
                     },
-                    "refreshToken": {
+                    "channel": {
                       "type": "string",
-                      "description": "Long-lived opaque token (~30 days); exchange at /v1/auth/refresh"
+                      "const": "email",
+                      "description": "Where the code was sent"
                     },
-                    "user": {
-                      "type": "object",
-                      "properties": {
-                        "id": {
-                          "type": "string",
-                          "description": "User id"
-                        },
-                        "name": {
-                          "type": "string",
-                          "description": "Full name"
-                        },
-                        "email": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ],
-                          "description": "Email address, if set"
-                        },
-                        "phone": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ],
-                          "description": "Phone number, if set"
-                        },
-                        "role": {
-                          "type": "string",
-                          "enum": [
-                            "RESIDENT",
-                            "GUARD",
-                            "ADMIN"
-                          ],
-                          "description": "Role of the account"
-                        },
-                        "avatarUrl": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ],
-                          "description": "Profile photo URL, if set"
-                        },
-                        "societyId": {
-                          "anyOf": [
-                            {
-                              "type": "string"
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ],
-                          "description": "Society the user belongs to. Null for a Google account created before any invite existed for its email — such a user can sign in but has no society data, and clients should hold them at a 'waiting for an invite' gate. Set automatically once an admin invites the email."
-                        }
-                      },
-                      "required": [
-                        "id",
-                        "name",
-                        "email",
-                        "phone",
-                        "role",
-                        "avatarUrl",
-                        "societyId"
-                      ],
-                      "additionalProperties": false,
-                      "description": "Public shape of the authenticated user"
+                    "email": {
+                      "type": "string",
+                      "description": "Email address the OTP was sent to"
+                    },
+                    "devCode": {
+                      "description": "The OTP itself — present only when OTP_DEV_ECHO=true (dev)",
+                      "type": "string"
                     }
                   },
                   "required": [
-                    "accessToken",
-                    "refreshToken",
-                    "user"
+                    "status",
+                    "channel",
+                    "email"
                   ],
                   "additionalProperties": false,
-                  "description": "Token pair plus the logged-in user"
+                  "description": "Email is not verified — confirm the emailed code via /v1/auth/email-otp/verify"
                 }
               }
             }
@@ -1067,7 +995,7 @@
       "post": {
         "operationId": "auth-googleLogin",
         "summary": "Log in with a Google ID token",
-        "description": "Verifies the Google ID token server-side. Logs in an existing Google-linked account, or creates one when a PendingResidentInvite matches the Google email. Errors: 401 on an invalid token, 403 if no invite matches, 409 if a password account already uses the email, 412 if Google login is not configured on the server.",
+        "description": "Verifies the Google ID token server-side. Logs in an existing Google-linked account; links Google onto an existing password account with the same (Google-verified) email and logs it in; or creates a new account — attached to the society when a PendingResidentInvite matches the email, society-less otherwise. Errors: 401 on an invalid token, 403 if the account is deactivated, 409 if the Google email is unverified and a password account uses it, 412 if Google login is not configured on the server.",
         "tags": [
           "Auth"
         ],

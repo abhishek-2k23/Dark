@@ -55,10 +55,17 @@ export default function NoSocietyScreen() {
   });
 
   // Signed out from here, or a refresh picked up a society — either way this
-  // screen no longer applies; let the launch gate re-route.
+  // screen no longer applies.
   if (status === "unauthenticated") return <Redirect href="/(auth)/login" />;
   if (status === "authenticated" && user?.societyId) {
-    return <Redirect href="/" />;
+    // An approval or invite just landed. Residents get walked through
+    // profile-setup (photo + emergency contact) before the dashboard — this is
+    // their real "first login" moment; other roles go straight home.
+    return (
+      <Redirect
+        href={user.role === "RESIDENT" ? "/(resident)/profile-setup" : "/"}
+      />
+    );
   }
 
   const onCheckAgain = async () => {

@@ -28,8 +28,13 @@ const OTP_LENGTH = 6;
 export default function OtpScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const params = useLocalSearchParams<{ email?: string; devCode?: string }>();
+  const params = useLocalSearchParams<{
+    email?: string;
+    devCode?: string;
+    flow?: string;
+  }>();
   const email = params.email ?? "";
+  const fromSignup = params.flow === "signup";
   const setSession = useAuthStore((s) => s.setSession);
   const showToast = useUIStore((s) => s.showToast);
 
@@ -61,7 +66,13 @@ export default function OtpScreen() {
   const verify = trpc.auth.verifyEmailOtp.useMutation({
     onSuccess: async (session) => {
       await setSession(session);
-      showToast(t("auth.welcomeToast"), "success");
+      showToast(t(fromSignup ? "signup.welcome" : "auth.welcomeToast"), "success");
+      // First login after signup → collect photo + emergency contact before
+      // the dashboard. Society-less signups pass the no-society gate first;
+      // that screen sends them to profile-setup once they're approved.
+      if (fromSignup && session.user.societyId && session.user.role === "RESIDENT") {
+        router.replace("/(resident)/profile-setup");
+      }
     },
     onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
