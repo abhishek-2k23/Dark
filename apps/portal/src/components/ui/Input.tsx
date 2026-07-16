@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type Ref } from "react";
 import {
   TextInput,
   View,
@@ -16,6 +16,12 @@ import { Icon, type IconName } from "./Icon";
 import { Text } from "./Text";
 
 export interface InputProps extends TextInputProps {
+  /**
+   * React 19 ref-as-prop: lands in `...rest` and spreads onto the TextInput,
+   * so callers can imperatively focus() the field. Declared here because
+   * TextInputProps itself doesn't carry `ref`.
+   */
+  ref?: Ref<TextInput>;
   label?: string;
   /** Right-aligned trailing label, e.g. "Optional". */
   labelHint?: string;

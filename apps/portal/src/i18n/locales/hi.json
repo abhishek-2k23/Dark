@@ -116,17 +116,25 @@
     "registerMissingFields": "सभी सोसायटी फ़ील्ड और एडमिन का नाम भरें।",
     "registerMissingAdminId": "एडमिन का ईमेल या फ़ोन नंबर दें।",
     "registerShortPassword": "पासवर्ड कम से कम 8 अक्षरों का होना चाहिए।",
-    "haveAccount": "पहले से खाता है?"
+    "haveAccount": "पहले से खाता है?",
+    "or": "या",
+    "signInWithGoogle": "Google से साइन इन करें",
+    "createSociety": "सोसाइटी बनाएँ",
+    "missingIdentifier": "पहले अपना ईमेल या फ़ोन नंबर दर्ज करें",
+    "welcomeTitle": "प्रांगण में आपका स्वागत है",
+    "welcomeTagline": "जहाँ गेट समुदाय से मिलता है",
+    "enterEmail": "अपना ईमेल दर्ज करें",
+    "emailPlaceholder": "you@email.com",
+    "missingEmail": "सही ईमेल पता दर्ज करें।"
   },
   "otp": {
-    "title": "अपना ईमेल सत्यापित करें",
-    "subtitle": "{{email}} पर भेजा गया 6-अंकों का कोड दर्ज करें।",
-    "codeLabel": "सत्यापन कोड",
-    "verify": "सत्यापित करें और जारी रखें",
+    "sentTo": "इस ईमेल पर भेजा गया 6-अंकों का OTP दर्ज करें",
     "resend": "कोड पुनः भेजें",
     "resent": "एक नया कोड भेजा जा रहा है।",
     "back": "लॉगिन पर वापस जाएँ",
-    "missingCode": "6-अंकों का कोड दर्ज करें।"
+    "missingCode": "6-अंकों का कोड दर्ज करें।",
+    "notReceived": "OTP नहीं मिला?",
+    "resendIn": "{{time}} के बाद दोबारा भेजें"
   },
   "signup": {
     "title": "खाता बनाएँ",
@@ -570,7 +578,18 @@
     "confirmReject": "रसीद अस्वीकार करें",
     "rejectReasonPlaceholder": "क्यों? निवासी इसे देखेंगे।",
     "receiptVerified": "भुगतान सत्यापित",
-    "receiptRejected": "रसीद अस्वीकृत"
+    "receiptRejected": "रसीद अस्वीकृत",
+    "joinRequests": "जुड़ने के अनुरोध",
+    "joinRequestsBody": "आपकी सोसाइटी से जुड़ने के इच्छुक लोग",
+    "noJoinRequests": "अभी कोई अनुरोध नहीं",
+    "noJoinRequestsBody": "जब कोई आपकी सोसाइटी से जुड़ने का अनुरोध करेगा, तो वह यहाँ 2 घंटे तक दिखेगा।",
+    "approve": "स्वीकृत करें",
+    "confirmApprove": "निवासी को शामिल करें",
+    "rejectRequest": "अनुरोध अस्वीकारें",
+    "rejectRequestConfirm": "{{name}} का अनुरोध अस्वीकारें? इसके बाद वे दोबारा अनुरोध नहीं कर पाएँगे — केवल आमंत्रण से ही शामिल हो सकेंगे।",
+    "requestApproved": "निवासी शामिल किया गया",
+    "requestRejected": "अनुरोध अस्वीकृत",
+    "expiresAt": "{{time}} तक"
   },
   "notifications": {
     "title": "सूचनाएँ",
@@ -747,6 +766,19 @@
     "checkAgain": "दोबारा जाँचें",
     "tryAnother": "दूसरा खाता उपयोग करें",
     "hint": "एडमिन आपके फ्लैट रिकॉर्ड में दर्ज ईमेल पर आमंत्रण भेजते हैं — वह इससे अलग हो सकता है।",
-    "stillNoInvite": "इस ईमेल के लिए अभी भी कोई आमंत्रण नहीं है।"
+    "stillNoInvite": "इस ईमेल के लिए अभी भी कोई आमंत्रण नहीं है।",
+    "joinTitle": "सोसाइटी से जुड़ने का अनुरोध करें",
+    "joinBody": "अपनी सोसाइटी के एडमिन का ईमेल दर्ज करें। उन्हें आपका अनुरोध मिलेगा और वे आपको शामिल कर सकेंगे।",
+    "adminEmailPlaceholder": "admin@yoursociety.com",
+    "requestCta": "जुड़ने का अनुरोध भेजें",
+    "requestSubmitted": "अनुरोध भेज दिया गया। यदि यह ईमेल किसी सोसाइटी एडमिन का है, तो वे इसे अभी देखेंगे।",
+    "badEmail": "यह ईमेल पता सही नहीं लगता",
+    "pendingTitle": "अनुरोध लंबित",
+    "pendingBody": "{{society}} के जवाब की प्रतीक्षा है — अनुरोध {{time}} तक खुला रहेगा।",
+    "expiredTitle": "कोई जवाब नहीं",
+    "expiredBody": "{{society}} ने समय रहते जवाब नहीं दिया।",
+    "retryAt": "आप {{time}} के बाद फिर से पूछ सकते हैं।",
+    "rejectedTitle": "अनुरोध अस्वीकृत",
+    "rejectedBody": "{{society}} ने आपका अनुरोध अस्वीकार कर दिया। अब केवल उनका एडमिन आपको आमंत्रित कर सकता है — या किसी और सोसाइटी से पूछें।"
   }
 }

@@ -116,17 +116,25 @@
     "registerMissingFields": "Fill in all society fields and the admin name.",
     "registerMissingAdminId": "Provide an admin email or phone number.",
     "registerShortPassword": "Password must be at least 8 characters.",
-    "haveAccount": "Already have an account?"
+    "haveAccount": "Already have an account?",
+    "or": "or",
+    "signInWithGoogle": "Sign in with Google",
+    "createSociety": "Create society",
+    "missingIdentifier": "Enter your email or phone number first",
+    "welcomeTitle": "Welcome to Prangan",
+    "welcomeTagline": "Where the Gate Meets the Community",
+    "enterEmail": "Enter your email",
+    "emailPlaceholder": "you@email.com",
+    "missingEmail": "Enter a valid email address."
   },
   "otp": {
-    "title": "Verify your email",
-    "subtitle": "Enter the 6-digit code we sent to {{email}}.",
-    "codeLabel": "Verification code",
-    "verify": "Verify & continue",
+    "sentTo": "Enter the 6-digit OTP sent to",
     "resend": "Resend code",
     "resent": "A new code is on its way.",
     "back": "Back to login",
-    "missingCode": "Enter the 6-digit code."
+    "missingCode": "Enter the 6-digit code.",
+    "notReceived": "Not received the OTP?",
+    "resendIn": "Resend after {{time}}"
   },
   "signup": {
     "title": "Create account",
@@ -570,7 +578,18 @@
     "confirmReject": "Reject receipt",
     "rejectReasonPlaceholder": "Why? The resident will see this.",
     "receiptVerified": "Payment verified",
-    "receiptRejected": "Receipt rejected"
+    "receiptRejected": "Receipt rejected",
+    "joinRequests": "Join requests",
+    "joinRequestsBody": "People asking to join your society",
+    "noJoinRequests": "No requests right now",
+    "noJoinRequestsBody": "When someone asks to join your society, they'll show up here for 2 hours.",
+    "approve": "Approve",
+    "confirmApprove": "Admit resident",
+    "rejectRequest": "Decline request",
+    "rejectRequestConfirm": "Decline {{name}}'s request? They won't be able to ask your society again — only an invite can admit them after this.",
+    "requestApproved": "Resident admitted",
+    "requestRejected": "Request declined",
+    "expiresAt": "until {{time}}"
   },
   "notifications": {
     "title": "Notifications",
@@ -747,6 +766,19 @@
     "checkAgain": "Check again",
     "tryAnother": "Use a different account",
     "hint": "Your admin invites you using the email on your flat record — that may be a different address to this one.",
-    "stillNoInvite": "Still no invite for this email yet."
+    "stillNoInvite": "Still no invite for this email yet.",
+    "joinTitle": "Ask to join a society",
+    "joinBody": "Enter your society admin's email. They'll get your request and can let you in.",
+    "adminEmailPlaceholder": "admin@yoursociety.com",
+    "requestCta": "Request to join",
+    "requestSubmitted": "Request sent. If that email belongs to a society admin, they'll see it now.",
+    "badEmail": "That doesn't look like an email address",
+    "pendingTitle": "Request pending",
+    "pendingBody": "Waiting for {{society}} to respond — the request stays open until {{time}}.",
+    "expiredTitle": "No response",
+    "expiredBody": "{{society}} didn't answer in time.",
+    "retryAt": "You can ask them again after {{time}}.",
+    "rejectedTitle": "Request declined",
+    "rejectedBody": "{{society}} declined your request. Only their admin can invite you now — or try another society."
   }
 }
