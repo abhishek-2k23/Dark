@@ -1,6 +1,11 @@
 import http from "node:http";
 import { logger } from "@repo/logger";
-import { visitorService, preApprovalService, dueService } from "@repo/services";
+import {
+  visitorService,
+  preApprovalService,
+  dueService,
+  joinRequestService,
+} from "@repo/services";
 import { app as expressApplication } from "./server";
 
 import { env } from "./env";
@@ -21,8 +26,14 @@ function startExpirySweep() {
       );
       const lapsedPreApprovals = await preApprovalService.expireLapsedPreApprovals();
       const overdueDues = await dueService.markOverdueDues();
-      if (staleVisitors || lapsedPreApprovals || overdueDues) {
-        logger.info("Expiry sweep", { staleVisitors, lapsedPreApprovals, overdueDues });
+      const lapsedJoinRequests = await joinRequestService.expireStaleJoinRequests();
+      if (staleVisitors || lapsedPreApprovals || overdueDues || lapsedJoinRequests) {
+        logger.info("Expiry sweep", {
+          staleVisitors,
+          lapsedPreApprovals,
+          overdueDues,
+          lapsedJoinRequests,
+        });
       }
     } catch (err) {
       logger.error("Expiry sweep failed", { err });

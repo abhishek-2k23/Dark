@@ -138,7 +138,21 @@ enum DeviceType {
   ANDROID
 }
 
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  // Permanent for that society: only an admin invite can let the user in after
+  // this. Guards submitJoinRequest.
+  REJECTED
+  // The admin never answered within the TTL. The user may request again after
+  // the cooldown (measured from the request's createdAt).
+  EXPIRED
+}
+
 enum NotificationType {
+  JOIN_REQUEST_RECEIVED
+  JOIN_REQUEST_APPROVED
+  JOIN_REQUEST_REJECTED
   PAYMENT_VERIFIED
   PAYMENT_REJECTED
   VISITOR_PENDING
@@ -177,6 +191,7 @@ model Society {
   polls            Poll[]
   amenities        Amenity[]
   serviceProviders ServiceProvider[]
+  joinRequests     SocietyJoinRequest[]
 }
 
 model Tower {
@@ -249,6 +264,8 @@ model User {
   sentInvites           PendingResidentInvite[]
   addedServiceProviders ServiceProvider[]
   verifiedPayments      Payment[]               @relation("PaymentVerifiedByAdmin")
+  joinRequests          SocietyJoinRequest[]    @relation("JoinRequestUser")
+  decidedJoinRequests   SocietyJoinRequest[]    @relation("JoinRequestDecidedBy")
   notifications         Notification[]
 }
 
@@ -349,6 +366,29 @@ model EmailOtp {
   createdAt DateTime        @default(now())
 
   @@index([userId, purpose])
+}
+
+// A society-less user asking a society's admin to let them in. Created from
+// the no-society screen by giving an admin's email; the admin approves (picking
+// the flat) or rejects from their queue. Sibling to PendingResidentInvite,
+// which is the admin-initiated direction and stays authoritative.
+model SocietyJoinRequest {
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation("JoinRequestUser", fields: [userId], references: [id])
+  societyId        String
+  society          Society           @relation(fields: [societyId], references: [id])
+  status           JoinRequestStatus @default(PENDING)
+  // PENDING requests past this moment are dead: hidden from the admin queue
+  // and flipped to EXPIRED by the sweep.
+  expiresAt        DateTime
+  decidedByAdminId String?
+  decidedByAdmin   User?             @relation("JoinRequestDecidedBy", fields: [decidedByAdminId], references: [id])
+  decidedAt        DateTime?
+  createdAt        DateTime          @default(now())
+
+  @@index([societyId, status])
+  @@index([userId, createdAt])
 }
 
 model PendingResidentInvite {

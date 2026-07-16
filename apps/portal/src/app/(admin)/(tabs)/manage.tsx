@@ -57,6 +57,13 @@ const ENTRIES: Entry[] = [
     href: "/(admin)/amenities",
   },
   {
+    icon: "person-add-outline",
+    hue: hueFor("residents"),
+    titleKey: "admin.joinRequests",
+    bodyKey: "admin.joinRequestsBody",
+    href: "/(admin)/join-requests",
+  },
+  {
     icon: "receipt-outline",
     hue: hueFor("payments"),
     titleKey: "admin.verifyPayments",

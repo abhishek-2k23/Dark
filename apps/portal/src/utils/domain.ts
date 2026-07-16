@@ -100,6 +100,9 @@ export const serviceCategoryIcon: Record<string, IconName> = {
 };
 
 export const notificationTypeIcon: Record<string, IconName> = {
+  JOIN_REQUEST_RECEIVED: "person-add-outline",
+  JOIN_REQUEST_APPROVED: "checkmark-done-outline",
+  JOIN_REQUEST_REJECTED: "close-circle-outline",
   VISITOR_PENDING: "walk-outline",
   VISITOR_APPROVED: "checkmark-circle-outline",
   VISITOR_DENIED: "close-circle-outline",
@@ -142,6 +145,7 @@ export function notificationHref(
     ) {
       return "/(resident)/(tabs)/payments";
     }
+    if (type.startsWith("JOIN_REQUEST")) return "/";
     return null;
   }
 
@@ -154,6 +158,7 @@ export function notificationHref(
     if (type === "PAYMENT_VERIFIED" || type === "PAYMENT_REJECTED") {
       return "/(admin)/payments/verify";
     }
+    if (type === "JOIN_REQUEST_RECEIVED") return "/(admin)/join-requests";
     return null;
   }
 

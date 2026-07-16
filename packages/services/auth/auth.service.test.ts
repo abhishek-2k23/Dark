@@ -149,15 +149,22 @@ describe("signup", () => {
     );
   });
 
-  it("rejects when no invite matches", async () => {
-    await expectTRPCError(
-      authService.signup({
-        name: "No Invite",
-        email: `uninvited-${h.runId}@test.local`,
-        password,
-      }),
-      "FORBIDDEN",
-    );
+  it("creates a society-less account when no invite matches", async () => {
+    // The no-society gate: signing up is open; the society comes later via an
+    // admin invite or an approved join request.
+    const session = await authService.signup({
+      name: "No Invite",
+      email: `uninvited-${h.runId}@test.local`,
+      password,
+    });
+    expect(session.user.societyId).toBeNull();
+    const created = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { residentProfile: true },
+    });
+    expect(created?.role).toBe("RESIDENT");
+    // No flat yet, so no resident profile either.
+    expect(created?.residentProfile).toBeNull();
   });
 
   it("creates a resident linked to the invited flat and claims the invite", async () => {
@@ -374,11 +381,12 @@ describe("google login", () => {
     );
   });
 
-  it("rejects a Google login with no matching invite", async () => {
-    await expectTRPCError(
-      authService.googleLogin({ idToken: `valid:stranger-${h.runId}@test.local` }),
-      "FORBIDDEN",
-    );
+  it("creates a society-less account for a Google login with no matching invite", async () => {
+    const session = await authService.googleLogin({
+      idToken: `valid:stranger-${h.runId}@test.local`,
+    });
+    expect(session.user.societyId).toBeNull();
+    expect(session.user.role).toBe("RESIDENT");
   });
 });
 

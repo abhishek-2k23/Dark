@@ -2437,6 +2437,513 @@
         }
       }
     },
+    "/v1/join-requests": {
+      "post": {
+        "operationId": "joinRequest-submit",
+        "summary": "Ask to join a society by naming its admin's email",
+        "description": "For signed-in users with no society. ALWAYS returns submitted:true whether or not the email matched an admin — this endpoint must not be usable to probe which emails belong to admins. The caller's own history still errors honestly: 409 if they already have a pending request, 403 if that society rejected them before (permanent — only an admin invite can follow), 429 during the re-request cooldown after an expired request, 412 if they already belong to a society. Requests lapse after JOIN_REQUEST_TTL_MIN (default 120).",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "adminEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Email of the target society's admin — how the society is identified"
+                  }
+                },
+                "required": [
+                  "adminEmail"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "submitted": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "submitted"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "joinRequest-list",
+        "summary": "List live join requests for the admin's society",
+        "description": "Cursor-paginated, oldest first. Requests past their TTL never appear, even before the sweep marks them EXPIRED. Errors: 403 if not an admin, 412 if the account has no society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "description": "Id of the last request from the previous page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Request id"
+                          },
+                          "userName": {
+                            "type": "string",
+                            "description": "Who is asking"
+                          },
+                          "userEmail": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Their email, if any"
+                          },
+                          "userPhone": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Their phone, if any"
+                          },
+                          "userAvatarUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Their profile photo, if set"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "description": "ISO time the request lapses"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO time the request was made"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "userName",
+                          "userEmail",
+                          "userPhone",
+                          "userAvatarUrl",
+                          "expiresAt",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A live join request awaiting this admin's decision"
+                      },
+                      "description": "Requests on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page, or null"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/join-requests/mine": {
+      "get": {
+        "operationId": "joinRequest-mine",
+        "summary": "The caller's most recent join request, if any",
+        "description": "Drives the no-society screen: shows a pending countdown, an expired request's re-request time, or a rejection. Null when the caller has never asked. Showing a user their own request leaks nothing, so this is exact where submit is vague.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Request id"
+                        },
+                        "societyName": {
+                          "type": "string",
+                          "description": "Society the request targets"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "PENDING",
+                            "APPROVED",
+                            "REJECTED",
+                            "EXPIRED"
+                          ],
+                          "description": "Request lifecycle. REJECTED is permanent for that society (only an admin invite can follow); EXPIRED means the admin never answered within the TTL and the user may ask again after the cooldown"
+                        },
+                        "expiresAt": {
+                          "type": "string",
+                          "description": "ISO time a PENDING request lapses"
+                        },
+                        "canRequestAgainAt": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "When an EXPIRED request stops blocking a new one; null otherwise"
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "description": "ISO time the request was made"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "societyName",
+                        "status",
+                        "expiresAt",
+                        "canRequestAgainAt",
+                        "createdAt"
+                      ],
+                      "additionalProperties": false,
+                      "description": "The caller's most recent join request"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/join-requests/decide": {
+      "post": {
+        "operationId": "joinRequest-decide",
+        "summary": "Approve or reject a join request",
+        "description": "Approving requires flatId — a resident without a flat can't use visitors, dues, or tickets — and attaches the user to the society plus creates their resident profile in one transaction; their next session refresh sees the society. Rejecting is permanent for that society. Either way the requester is notified. Errors: 400 approving without a flat, 403 if not an admin, 404 for a request or flat outside the admin's society, 409 if already decided/expired or the user joined elsewhere.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "description": "Id of the request to decide on"
+                  },
+                  "approve": {
+                    "type": "boolean",
+                    "description": "true admits the user; false declines them"
+                  },
+                  "flatId": {
+                    "type": "string",
+                    "description": "Required when approving — the flat the new resident belongs to"
+                  }
+                },
+                "required": [
+                  "requestId",
+                  "approve"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "PENDING",
+                        "APPROVED",
+                        "REJECTED",
+                        "EXPIRED"
+                      ],
+                      "description": "Request lifecycle. REJECTED is permanent for that society (only an admin invite can follow); EXPIRED means the admin never answered within the TTL and the user may ask again after the cooldown"
+                    }
+                  },
+                  "required": [
+                    "status"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/towers": {
       "post": {
         "operationId": "tower-create",
@@ -15831,6 +16338,9 @@
                           "type": {
                             "type": "string",
                             "enum": [
+                              "JOIN_REQUEST_RECEIVED",
+                              "JOIN_REQUEST_APPROVED",
+                              "JOIN_REQUEST_REJECTED",
                               "VISITOR_PENDING",
                               "VISITOR_APPROVED",
                               "VISITOR_DENIED",
@@ -15999,6 +16509,9 @@
                     "type": {
                       "type": "string",
                       "enum": [
+                        "JOIN_REQUEST_RECEIVED",
+                        "JOIN_REQUEST_APPROVED",
+                        "JOIN_REQUEST_REJECTED",
                         "VISITOR_PENDING",
                         "VISITOR_APPROVED",
                         "VISITOR_DENIED",

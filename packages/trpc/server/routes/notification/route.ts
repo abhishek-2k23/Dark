@@ -9,6 +9,9 @@ const pushTokenPath = generatePath("v1/push-tokens");
 
 const NotificationTypeEnum = z
   .enum([
+    "JOIN_REQUEST_RECEIVED",
+    "JOIN_REQUEST_APPROVED",
+    "JOIN_REQUEST_REJECTED",
     "VISITOR_PENDING",
     "VISITOR_APPROVED",
     "VISITOR_DENIED",

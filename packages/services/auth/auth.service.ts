@@ -271,15 +271,23 @@ export async function signup(input: {
     where: { status: "PENDING", OR: identifierFilter(email, phone) },
     orderBy: { createdAt: "desc" },
   });
-  if (!invite) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message:
-        "No invite found for this email or phone — ask your society admin to add you first",
-    });
-  }
 
   const passwordHash = await hashPassword(password);
+
+  // No invite: the account is still created, just society-less — mirroring
+  // googleLogin. Clients hold these users at the no-society gate, where they
+  // can send a join request; an admin invite or approval attaches the society
+  // on their next refresh. No residentProfile yet: that needs a flat, and the
+  // flat only comes with the invite/approval.
+  if (!invite) {
+    const user = await prisma.user.create({
+      data: { name, email, phone, passwordHash, role: "RESIDENT" },
+    });
+    logger.info("Created society-less user via signup (no matching invite)", {
+      userId: user.id,
+    });
+    return issueSession(user);
+  }
   const user = await prisma.$transaction(async (tx) => {
     const created = await tx.user.create({
       data: {

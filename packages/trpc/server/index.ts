@@ -4,6 +4,7 @@ import { healthRouter } from "./routes/health/route";
 import { authRouter } from "./routes/auth/route";
 import { accountRouter } from "./routes/account/route";
 import { societyRouter, towerRouter, flatRouter } from "./routes/society/route";
+import { joinRequestRouter } from "./routes/society/join-request.route";
 import { residentRouter } from "./routes/resident/route";
 import { staffRouter } from "./routes/staff/route";
 import { profileRouter, familyMemberRouter, vehicleRouter } from "./routes/profile/route";
@@ -22,6 +23,7 @@ export const serverRouter = router({
   auth: authRouter,
   account: accountRouter,
   society: societyRouter,
+  joinRequest: joinRequestRouter,
   tower: towerRouter,
   flat: flatRouter,
   resident: residentRouter,
