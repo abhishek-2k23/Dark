@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
+import { ImageField } from "@/components/media";
 import {
   Badge,
   Button,
   Card,
+  Input,
   GlassCard,
   Icon,
   IconCircle,
@@ -17,6 +19,7 @@ import {
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
+import { toErrorMessage } from "@/utils/errors";
 import { dueStatusTone, paymentStatusTone } from "@/utils/domain";
 import { formatDate, formatDateTime, formatMoney, MONTH_KEYS } from "@/utils/format";
 
@@ -31,6 +34,9 @@ function DuesList() {
   const showToast = useUIStore((s) => s.showToast);
   const utils = trpc.useUtils();
   const [payingId, setPayingId] = useState<string | null>(null);
+  const [offlineId, setOfflineId] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [note, setNote] = useState("");
   const [method, setMethod] = useState<"UPI" | "CARD" | "NETBANKING">("UPI");
 
   const q = trpc.due.list.useInfiniteQuery(
@@ -50,6 +56,18 @@ function DuesList() {
       void utils.payment.history.invalidate();
     },
     onError: (e) => showToast(e.message, "error"),
+  });
+
+  const submitOffline = trpc.payment.submitOffline.useMutation({
+    onSuccess: () => {
+      showToast(t("payments.receiptSubmittedToast"), "success");
+      setOfflineId(null);
+      setReceiptUrl(null);
+      setNote("");
+      void utils.due.list.invalidate();
+      void utils.payment.history.invalidate();
+    },
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
 
   if (q.isLoading) return <Loading />;
@@ -83,6 +101,7 @@ function DuesList() {
       {items.map((d) => {
         const payable = d.status === "PENDING" || d.status === "OVERDUE";
         const paying = payingId === d.id;
+        const offline = offlineId === d.id;
         return (
           <Card key={d.id} className="gap-3">
             <View className="flex-row items-center gap-3">
@@ -110,13 +129,79 @@ function DuesList() {
               </View>
             </View>
 
-            {payable && !paying && (
-              <Button
-                label={t("payments.payNow")}
-                variant="primary"
-                size="sm"
-                onPress={() => setPayingId(d.id)}
-              />
+            {payable && !paying && !offline && (
+              <View className="flex-row gap-2">
+                <Button
+                  label={t("payments.payNow")}
+                  variant="primary"
+                  size="sm"
+                  className="flex-1"
+                  onPress={() => setPayingId(d.id)}
+                />
+                {/* For dues settled at the office by cash or cheque — the
+                    receipt is a claim an admin still has to verify. */}
+                <Button
+                  label={t("payments.paidOffline")}
+                  variant="outline"
+                  size="sm"
+                  leftIcon="receipt-outline"
+                  className="flex-1"
+                  onPress={() => {
+                    setOfflineId(d.id);
+                    setReceiptUrl(null);
+                    setNote("");
+                  }}
+                />
+              </View>
+            )}
+
+            {offline && (
+              <View className="gap-3">
+                <ImageField
+                  value={receiptUrl}
+                  onChange={setReceiptUrl}
+                  kind="RECEIPT"
+                  label={t("payments.receipt")}
+                  hint={t("payments.receiptHint")}
+                  aspect={[4, 3]}
+                  contentFit="contain"
+                />
+                <Input
+                  placeholder={t("payments.notePlaceholder")}
+                  value={note}
+                  onChangeText={setNote}
+                  multiline
+                  style={{ minHeight: 56, textAlignVertical: "top" }}
+                />
+                <Text variant="caption" color="tertiary">
+                  {t("payments.offlineDisclaimer")}
+                </Text>
+                <View className="flex-row gap-2">
+                  <Button
+                    label={t("common.cancel")}
+                    variant="ghost"
+                    size="sm"
+                    className="flex-1"
+                    onPress={() => setOfflineId(null)}
+                  />
+                  <Button
+                    label={t("payments.submitReceipt")}
+                    variant="success"
+                    size="sm"
+                    className="flex-1"
+                    disabled={!receiptUrl}
+                    loading={submitOffline.isPending}
+                    onPress={() => {
+                      if (!receiptUrl) return;
+                      submitOffline.mutate({
+                        dueId: d.id,
+                        receiptUrl,
+                        note: note.trim() || undefined,
+                      });
+                    }}
+                  />
+                </View>
+              </View>
             )}
 
             {paying && (

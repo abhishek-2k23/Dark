@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
+import { PhotoGrid } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Button,
@@ -29,6 +30,7 @@ export default function CreateTicket() {
   const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>("MEDIUM");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
   const create = trpc.ticket.create.useMutation({
     onSuccess: (tk) => {
@@ -92,6 +94,17 @@ export default function CreateTicket() {
           style={{ minHeight: 96, textAlignVertical: "top" }}
         />
 
+        {/* Right after the description: a photo of the leak says more than
+            the text box ever will, and it saves the "can you send a picture?"
+            round-trip that otherwise costs a day. */}
+        <PhotoGrid
+          value={photoUrls}
+          onChange={setPhotoUrls}
+          kind="TICKET"
+          label={t("tickets.photos")}
+          max={5}
+        />
+
         <View className="gap-2">
           <Text variant="subtitle" color="primary">
             {t("tickets.priority")}
@@ -133,6 +146,7 @@ export default function CreateTicket() {
               priority,
               title: title.trim(),
               description: description.trim(),
+              photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
             });
           }}
           fullWidth

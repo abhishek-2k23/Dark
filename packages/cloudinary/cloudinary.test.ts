@@ -57,10 +57,39 @@ describe("getUploadSignature", () => {
     });
 
     it("every upload kind maps to its own folder", () => {
-      const kinds: UploadKind[] = ["AVATAR", "VISITOR", "TICKET", "NOTICE"];
+      const kinds: UploadKind[] = [
+        "AVATAR",
+        "VISITOR",
+        "TICKET",
+        "NOTICE",
+        "AMENITY",
+        "RECEIPT",
+        "LOGO",
+      ];
       const folders = kinds.map((kind) => getUploadSignature(kind).folder);
-      expect(folders).toEqual(["avatars", "visitors", "tickets", "notices"]);
-      expect(new Set(folders).size).toBe(4);
+      expect(folders).toEqual([
+        "avatars",
+        "visitors",
+        "tickets",
+        "notices",
+        "amenities",
+        "receipts",
+        "logos",
+      ]);
+      expect(new Set(folders).size).toBe(kinds.length);
+    });
+
+    it("signs every kind with its own transformation", () => {
+      for (const kind of Object.keys(UPLOAD_PRESETS) as UploadKind[]) {
+        const sig = getUploadSignature(kind);
+        expect(sig.transformation, kind).toBe(UPLOAD_PRESETS[kind].transformation);
+        expect(sig.signature, kind).toBe(
+          cloudinary.utils.api_sign_request(
+            { timestamp: sig.timestamp, folder: sig.folder, transformation: sig.transformation },
+            SECRET,
+          ),
+        );
+      }
     });
   });
 });

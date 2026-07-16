@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
+import { GatePass } from "@/components/GatePass";
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { VisitorRow } from "@/components/VisitorRow";
 import {
@@ -17,7 +18,6 @@ import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 import { preApprovalStatusTone } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
-import QRCode from "react-native-qrcode-svg";
 
 type Tab = "pending" | "history" | "passes";
 type Period = "TODAY" | "WEEK" | "MONTH" | "ALL";
@@ -136,6 +136,43 @@ function PassesList() {
     <View className="gap-3">
       {q.data.items.map((p) => {
         const open = expanded === p.id;
+
+        // An open, usable pass shows as the ticket itself — rendered outside a
+        // Card because its torn notches are painted in the screen's background
+        // colour and would read wrong against a card surface.
+        if (open && p.status === "ACTIVE") {
+          return (
+            <View key={p.id} className="gap-3">
+              <GatePass
+                guestName={p.guestName}
+                qrCode={p.qrCode}
+                validFrom={p.validFrom}
+                validTo={p.validTo}
+                vehicleNumber={p.vehicleNumber}
+                status={t(`enums.preApprovalStatus.${p.status}`)}
+                statusTone={preApprovalStatusTone[p.status] ?? "neutral"}
+              />
+              <View className="flex-row gap-2">
+                <Button
+                  label={t("passes.collapse")}
+                  variant="ghost"
+                  size="sm"
+                  className="flex-1"
+                  onPress={() => setExpanded(null)}
+                />
+                <Button
+                  label={t("passes.cancel")}
+                  variant="dangerSoft"
+                  size="sm"
+                  className="flex-1"
+                  loading={cancel.isPending}
+                  onPress={() => cancel.mutate({ preApprovalId: p.id })}
+                />
+              </View>
+            </View>
+          );
+        }
+
         return (
           <Card
             key={p.id}
@@ -158,23 +195,6 @@ function PassesList() {
                 size="sm"
               />
             </View>
-            {open && p.status === "ACTIVE" && (
-              <View className="items-center gap-4 pt-2">
-                <View className="rounded-2xl bg-white p-4">
-                  <QRCode value={p.qrCode} size={180} />
-                </View>
-                <Text variant="caption" color="secondary" align="center">
-                  {t("passes.qrHint")}
-                </Text>
-                <Button
-                  label={t("passes.cancel")}
-                  variant="dangerSoft"
-                  size="sm"
-                  loading={cancel.isPending}
-                  onPress={() => cancel.mutate({ preApprovalId: p.id })}
-                />
-              </View>
-            )}
           </Card>
         );
       })}

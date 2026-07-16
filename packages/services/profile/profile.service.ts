@@ -117,7 +117,8 @@ export async function updateMyProfile(
   actor: User,
   input: {
     name?: string;
-    avatarUrl?: string;
+    /** undefined leaves the current photo alone; null clears it. */
+    avatarUrl?: string | null;
     emergencyContactName?: string;
     emergencyContactPhone?: string;
   },
@@ -182,7 +183,8 @@ export async function updateFamilyMember(
     name?: string;
     relation?: string;
     age?: number;
-    photoUrl?: string;
+    /** undefined leaves the current photo alone; null clears it. */
+    photoUrl?: string | null;
   },
 ): Promise<FamilyMemberInfo> {
   assertCloudinaryUrl(input.photoUrl);

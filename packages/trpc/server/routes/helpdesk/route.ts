@@ -28,6 +28,9 @@ const UserRefModel = z.object({
 const TicketModel = z
   .object({
     id: z.string().describe("Ticket id"),
+    referenceCode: z
+      .string()
+      .describe("Human-readable handle, e.g. TKT-4B7Q2M — quote this when following up"),
     category: TicketCategoryEnum,
     title: z.string().describe("Short summary of the issue"),
     description: z.string().describe("Full description of the issue"),
@@ -50,6 +53,7 @@ const CommentModel = z
     id: z.string().describe("Comment id"),
     author: UserRefModel.describe("Who wrote the comment"),
     message: z.string().describe("Comment text"),
+    photoUrls: z.array(z.string()).describe("Photo URLs attached to the comment"),
     createdAt: z.string().describe("ISO creation time"),
   })
   .describe("A comment on a helpdesk ticket");
@@ -91,6 +95,11 @@ const AssignInput = z.object({
 const AddCommentInput = z.object({
   ticketId: z.string().describe("Id of the ticket"),
   message: z.string().min(1).describe("Comment text"),
+  photoUrls: z
+    .array(z.url())
+    .max(5)
+    .describe("Photo URLs (Cloudinary TICKET kind) — e.g. proof the issue is fixed")
+    .optional(),
 });
 
 // ---------------------------------------------------------------------------

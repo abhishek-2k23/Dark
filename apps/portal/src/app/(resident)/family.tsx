@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
+import { AvatarPicker } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Avatar,
@@ -25,6 +26,7 @@ export default function FamilyScreen() {
   const [name, setName] = useState("");
   const [relation, setRelation] = useState("");
   const [age, setAge] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const q = trpc.profile.me.useQuery();
   const members = q.data?.residentProfile?.familyMembers ?? [];
@@ -37,6 +39,7 @@ export default function FamilyScreen() {
       setName("");
       setRelation("");
       setAge("");
+      setPhotoUrl(null);
       invalidate();
     },
     onError: (e) => showToast(e.message, "error"),
@@ -88,6 +91,13 @@ export default function FamilyScreen() {
 
           {adding ? (
             <Card className="gap-4">
+              <AvatarPicker
+                value={photoUrl}
+                onChange={setPhotoUrl}
+                name={name}
+                size={80}
+                label={t("family.photoHint")}
+              />
               <Input
                 label={t("signup.name")}
                 leftIcon="person-outline"
@@ -130,6 +140,7 @@ export default function FamilyScreen() {
                       name: name.trim(),
                       relation: relation.trim(),
                       age: age.trim() ? Number(age.trim()) : undefined,
+                      photoUrl: photoUrl ?? undefined,
                     });
                   }}
                 />

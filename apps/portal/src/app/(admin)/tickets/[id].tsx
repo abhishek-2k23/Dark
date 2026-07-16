@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { ErrorState, Loading } from "@/components/ListState";
+import { PhotoGrid, PhotoStrip } from "@/components/media";
+import { TicketStub } from "@/components/TicketStub";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Avatar,
@@ -30,6 +32,7 @@ export default function AdminTicketDetail() {
   const showToast = useUIStore((s) => s.showToast);
   const utils = trpc.useUtils();
   const [message, setMessage] = useState("");
+  const [commentPhotos, setCommentPhotos] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
 
   const ticketId = id ?? "";
@@ -58,6 +61,7 @@ export default function AdminTicketDetail() {
   const comment = trpc.ticket.addComment.useMutation({
     onSuccess: () => {
       setMessage("");
+      setCommentPhotos([]);
       refresh();
     },
     onError: (e) => showToast(e.message, "error"),
@@ -102,6 +106,8 @@ export default function AdminTicketDetail() {
             <Text variant="body" color="secondary">
               {tk.description}
             </Text>
+            <PhotoStrip urls={tk.photoUrls} />
+            <TicketStub referenceCode={tk.referenceCode} />
             <Text variant="caption" color="tertiary">
               {t("admin.raisedByFlat", {
                 name: tk.raisedBy.name,
@@ -210,6 +216,7 @@ export default function AdminTicketDetail() {
                     </Text>
                   </View>
                   <Text variant="body">{c.message}</Text>
+                  <PhotoStrip urls={c.photoUrls} size={64} />
                 </Card>
               ))}
             </View>
@@ -223,6 +230,12 @@ export default function AdminTicketDetail() {
               multiline
               style={{ minHeight: 60, textAlignVertical: "top" }}
             />
+            <PhotoGrid
+              value={commentPhotos}
+              onChange={setCommentPhotos}
+              kind="TICKET"
+              max={3}
+            />
             <Button
               label={t("tickets.addComment")}
               variant="primary"
@@ -230,7 +243,11 @@ export default function AdminTicketDetail() {
               loading={comment.isPending}
               onPress={() => {
                 if (!message.trim()) return;
-                comment.mutate({ ticketId: tk.id, message: message.trim() });
+                comment.mutate({
+                  ticketId: tk.id,
+                  message: message.trim(),
+                  photoUrls: commentPhotos.length > 0 ? commentPhotos : undefined,
+                });
               }}
               fullWidth
             />

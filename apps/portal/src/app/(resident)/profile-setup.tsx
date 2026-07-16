@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
+import { AvatarPicker } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import {
-  Avatar,
   Button,
   Input,
   Link,
@@ -16,12 +16,12 @@ import {
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
+import { toErrorMessage } from "@/utils/errors";
 
 /**
- * Emergency-contact form. Two entry points:
+ * Profile photo + emergency-contact form. Two entry points:
  *  - first login after signup (onboarding copy + skip link)
  *  - "edit" from the profile tab (?edit=1 — prefilled, saves then goes back)
- * (Avatar upload arrives with real Cloudinary credentials — deferred.)
  */
 export default function ProfileSetupScreen() {
   const { t } = useTranslation();
@@ -35,14 +35,39 @@ export default function ProfileSetupScreen() {
   const me = trpc.profile.me.useQuery(undefined, { enabled: isEdit });
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(user?.avatarUrl ?? null);
 
   // Prefill once when editing.
   useEffect(() => {
     if (isEdit && me.data) {
       setContactName(me.data.emergencyContactName ?? "");
       setContactPhone(me.data.emergencyContactPhone ?? "");
+      setAvatarUrl(me.data.avatarUrl ?? null);
     }
   }, [isEdit, me.data]);
+
+  /**
+   * The photo saves on pick rather than waiting for the form's Save, because
+   * onboarding offers a Skip link — a tapped-through avatar would otherwise be
+   * silently discarded by the one path most likely to be taken.
+   */
+  const saveAvatar = trpc.profile.update.useMutation({
+    onSuccess: () => void utils.profile.me.invalidate(),
+  });
+
+  const onAvatarChange = (url: string | null) => {
+    const previous = avatarUrl;
+    setAvatarUrl(url);
+    saveAvatar.mutate(
+      { avatarUrl: url },
+      {
+        onError: (e) => {
+          setAvatarUrl(previous); // put the old photo back rather than lie
+          showToast(toErrorMessage(e, t), "error");
+        },
+      },
+    );
+  };
 
   const done = () =>
     isEdit ? router.back() : router.replace("/(resident)");
@@ -59,10 +84,27 @@ export default function ProfileSetupScreen() {
   return (
     <Screen scroll contentClassName="gap-6 pb-8">
       {isEdit ? (
-        <StackHeader title={t("profile.emergencyContact")} />
+        <>
+          <StackHeader title={t("profile.emergencyContact")} />
+          <View className="items-center">
+            <AvatarPicker
+              value={avatarUrl}
+              onChange={onAvatarChange}
+              name={user?.name}
+              size={88}
+              label={t("profileSetup.photoHint")}
+            />
+          </View>
+        </>
       ) : (
         <View className="items-center gap-3 pt-10">
-          <Avatar name={user?.name} size={88} />
+          <AvatarPicker
+            value={avatarUrl}
+            onChange={onAvatarChange}
+            name={user?.name}
+            size={88}
+            label={t("profileSetup.photoHint")}
+          />
           <View className="items-center gap-1">
             <Text variant="h1" align="center">
               {t("profileSetup.title", { name: user?.name?.split(" ")[0] ?? "" })}

@@ -28,6 +28,23 @@
     "voteNow": "अभी वोट करें",
     "enterDashboard": "डैशबोर्ड खोलें"
   },
+  "media": {
+    "sourceTitle": "फोटो जोड़ें",
+    "camera": "फोटो खींचें",
+    "gallery": "गैलरी से चुनें",
+    "add": "जोड़ें",
+    "addPhoto": "फोटो जोड़ें",
+    "changePhoto": "फोटो बदलें",
+    "remove": "हटाएँ",
+    "uploading": "अपलोड हो रहा है…",
+    "tooLarge": "यह छवि बहुत बड़ी है। 10 MB से कम की छवि चुनें।",
+    "countOfMax": "{{max}} में से {{current}}",
+    "permission": {
+      "camera": "कैमरा की अनुमति बंद है। फोटो खींचने के लिए सेटिंग्स में चालू करें।",
+      "library": "फोटो की अनुमति बंद है। फोटो चुनने के लिए सेटिंग्स में चालू करें।"
+    },
+    "viewPhoto": "फ़ोटो देखें"
+  },
   "tabs": {
     "home": "होम",
     "visitors": "आगंतुक",
@@ -145,7 +162,8 @@
     "contactPhone": "आपातकालीन संपर्क फ़ोन",
     "saved": "प्रोफ़ाइल अपडेट हो गई।",
     "missing": "संपर्क का नाम और सही फ़ोन नंबर दर्ज करें।",
-    "skip": "अभी छोड़ें"
+    "skip": "अभी छोड़ें",
+    "photoHint": "प्रोफ़ाइल फोटो"
   },
   "dashboard": {
     "greeting": "सुप्रभात, {{name}}!",
@@ -207,7 +225,15 @@
     "cancel": "पास रद्द करें",
     "cancelledToast": "पास रद्द हो गया।",
     "empty": "अभी कोई अतिथि पास नहीं",
-    "emptyBody": "साझा करने योग्य QR पास बनाने के लिए अतिथि को पूर्व-स्वीकृति दें।"
+    "emptyBody": "साझा करने योग्य QR पास बनाने के लिए अतिथि को पूर्व-स्वीकृति दें।",
+    "guestEmail": "मेहमान का ईमेल",
+    "emailedTo": "पास {{email}} पर भेजा गया",
+    "passCode": "पास कोड",
+    "validFrom": "इससे मान्य",
+    "validTo": "इस तक मान्य",
+    "flat": "फ़्लैट",
+    "host": "मेज़बान",
+    "collapse": "बंद करें"
   },
   "tickets": {
     "title": "हेल्पडेस्क",
@@ -230,7 +256,10 @@
     "thread": "टिप्पणियाँ",
     "noComments": "अभी कोई टिप्पणी नहीं।",
     "commentPlaceholder": "टिप्पणी लिखें…",
-    "addComment": "टिप्पणी जोड़ें"
+    "addComment": "टिप्पणी जोड़ें",
+    "photos": "फ़ोटो",
+    "reference": "संदर्भ संख्या",
+    "referenceHint": "फ़ॉलो-अप करते समय यह बताएं"
   },
   "amenities": {
     "title": "सुविधाएँ",
@@ -282,7 +311,14 @@
     "payNow": "अभी भुगतान करें",
     "confirmPay": "{{amount}} चुकाएँ",
     "initiatedToast": "भुगतान शुरू (ऑर्डर {{orderId}})। गेटवे की पुष्टि पर पूर्ण होगा।",
-    "noHistory": "अभी कोई भुगतान नहीं"
+    "noHistory": "अभी कोई भुगतान नहीं",
+    "paidOffline": "ऑफ़लाइन भुगतान किया",
+    "receipt": "रसीद",
+    "receiptHint": "नकद रसीद, चेक, या ट्रांसफ़र पुष्टि की फ़ोटो",
+    "notePlaceholder": "एडमिन के लिए टिप्पणी (वैकल्पिक)",
+    "offlineDisclaimer": "एडमिन इसे सत्यापित करेंगे। तब तक बकाया देय बना रहेगा।",
+    "submitReceipt": "रसीद भेजें",
+    "receiptSubmittedToast": "रसीद सत्यापन के लिए भेजी गई"
   },
   "community": {
     "title": "समुदाय",
@@ -333,7 +369,6 @@
     "selectFlatFirst": "पहले लक्ष्य फ्लैट चुनें।",
     "missingVisitor": "आगंतुक का नाम और सही फ़ोन दर्ज करें।",
     "registerCta": "आगंतुक दर्ज करें",
-    "photoDeferred": "फ़ोटो कैप्चर Cloudinary सेटअप के साथ आएगा।",
     "verifySubtitle": "अपने अतिथि को चेक-इन करने के लिए उनका पास कोड दर्ज करें।",
     "passCode": "पास कोड",
     "passCodePlaceholder": "अतिथि का कोड चिपकाएँ या टाइप करें",
@@ -349,7 +384,8 @@
     "deniedNote": "इस आगंतुक को निवासी ने अस्वीकार किया।",
     "expiredNote": "स्वीकृति से पहले यह अनुरोध समाप्त हो गया।",
     "entryMarked": "प्रवेश दर्ज किया गया।",
-    "exitMarked": "निकास दर्ज किया गया।"
+    "exitMarked": "निकास दर्ज किया गया।",
+    "visitorPhotoHint": "आगंतुक की फोटो खींचने के लिए टैप करें"
   },
   "admin": {
     "tabManage": "प्रबंधन",
@@ -516,7 +552,24 @@
     "billed": "बिल किया गया",
     "overdueCount": "{{count}} शुल्क बकाया",
     "complaintBreakdown": "शिकायतें",
-    "reportsNote": "आँकड़े हाल की गतिविधि दर्शाते हैं (नवीनतम 100 रिकॉर्ड तक)।"
+    "reportsNote": "आँकड़े हाल की गतिविधि दर्शाते हैं (नवीनतम 100 रिकॉर्ड तक)।",
+    "amenityPhotos": "फ़ोटो",
+    "providerPhotoHint": "फोटो जोड़ें",
+    "noticeBanner": "बैनर छवि",
+    "noticeBannerHint": "सूचना के शीर्ष पर दिखाई देगी",
+    "societyLogo": "सोसाइटी का लोगो",
+    "societyLogoHint": "पूरे ऐप में दिखाई देगा",
+    "verifyPayments": "भुगतान सत्यापित करें",
+    "verifyPaymentsBody": "ऑफ़लाइन भुगतान की रसीदें जाँचें",
+    "noReceipts": "सत्यापित करने के लिए कुछ नहीं",
+    "noReceiptsBody": "ऑफ़लाइन भुगतान की रसीदें यहाँ दिखेंगी।",
+    "verifyReceipt": "भुगतान सत्यापित करें",
+    "verifyReceiptConfirm": "{{amount}} का यह बकाया भुगतान किया हुआ चिह्नित करें?",
+    "reject": "अस्वीकार करें",
+    "confirmReject": "रसीद अस्वीकार करें",
+    "rejectReasonPlaceholder": "क्यों? निवासी इसे देखेंगे।",
+    "receiptVerified": "भुगतान सत्यापित",
+    "receiptRejected": "रसीद अस्वीकृत"
   },
   "notifications": {
     "title": "सूचनाएँ",
@@ -552,7 +605,8 @@
     "age": "{{age}} वर्ष",
     "missing": "नाम और रिश्ता दर्ज करें।",
     "addedToast": "सदस्य जोड़ा गया।",
-    "removedToast": "सदस्य हटाया गया।"
+    "removedToast": "सदस्य हटाया गया।",
+    "photoHint": "फोटो जोड़ें"
   },
   "vehicles": {
     "title": "वाहन",
@@ -634,12 +688,15 @@
     "paymentStatus": {
       "INITIATED": "प्रक्रिया में",
       "SUCCESS": "चुकता",
-      "FAILED": "विफल"
+      "FAILED": "विफल",
+      "PENDING_VERIFICATION": "सत्यापन प्रतीक्षित",
+      "REJECTED": "अस्वीकृत"
     },
     "paymentMethod": {
       "UPI": "UPI",
       "CARD": "कार्ड",
-      "NETBANKING": "नेटबैंकिंग"
+      "NETBANKING": "नेटबैंकिंग",
+      "OFFLINE": "ऑफ़लाइन"
     },
     "serviceCategory": {
       "MAID": "घरेलू सहायिका",

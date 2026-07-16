@@ -1,6 +1,22 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { prisma, type User } from "@repo/database";
+
+// The repo .env carries live SMTP credentials, so creating a pass with a guest
+// email would otherwise send real mail from the test suite.
+const sentPasses = vi.hoisted(
+  () => [] as { to: string; qrCode: string; hostName: string; flatLabel: string }[],
+);
+vi.mock("@repo/mailer", () => ({
+  isMailerConfigured: () => false,
+  sendGuestPassEmail: vi.fn(async (p: (typeof sentPasses)[number]) => {
+    sentPasses.push(p);
+  }),
+  sendOtpEmail: vi.fn(async () => {}),
+  sendAccountDeletionOtpEmail: vi.fn(async () => {}),
+  sendPasswordResetEmail: vi.fn(async () => {}),
+  sendMail: vi.fn(async () => {}),
+}));
 
 import * as preApprovalService from "./pre-approval.service";
 
@@ -279,5 +295,55 @@ describe("lapse sweep", () => {
     expect(lapsedRow?.status).toBe("EXPIRED");
     const freshRow = await prisma.guestPreApproval.findUnique({ where: { id: fresh.id } });
     expect(freshRow?.status).toBe("ACTIVE");
+  });
+});
+
+describe("emailing the pass to the guest", () => {
+  const future = (mins: number) => new Date(Date.now() + mins * 60_000).toISOString();
+
+  it("emails the QR and code when a guest email is given", async () => {
+    sentPasses.length = 0;
+    const pre = await preApprovalService.createPreApproval(resident, {
+      guestName: "Emailed Guest",
+      guestPhone: "9876500011",
+      guestEmail: "guest@example.test",
+      validFrom: future(5),
+      validTo: future(120),
+    });
+
+    expect(pre.guestEmail).toBe("guest@example.test");
+    expect(sentPasses).toHaveLength(1);
+    expect(sentPasses[0]!.to).toBe("guest@example.test");
+    // The guard scans exactly what the pass stores.
+    expect(sentPasses[0]!.qrCode).toBe(pre.qrCode);
+    expect(sentPasses[0]!.hostName).toBe(resident.name);
+  });
+
+  it("sends nothing when no guest email is given", async () => {
+    sentPasses.length = 0;
+    const pre = await preApprovalService.createPreApproval(resident, {
+      guestName: "Quiet Guest",
+      guestPhone: "9876500012",
+      validFrom: future(5),
+      validTo: future(120),
+    });
+    expect(pre.guestEmail).toBeNull();
+    expect(sentPasses).toHaveLength(0);
+  });
+
+  it("a mail failure does not fail the pass", async () => {
+    const mailer = await import("@repo/mailer");
+    vi.mocked(mailer.sendGuestPassEmail).mockRejectedValueOnce(new Error("SMTP down"));
+
+    // The pass is what matters — the resident can always show the QR in-app.
+    const pre = await preApprovalService.createPreApproval(resident, {
+      guestName: "Undeliverable Guest",
+      guestPhone: "9876500013",
+      guestEmail: "bounce@example.test",
+      validFrom: future(5),
+      validTo: future(120),
+    });
+    expect(pre.status).toBe("ACTIVE");
+    expect(pre.qrCode).toBeTruthy();
   });
 });

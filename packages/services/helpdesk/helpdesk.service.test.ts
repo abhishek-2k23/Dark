@@ -1,6 +1,23 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { prisma, type User } from "@repo/database";
+
+// Raising a ticket emails its reference to the resident, and the repo .env
+// carries live SMTP credentials — without this the suite sends real mail.
+const sentTicketEmails = vi.hoisted(
+  () => [] as { to: string; referenceCode: string; title: string }[],
+);
+vi.mock("@repo/mailer", () => ({
+  isMailerConfigured: () => false,
+  sendTicketRaisedEmail: vi.fn(async (p: (typeof sentTicketEmails)[number]) => {
+    sentTicketEmails.push(p);
+  }),
+  sendGuestPassEmail: vi.fn(async () => {}),
+  sendOtpEmail: vi.fn(async () => {}),
+  sendAccountDeletionOtpEmail: vi.fn(async () => {}),
+  sendPasswordResetEmail: vi.fn(async () => {}),
+  sendMail: vi.fn(async () => {}),
+}));
 
 import * as helpdeskService from "./helpdesk.service";
 
@@ -213,5 +230,50 @@ describe("access scoping", () => {
     expect(filtered.items.length).toBeGreaterThanOrEqual(1);
 
     await expectTRPCError(helpdeskService.listTickets(guard, { limit: 50 }), "FORBIDDEN");
+  });
+});
+
+describe("ticket reference codes", () => {
+  const raise = (title: string) =>
+    helpdeskService.createTicket(resident, {
+      category: "PLUMBING",
+      title,
+      description: "Reference code coverage",
+    });
+
+  it("stamps a readable TKT- code and emails it to the resident", async () => {
+    sentTicketEmails.length = 0;
+    const ticket = await raise("Reference code ticket");
+
+    expect(ticket.referenceCode).toMatch(/^TKT-[0-9A-HJKMNP-TV-Z]{6}$/);
+
+    expect(sentTicketEmails).toHaveLength(1);
+    expect(sentTicketEmails[0]!.to).toBe(resident.email);
+    // The emailed reference must be the one actually stored, or it's useless.
+    expect(sentTicketEmails[0]!.referenceCode).toBe(ticket.referenceCode);
+  });
+
+  it("never reuses a code", async () => {
+    const codes = await Promise.all([
+      raise("Unique 1"),
+      raise("Unique 2"),
+      raise("Unique 3"),
+      raise("Unique 4"),
+    ]).then((ts) => ts.map((t) => t.referenceCode));
+    expect(new Set(codes).size).toBe(codes.length);
+  });
+
+  it("omits the ambiguous characters I, L, O and U", async () => {
+    const ticket = await raise("Alphabet check");
+    // These are the ones that get misread as 1/0 or misheard on a call.
+    expect(ticket.referenceCode.slice(4)).not.toMatch(/[ILOU]/);
+  });
+
+  it("a mail failure does not fail the raise", async () => {
+    const mailer = await import("@repo/mailer");
+    vi.mocked(mailer.sendTicketRaisedEmail).mockRejectedValueOnce(new Error("SMTP down"));
+    const ticket = await raise("Undeliverable reference");
+    expect(ticket.referenceCode).toBeTruthy();
+    expect(ticket.status).toBe("OPEN");
   });
 });

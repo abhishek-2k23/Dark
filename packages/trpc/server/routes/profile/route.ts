@@ -84,7 +84,10 @@ const MyProfileModel = z
 
 const UpdateProfileInput = z.object({
   name: z.string().min(1).describe("New display name").optional(),
-  avatarUrl: z.url().describe("New profile photo URL (Cloudinary, Phase 9)").optional(),
+  avatarUrl: z
+    .url()
+    .nullish()
+    .describe("New profile photo URL (Cloudinary, Phase 9); null clears it"),
   emergencyContactName: z.string().min(1).describe("Emergency contact name").optional(),
   emergencyContactPhone: phoneSchema.describe("Emergency contact's 10-digit phone").optional(),
 });
@@ -101,7 +104,7 @@ const UpdateFamilyMemberInput = z.object({
   name: z.string().min(1).describe("New name").optional(),
   relation: z.string().min(1).describe("New relation").optional(),
   age: z.number().int().min(0).max(130).describe("New age").optional(),
-  photoUrl: z.url().describe("New photo URL").optional(),
+  photoUrl: z.url().nullish().describe("New photo URL; null clears it"),
 });
 
 const FamilyMemberIdInput = z.object({

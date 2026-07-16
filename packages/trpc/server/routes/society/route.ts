@@ -20,6 +20,7 @@ const SocietyModel = z
   .object({
     id: z.string().describe("Society id"),
     name: z.string().describe("Society name"),
+    logoUrl: z.string().nullable().describe("Society logo URL, if set"),
     address: z.string().describe("Street address"),
     city: z.string().describe("City"),
     state: z.string().describe("State"),
@@ -54,6 +55,7 @@ const FlatModel = z
 
 const UpdateSocietyInput = z.object({
   name: z.string().min(1).describe("New society name").optional(),
+  logoUrl: z.url().nullish().describe("New logo URL (Cloudinary LOGO kind); null clears it"),
   address: z.string().min(1).describe("New street address").optional(),
   city: z.string().min(1).describe("New city").optional(),
   state: z.string().min(1).describe("New state").optional(),

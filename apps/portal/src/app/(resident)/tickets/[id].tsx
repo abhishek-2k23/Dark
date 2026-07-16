@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
 import { ErrorState, Loading } from "@/components/ListState";
+import { PhotoGrid, PhotoStrip } from "@/components/media";
+import { TicketStub } from "@/components/TicketStub";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Avatar,
@@ -27,12 +29,14 @@ export default function TicketDetail() {
   const showToast = useUIStore((s) => s.showToast);
   const utils = trpc.useUtils();
   const [message, setMessage] = useState("");
+  const [commentPhotos, setCommentPhotos] = useState<string[]>([]);
 
   const q = trpc.ticket.get.useQuery({ ticketId: id ?? "" }, { enabled: !!id });
 
   const comment = trpc.ticket.addComment.useMutation({
     onSuccess: () => {
       setMessage("");
+      setCommentPhotos([]);
       void utils.ticket.get.invalidate({ ticketId: id ?? "" });
       void utils.ticket.list.invalidate();
     },
@@ -78,6 +82,8 @@ export default function TicketDetail() {
             <Text variant="body" color="secondary">
               {tk.description}
             </Text>
+            <PhotoStrip urls={tk.photoUrls} />
+            <TicketStub referenceCode={tk.referenceCode} />
             <Text variant="caption" color="tertiary">
               {t("tickets.raisedOn", { date: formatDateTime(tk.createdAt) })}
               {tk.assignedTo
@@ -108,6 +114,7 @@ export default function TicketDetail() {
                     </Text>
                   </View>
                   <Text variant="body">{c.message}</Text>
+                  <PhotoStrip urls={c.photoUrls} size={64} />
                 </Card>
               ))}
             </View>
@@ -121,6 +128,12 @@ export default function TicketDetail() {
               multiline
               style={{ minHeight: 60, textAlignVertical: "top" }}
             />
+            <PhotoGrid
+              value={commentPhotos}
+              onChange={setCommentPhotos}
+              kind="TICKET"
+              max={3}
+            />
             <Button
               label={t("tickets.addComment")}
               variant="primary"
@@ -128,7 +141,11 @@ export default function TicketDetail() {
               loading={comment.isPending}
               onPress={() => {
                 if (!message.trim()) return;
-                comment.mutate({ ticketId: tk.id, message: message.trim() });
+                comment.mutate({
+                  ticketId: tk.id,
+                  message: message.trim(),
+                  photoUrls: commentPhotos.length > 0 ? commentPhotos : undefined,
+                });
               }}
               fullWidth
             />

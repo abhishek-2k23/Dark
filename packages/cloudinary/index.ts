@@ -11,14 +11,32 @@ import { TRPCError } from "@trpc/server";
  * Env: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET.
  */
 
-export type UploadKind = "AVATAR" | "VISITOR" | "TICKET" | "NOTICE";
+export type UploadKind =
+  | "AVATAR"
+  | "VISITOR"
+  | "TICKET"
+  | "NOTICE"
+  | "AMENITY"
+  | "RECEIPT"
+  | "LOGO";
 
 /** Folder + incoming transformation per upload kind (see plan Phase 9). */
 export const UPLOAD_PRESETS: Record<UploadKind, { folder: string; transformation: string }> = {
   AVATAR: { folder: "avatars", transformation: "c_thumb,g_face,w_512,h_512" }, // square, face-crop
-  VISITOR: { folder: "visitors", transformation: "c_fill,w_800,h_600,q_auto:good" }, // fixed aspect, moderate compression
+  // A visitor photo exists so a resident can recognise a face on the approval
+  // screen, so it crops like a portrait, not a landscape: g_face keeps the head
+  // centred (falling back to a centre crop when no face is found, e.g. a
+  // parcel), and square displays cleanly in both the avatar and the detail card.
+  VISITOR: { folder: "visitors", transformation: "c_thumb,g_face,w_800,h_800,q_auto:good" },
   TICKET: { folder: "tickets", transformation: "c_limit,w_1600,h_1600,q_auto:good" }, // original, size-capped
   NOTICE: { folder: "notices", transformation: "c_fill,w_1200,h_400" }, // banner aspect
+  AMENITY: { folder: "amenities", transformation: "c_fill,w_1200,h_800,q_auto:good" }, // 3:2 gallery shot
+  // Receipts are read, not admired: q_auto:best keeps small print legible for
+  // the admin verifying the payment, and no crop can cut an amount off.
+  RECEIPT: { folder: "receipts", transformation: "c_limit,w_2000,h_2000,q_auto:best" },
+  // c_fit never crops and never upscales, so a wordmark keeps its aspect ratio;
+  // logos are usually transparent PNGs, hence no background fill.
+  LOGO: { folder: "logos", transformation: "c_fit,w_512,h_512" },
 };
 
 interface CloudinaryConfig {

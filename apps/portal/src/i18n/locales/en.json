@@ -28,6 +28,23 @@
     "voteNow": "Vote Now",
     "enterDashboard": "Enter Dashboard"
   },
+  "media": {
+    "sourceTitle": "Add a photo",
+    "camera": "Take a photo",
+    "gallery": "Choose from gallery",
+    "add": "Add",
+    "addPhoto": "Add photo",
+    "changePhoto": "Change photo",
+    "remove": "Remove",
+    "uploading": "Uploading…",
+    "tooLarge": "That image is too large. Please pick one under 10 MB.",
+    "countOfMax": "{{current}} of {{max}}",
+    "permission": {
+      "camera": "Camera access is off. Turn it on in Settings to take a photo.",
+      "library": "Photo access is off. Turn it on in Settings to choose a photo."
+    },
+    "viewPhoto": "View photo"
+  },
   "tabs": {
     "home": "Home",
     "visitors": "Visitors",
@@ -145,7 +162,8 @@
     "contactPhone": "Emergency contact phone",
     "saved": "Profile updated.",
     "missing": "Enter the contact's name and a valid phone number.",
-    "skip": "Skip for now"
+    "skip": "Skip for now",
+    "photoHint": "Profile photo"
   },
   "dashboard": {
     "greeting": "Good morning, {{name}}!",
@@ -207,7 +225,15 @@
     "cancel": "Cancel pass",
     "cancelledToast": "Pass cancelled.",
     "empty": "No guest passes yet",
-    "emptyBody": "Pre-approve a guest to generate a shareable QR pass."
+    "emptyBody": "Pre-approve a guest to generate a shareable QR pass.",
+    "guestEmail": "Guest's email",
+    "emailedTo": "Pass emailed to {{email}}",
+    "passCode": "Pass code",
+    "validFrom": "Valid from",
+    "validTo": "Valid until",
+    "flat": "Flat",
+    "host": "Host",
+    "collapse": "Close"
   },
   "tickets": {
     "title": "Helpdesk",
@@ -230,7 +256,10 @@
     "thread": "Comments",
     "noComments": "No comments yet.",
     "commentPlaceholder": "Write a comment…",
-    "addComment": "Add comment"
+    "addComment": "Add comment",
+    "photos": "Photos",
+    "reference": "Reference",
+    "referenceHint": "Quote this when you follow up"
   },
   "amenities": {
     "title": "Amenities",
@@ -282,7 +311,14 @@
     "payNow": "Pay now",
     "confirmPay": "Pay {{amount}}",
     "initiatedToast": "Payment started (order {{orderId}}). It completes once the gateway confirms.",
-    "noHistory": "No payments yet"
+    "noHistory": "No payments yet",
+    "paidOffline": "Paid offline",
+    "receipt": "Receipt",
+    "receiptHint": "Photo of the cash receipt, cheque, or transfer confirmation",
+    "notePlaceholder": "Note for the admin (optional) — e.g. paid by cheque #4471",
+    "offlineDisclaimer": "An admin will verify this. The due stays payable until then.",
+    "submitReceipt": "Submit receipt",
+    "receiptSubmittedToast": "Receipt sent for verification"
   },
   "community": {
     "title": "Community",
@@ -333,7 +369,6 @@
     "selectFlatFirst": "Select the target flat first.",
     "missingVisitor": "Enter the visitor's name and a valid phone.",
     "registerCta": "Register visitor",
-    "photoDeferred": "Photo capture arrives with Cloudinary setup.",
     "verifySubtitle": "Enter the pass code your guest received to check them in.",
     "passCode": "Pass code",
     "passCodePlaceholder": "Paste or type the guest's code",
@@ -349,7 +384,8 @@
     "deniedNote": "This visitor was denied by the resident.",
     "expiredNote": "This request expired before it was approved.",
     "entryMarked": "Entry marked.",
-    "exitMarked": "Exit marked."
+    "exitMarked": "Exit marked.",
+    "visitorPhotoHint": "Tap to photograph the visitor"
   },
   "admin": {
     "tabManage": "Manage",
@@ -516,7 +552,24 @@
     "billed": "Billed",
     "overdueCount": "{{count}} dues overdue",
     "complaintBreakdown": "Complaints",
-    "reportsNote": "Figures reflect recent activity (up to the latest 100 records)."
+    "reportsNote": "Figures reflect recent activity (up to the latest 100 records).",
+    "amenityPhotos": "Photos",
+    "providerPhotoHint": "Add a photo",
+    "noticeBanner": "Banner image",
+    "noticeBannerHint": "Shown at the top of the notice",
+    "societyLogo": "Society logo",
+    "societyLogoHint": "Shown across the app",
+    "verifyPayments": "Verify payments",
+    "verifyPaymentsBody": "Check receipts for dues paid offline",
+    "noReceipts": "Nothing to verify",
+    "noReceiptsBody": "Receipts for offline payments will show up here.",
+    "verifyReceipt": "Verify payment",
+    "verifyReceiptConfirm": "Mark this due as paid for {{amount}}? This settles it.",
+    "reject": "Reject",
+    "confirmReject": "Reject receipt",
+    "rejectReasonPlaceholder": "Why? The resident will see this.",
+    "receiptVerified": "Payment verified",
+    "receiptRejected": "Receipt rejected"
   },
   "notifications": {
     "title": "Notifications",
@@ -552,7 +605,8 @@
     "age": "{{age}} yrs",
     "missing": "Enter a name and relation.",
     "addedToast": "Family member added.",
-    "removedToast": "Family member removed."
+    "removedToast": "Family member removed.",
+    "photoHint": "Add a photo"
   },
   "vehicles": {
     "title": "Vehicles",
@@ -634,12 +688,15 @@
     "paymentStatus": {
       "INITIATED": "Processing",
       "SUCCESS": "Paid",
-      "FAILED": "Failed"
+      "FAILED": "Failed",
+      "PENDING_VERIFICATION": "Awaiting verification",
+      "REJECTED": "Rejected"
     },
     "paymentMethod": {
       "UPI": "UPI",
       "CARD": "Card",
-      "NETBANKING": "Netbanking"
+      "NETBANKING": "Netbanking",
+      "OFFLINE": "Offline"
     },
     "serviceCategory": {
       "MAID": "Maid",

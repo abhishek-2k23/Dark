@@ -7,11 +7,12 @@ import { generatePath } from "../../utils/path-generator";
 const path = generatePath("v1/uploads");
 
 const UploadKindEnum = z
-  .enum(["AVATAR", "VISITOR", "TICKET", "NOTICE"])
+  .enum(["AVATAR", "VISITOR", "TICKET", "NOTICE", "AMENITY", "RECEIPT", "LOGO"])
   .describe(
     "What the image is for — picks the Cloudinary folder and transformation: " +
       "AVATAR (square face-crop), VISITOR (fixed aspect), TICKET (size-capped original), " +
-      "NOTICE (banner aspect)",
+      "NOTICE (banner aspect), AMENITY (3:2 gallery), RECEIPT (size-capped, max quality " +
+      "so small print stays legible), LOGO (fit, no crop)",
   );
 
 const GetSignatureInput = z.object({

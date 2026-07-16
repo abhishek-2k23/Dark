@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
+import { ImageField } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Button,
@@ -52,6 +53,7 @@ export default function CreateNotice() {
   const [category, setCategory] = useState<Category>("GENERAL");
   const [pinned, setPinned] = useState(false);
   const [when, setWhen] = useState<When>("now");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function CreateNotice() {
       setBody(n.body);
       setCategory(n.category as Category);
       setPinned(n.isPinned);
+      setImageUrl(n.imageUrl ?? null);
       setLoaded(true);
     }
   }, [existing.data, id, isEdit, loaded]);
@@ -98,6 +101,7 @@ export default function CreateNotice() {
         noticeId: id!,
         title: title.trim(),
         body: body.trim(),
+        imageUrl,
         category,
         isPinned: pinned,
         // "now" publishes immediately (null); a preset reschedules.
@@ -107,6 +111,7 @@ export default function CreateNotice() {
       create.mutate({
         title: title.trim(),
         body: body.trim(),
+        imageUrl,
         category,
         isPinned: pinned,
         ...(scheduledAt ? { scheduledAt } : {}),
@@ -119,6 +124,16 @@ export default function CreateNotice() {
       <StackHeader title={isEdit ? t("admin.editNotice") : t("admin.newNotice")} />
 
       <Card className="gap-4">
+        {/* A banner is what makes a notice scannable in a busy feed. */}
+        <ImageField
+          value={imageUrl}
+          onChange={setImageUrl}
+          kind="NOTICE"
+          label={t("admin.noticeBanner")}
+          labelHint={t("common.optional")}
+          hint={t("admin.noticeBannerHint")}
+          aspect={[3, 1]}
+        />
         <Input
           label={t("tickets.titleLabel")}
           leftIcon="create-outline"
