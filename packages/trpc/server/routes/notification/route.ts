@@ -17,6 +17,8 @@ const NotificationTypeEnum = z
     "NOTICE_PUBLISHED",
     "POLL_CREATED",
     "DUE_GENERATED",
+    "PAYMENT_VERIFIED",
+    "PAYMENT_REJECTED",
     "BOOKING_CONFIRMED",
     "GENERAL",
   ])

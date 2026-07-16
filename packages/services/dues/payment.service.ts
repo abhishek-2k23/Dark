@@ -9,6 +9,9 @@ import {
   type DueStatus,
 } from "@repo/database";
 import { logger } from "@repo/logger";
+import { assertCloudinaryUrl } from "@repo/cloudinary";
+
+import { notifyUsers } from "../notification/notification.service";
 
 /**
  * Payments against maintenance dues.
@@ -39,6 +42,10 @@ export interface PaymentInfo {
   transactionId: string | null;
   status: PaymentStatus;
   paidAt: string | null;
+  receiptUrl: string | null;
+  note: string | null;
+  rejectionReason: string | null;
+  verifiedAt: string | null;
   createdAt: string;
 }
 
@@ -53,6 +60,10 @@ function toPaymentInfo(payment: PaymentRow): PaymentInfo {
     transactionId: payment.transactionId,
     status: payment.status,
     paidAt: payment.paidAt?.toISOString() ?? null,
+    receiptUrl: payment.receiptUrl,
+    note: payment.note,
+    rejectionReason: payment.rejectionReason,
+    verifiedAt: payment.verifiedAt?.toISOString() ?? null,
     createdAt: payment.createdAt.toISOString(),
   };
 }
@@ -82,6 +93,17 @@ export function signWebhookPayload(input: {
     .digest("hex");
 }
 
+/** Mirrors the helper in due.service.ts — both scope admin reads by society. */
+function actorSocietyId(actor: User): string {
+  if (!actor.societyId) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Your account is not linked to a society",
+    });
+  }
+  return actor.societyId;
+}
+
 async function actorResidentProfileId(actor: User): Promise<string> {
   const profile = await prisma.residentProfile.findUnique({
     where: { userId: actor.id },
@@ -106,6 +128,15 @@ export async function initiatePayment(
   actor: User,
   input: { dueId: string; method: PaymentMethod },
 ): Promise<{ payment: PaymentInfo; gateway: GatewaySession }> {
+  // OFFLINE is not a gateway method — it has no checkout and must never be
+  // handed a session. It goes through submitOfflinePayment instead.
+  if (input.method === "OFFLINE") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Offline payments are submitted with a receipt, not through the gateway",
+    });
+  }
+
   const residentProfile = await prisma.residentProfile.findUnique({
     where: { userId: actor.id },
     select: { id: true, flatId: true },
@@ -177,6 +208,17 @@ export async function handleWebhook(input: {
     throw new TRPCError({ code: "NOT_FOUND", message: "Payment not found" });
   }
 
+  // An offline payment has no gateway behind it, so any webhook naming one is
+  // either a mistake or forged — it must never be able to self-approve a
+  // receipt that is waiting on a human.
+  if (payment.method === "OFFLINE") {
+    logger.info("Payment webhook rejected: offline payment", { paymentId: payment.id });
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Offline payments are not settled by the gateway",
+    });
+  }
+
   // Idempotency: same event replayed after processing is a no-op.
   if (payment.status !== "INITIATED") {
     const matchesProcessed =
@@ -233,4 +275,191 @@ export async function paymentHistory(
   const hasMore = payments.length > input.limit;
   const items = (hasMore ? payments.slice(0, input.limit) : payments).map(toPaymentInfo);
   return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
+}
+
+// ---------------------------------------------------------------------------
+// Offline payments (cash / cheque / direct transfer)
+//
+// The resident uploads a receipt; an admin verifies it. Until that decision
+// the due stays payable, so nobody marks themselves paid — the receipt is a
+// claim, and only an admin turns a claim into a PAID due.
+// ---------------------------------------------------------------------------
+
+export async function submitOfflinePayment(
+  actor: User,
+  input: { dueId: string; receiptUrl: string; note?: string },
+): Promise<PaymentInfo> {
+  assertCloudinaryUrl(input.receiptUrl);
+
+  const residentProfile = await prisma.residentProfile.findUnique({
+    where: { userId: actor.id },
+    select: { id: true, flatId: true },
+  });
+  if (!residentProfile) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Your account has no resident profile",
+    });
+  }
+
+  // Residents pay their own flat's dues only.
+  const due = await prisma.maintenanceDue.findFirst({
+    where: { id: input.dueId, flatId: residentProfile.flatId },
+  });
+  if (!due) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Due not found" });
+  }
+  if (due.status === "PAID") {
+    throw new TRPCError({ code: "CONFLICT", message: "This due is already paid" });
+  }
+
+  // One claim at a time: a second receipt while the first is undecided would
+  // give an admin two things to approve for one due, and approving both would
+  // double-pay it.
+  const awaiting = await prisma.payment.findFirst({
+    where: { dueId: due.id, status: "PENDING_VERIFICATION" },
+  });
+  if (awaiting) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "A receipt for this due is already awaiting verification",
+    });
+  }
+
+  const payment = await prisma.payment.create({
+    data: {
+      dueId: due.id,
+      residentId: residentProfile.id,
+      amount: due.amount,
+      method: "OFFLINE",
+      status: "PENDING_VERIFICATION",
+      receiptUrl: input.receiptUrl,
+      note: input.note,
+    },
+    include: paymentInclude,
+  });
+
+  return toPaymentInfo(payment);
+}
+
+export interface PendingPaymentInfo extends PaymentInfo {
+  residentName: string;
+  flatNumber: string;
+  towerName: string;
+}
+
+/** Admin queue: offline receipts awaiting a decision, oldest first. */
+export async function listPendingOfflinePayments(
+  actor: User,
+  input: { cursor?: string; limit: number },
+): Promise<{ items: PendingPaymentInfo[]; nextCursor: string | null }> {
+  const societyId = actorSocietyId(actor);
+
+  const payments = await prisma.payment.findMany({
+    where: {
+      status: "PENDING_VERIFICATION",
+      // Scope to this admin's society via the due's flat.
+      due: { flat: { tower: { societyId } } },
+    },
+    // Oldest first: the resident who has been waiting longest is the one whose
+    // due is closest to going overdue.
+    orderBy: { createdAt: "asc" },
+    take: input.limit + 1,
+    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+    include: {
+      due: { include: { flat: { include: { tower: true } } } },
+      resident: { include: { user: { select: { name: true } } } },
+    },
+  });
+
+  const hasMore = payments.length > input.limit;
+  const page = hasMore ? payments.slice(0, input.limit) : payments;
+  const items: PendingPaymentInfo[] = page.map((p) => ({
+    ...toPaymentInfo(p),
+    residentName: p.resident.user.name,
+    flatNumber: p.due.flat.flatNumber,
+    towerName: p.due.flat.tower.name,
+  }));
+
+  return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
+}
+
+/**
+ * Admin decision on an uploaded receipt. Approving marks the due PAID in the
+ * same transaction as the payment, so the two can never disagree; rejecting
+ * leaves the due payable and lets the resident submit a better receipt.
+ */
+export async function decideOfflinePayment(
+  actor: User,
+  input: { paymentId: string; approve: boolean; rejectionReason?: string },
+): Promise<PaymentInfo> {
+  const societyId = actorSocietyId(actor);
+
+  const payment = await prisma.payment.findFirst({
+    where: {
+      id: input.paymentId,
+      due: { flat: { tower: { societyId } } },
+    },
+    include: { ...paymentInclude, resident: { select: { userId: true } } },
+  });
+  if (!payment) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Payment not found" });
+  }
+  if (payment.method !== "OFFLINE") {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Only offline payments are verified by hand",
+    });
+  }
+  if (payment.status !== "PENDING_VERIFICATION") {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `This receipt is already ${payment.status}`,
+    });
+  }
+
+  const decidedAt = new Date();
+
+  const updated = input.approve
+    ? await prisma.$transaction(async (tx) => {
+        const p = await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: "SUCCESS",
+            paidAt: decidedAt,
+            verifiedByAdminId: actor.id,
+            verifiedAt: decidedAt,
+          },
+          include: paymentInclude,
+        });
+        await tx.maintenanceDue.update({
+          where: { id: payment.dueId },
+          data: { status: "PAID" },
+        });
+        return p;
+      })
+    : await prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: "REJECTED",
+          verifiedByAdminId: actor.id,
+          verifiedAt: decidedAt,
+          rejectionReason: input.rejectionReason,
+        },
+        include: paymentInclude,
+      });
+
+  const monthLabel = `${updated.due.month}/${updated.due.year}`;
+  await notifyUsers([payment.resident.userId], {
+    type: input.approve ? "PAYMENT_VERIFIED" : "PAYMENT_REJECTED",
+    title: input.approve ? "Payment verified" : "Payment rejected",
+    body: input.approve
+      ? `Your ${monthLabel} maintenance payment has been verified.`
+      : input.rejectionReason
+        ? `Your ${monthLabel} receipt was rejected: ${input.rejectionReason}`
+        : `Your ${monthLabel} receipt was rejected. Please submit a valid receipt.`,
+    data: { paymentId: updated.id, dueId: updated.dueId },
+  });
+
+  return toPaymentInfo(updated);
 }

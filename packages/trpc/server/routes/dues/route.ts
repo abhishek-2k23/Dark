@@ -13,11 +13,25 @@ const paymentPath = generatePath("v1/payments");
 
 const DueStatusEnum = z.enum(["PENDING", "PAID", "OVERDUE"]).describe("Due status");
 
-const PaymentMethodEnum = z.enum(["UPI", "CARD", "NETBANKING"]).describe("Payment method");
+const PaymentMethodEnum = z
+  .enum(["UPI", "CARD", "NETBANKING", "OFFLINE"])
+  .describe("Payment method — OFFLINE means paid outside the app and evidenced by a receipt");
+
+/**
+ * Methods the gateway can actually take money with. OFFLINE is deliberately
+ * absent: it has no checkout, so accepting it here would mint a meaningless
+ * session. Offline payments go to /v1/payments/offline instead.
+ */
+const GatewayMethodEnum = z
+  .enum(["UPI", "CARD", "NETBANKING"])
+  .describe("Gateway payment method");
 
 const PaymentStatusEnum = z
-  .enum(["INITIATED", "SUCCESS", "FAILED"])
-  .describe("Payment status");
+  .enum(["INITIATED", "PENDING_VERIFICATION", "SUCCESS", "FAILED", "REJECTED"])
+  .describe(
+    "Payment status. PENDING_VERIFICATION and REJECTED apply to OFFLINE payments only: " +
+      "a receipt awaiting an admin decision, and one an admin turned down",
+  );
 
 const DueModel = z
   .object({
@@ -44,6 +58,10 @@ const PaymentModel = z
     transactionId: z.string().nullable().describe("Gateway transaction id, once known"),
     status: PaymentStatusEnum,
     paidAt: z.string().nullable().describe("ISO time the payment succeeded, if it did"),
+    receiptUrl: z.string().nullable().describe("Uploaded receipt (OFFLINE payments only)"),
+    note: z.string().nullable().describe("Resident's note attached to an offline receipt"),
+    rejectionReason: z.string().nullable().describe("Why an admin rejected the receipt, if they did"),
+    verifiedAt: z.string().nullable().describe("ISO time an admin decided on the receipt"),
     createdAt: z.string().describe("ISO time the payment was initiated"),
   })
   .describe("A payment attempt against a due");
@@ -76,7 +94,38 @@ const ListDuesInput = z.object({
 
 const InitiatePaymentInput = z.object({
   dueId: z.string().describe("Id of the due to pay"),
-  method: PaymentMethodEnum,
+  method: GatewayMethodEnum,
+});
+
+const SubmitOfflinePaymentInput = z.object({
+  dueId: z.string().describe("Id of the due being settled offline"),
+  receiptUrl: z.url().describe("Receipt image URL (Cloudinary RECEIPT kind)"),
+  note: z
+    .string()
+    .max(300)
+    .describe("Optional note for the admin, e.g. 'paid by cheque #123 to the office'")
+    .optional(),
+});
+
+const PendingPaymentModel = PaymentModel.extend({
+  residentName: z.string().describe("Who submitted the receipt"),
+  flatNumber: z.string().describe("Flat number"),
+  towerName: z.string().describe("Tower name"),
+}).describe("An offline receipt awaiting an admin decision");
+
+const PendingListInput = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size"),
+  cursor: z.string().describe("Id of the last payment from the previous page").optional(),
+});
+
+const DecideOfflinePaymentInput = z.object({
+  paymentId: z.string().describe("Id of the offline payment to decide on"),
+  approve: z.boolean().describe("true verifies the receipt and marks the due PAID; false rejects it"),
+  rejectionReason: z
+    .string()
+    .max(300)
+    .describe("Shown to the resident when rejecting")
+    .optional(),
 });
 
 const WebhookInput = z.object({
@@ -182,6 +231,71 @@ export const paymentRouter = router({
       }),
     )
     .mutation(({ ctx, input }) => paymentService.initiatePayment(ctx.user, input)),
+
+  submitOffline: residentProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: paymentPath("offline"),
+        tags: ["Dues"],
+        summary: "Submit a receipt for a payment made outside the app",
+        description:
+          "For dues settled by cash, cheque, or a direct transfer. Upload the receipt via the " +
+          "signed upload flow (kind RECEIPT) and send the URL here. The payment is recorded as " +
+          "OFFLINE/PENDING_VERIFICATION and the due STAYS PAYABLE until an admin verifies it — " +
+          "a receipt is a claim, not a settlement. Errors: 400 for a foreign media URL, 403 if " +
+          "not a resident, 404 for a due outside the caller's flat, 409 if the due is already " +
+          "paid or already has a receipt awaiting verification, 412 if the account has no " +
+          "resident profile.",
+        protect: true,
+      },
+    })
+    .input(SubmitOfflinePaymentInput)
+    .output(PaymentModel)
+    .mutation(({ ctx, input }) => paymentService.submitOfflinePayment(ctx.user, input)),
+
+  pendingOffline: adminProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: paymentPath("offline/pending"),
+        tags: ["Dues"],
+        summary: "List offline receipts awaiting verification",
+        description:
+          "The admin verification queue for the caller's society, oldest first — the resident " +
+          "who has waited longest is the one whose due is closest to going overdue. " +
+          "Cursor-paginated. Errors: 403 if not an admin, 412 if the account has no society.",
+        protect: true,
+      },
+    })
+    .input(PendingListInput)
+    .output(
+      z.object({
+        items: z.array(PendingPaymentModel).describe("Receipts on this page"),
+        nextCursor: z.string().nullable().describe("Cursor for the next page, or null"),
+      }),
+    )
+    .query(({ ctx, input }) => paymentService.listPendingOfflinePayments(ctx.user, input)),
+
+  decideOffline: adminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: paymentPath("offline/decide"),
+        tags: ["Dues"],
+        summary: "Verify or reject an offline payment receipt",
+        description:
+          "Approving marks the payment SUCCESS and its due PAID in one transaction, so the two " +
+          "can never disagree. Rejecting marks it REJECTED, leaves the due payable, and lets " +
+          "the resident submit again. Either way the resident is notified. Errors: 400 if the " +
+          "payment is not OFFLINE, 403 if not an admin, 404 for a payment outside the admin's " +
+          "society, 409 if it has already been decided.",
+        protect: true,
+      },
+    })
+    .input(DecideOfflinePaymentInput)
+    .output(PaymentModel)
+    .mutation(({ ctx, input }) => paymentService.decideOfflinePayment(ctx.user, input)),
 
   webhook: publicProcedure
     .meta({

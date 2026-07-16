@@ -36,8 +36,10 @@ export const dueStatusTone: Record<string, BadgeTone> = {
 
 export const paymentStatusTone: Record<string, BadgeTone> = {
   INITIATED: "warning",
+  PENDING_VERIFICATION: "warning",
   SUCCESS: "success",
   FAILED: "danger",
+  REJECTED: "danger",
 };
 
 export const bookingStatusTone: Record<string, BadgeTone> = {
@@ -106,6 +108,8 @@ export const notificationTypeIcon: Record<string, IconName> = {
   NOTICE_PUBLISHED: "megaphone-outline",
   POLL_CREATED: "stats-chart-outline",
   DUE_GENERATED: "wallet-outline",
+  PAYMENT_VERIFIED: "checkmark-done-outline",
+  PAYMENT_REJECTED: "alert-circle-outline",
   BOOKING_CONFIRMED: "calendar-outline",
   GENERAL: "notifications-outline",
 };
@@ -131,7 +135,13 @@ export function notificationHref(
     if (d.ticketId) return `/(resident)/tickets/${d.ticketId}`;
     if (d.noticeId) return `/(resident)/notices/${d.noticeId}`;
     if (d.pollId) return `/(resident)/polls/${d.pollId}`;
-    if (type === "DUE_GENERATED") return "/(resident)/(tabs)/payments";
+    if (
+      type === "DUE_GENERATED" ||
+      type === "PAYMENT_VERIFIED" ||
+      type === "PAYMENT_REJECTED"
+    ) {
+      return "/(resident)/(tabs)/payments";
+    }
     return null;
   }
 
@@ -141,6 +151,9 @@ export function notificationHref(
     if (d.noticeId) return "/(admin)/notices";
     if (d.visitorId) return "/(admin)/reports";
     if (type === "DUE_GENERATED") return "/(admin)/reports";
+    if (type === "PAYMENT_VERIFIED" || type === "PAYMENT_REJECTED") {
+      return "/(admin)/payments/verify";
+    }
     return null;
   }
 

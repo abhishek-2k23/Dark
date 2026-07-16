@@ -304,3 +304,185 @@ describe("payment flow", () => {
     expect(historyA.items[0]!.status).toBe("SUCCESS");
   });
 });
+
+describe("offline payments", () => {
+  // Pin the cloud name so receipt URLs are deterministic: the repo .env now
+  // carries real Cloudinary credentials, and assertCloudinaryUrl validates
+  // against whatever cloud is configured.
+  const CLOUD = "test-cloud";
+  const receipt = (n = 1) =>
+    `https://res.cloudinary.com/${CLOUD}/image/upload/v1/receipts/r${n}.jpg`;
+  let offlineDueId: string;
+
+  beforeAll(async () => {
+    process.env.CLOUDINARY_CLOUD_NAME = CLOUD;
+    await dueService.generateMonthly(admin, { month: 7, year: 2031, amount: 1800 });
+    const due = await prisma.maintenanceDue.findFirst({
+      where: { flatId: flatAId, month: 7, year: 2031 },
+    });
+    offlineDueId = due!.id;
+  });
+
+  it("rejects a receipt URL that is not from our Cloudinary cloud", async () => {
+    await expectTRPCError(
+      paymentService.submitOfflinePayment(residentA, {
+        dueId: offlineDueId,
+        receiptUrl: "https://evil.example.com/receipt.jpg",
+      }),
+      "BAD_REQUEST",
+    );
+  });
+
+  it("refuses OFFLINE at the gateway — it has no checkout", async () => {
+    await expectTRPCError(
+      paymentService.initiatePayment(residentA, {
+        dueId: offlineDueId,
+        method: "OFFLINE",
+      }),
+      "BAD_REQUEST",
+    );
+  });
+
+  it("a submitted receipt awaits verification and leaves the due payable", async () => {
+    const payment = await paymentService.submitOfflinePayment(residentA, {
+      dueId: offlineDueId,
+      receiptUrl: receipt(),
+      note: "Paid by cheque 4471 at the office",
+    });
+    expect(payment.method).toBe("OFFLINE");
+    expect(payment.status).toBe("PENDING_VERIFICATION");
+    expect(payment.receiptUrl).toBe(receipt());
+
+    // The whole point: a receipt is a claim, not a settlement.
+    const due = await prisma.maintenanceDue.findUnique({ where: { id: offlineDueId } });
+    expect(due?.status).not.toBe("PAID");
+  });
+
+  it("refuses a second receipt while one is still awaiting a decision", async () => {
+    await expectTRPCError(
+      paymentService.submitOfflinePayment(residentA, {
+        dueId: offlineDueId,
+        receiptUrl: receipt(2),
+      }),
+      "CONFLICT",
+    );
+  });
+
+  it("the gateway webhook cannot settle an offline payment", async () => {
+    const pending = await prisma.payment.findFirst({
+      where: { dueId: offlineDueId, status: "PENDING_VERIFICATION" },
+    });
+    const transactionId = `forged-${runId}`;
+    await expectTRPCError(
+      paymentService.handleWebhook({
+        event: "payment.success",
+        paymentId: pending!.id,
+        transactionId,
+        // Correctly signed: the point is that a valid signature still must not
+        // approve a receipt that is waiting on a human.
+        signature: paymentService.signWebhookPayload({
+          event: "payment.success",
+          paymentId: pending!.id,
+          transactionId,
+        }),
+      }),
+      "BAD_REQUEST",
+    );
+    const after = await prisma.payment.findUnique({ where: { id: pending!.id } });
+    expect(after?.status).toBe("PENDING_VERIFICATION");
+  });
+
+  it("lists the receipt in the admin queue, scoped to the society", async () => {
+    const queue = await paymentService.listPendingOfflinePayments(admin, { limit: 20 });
+    const mine = queue.items.find((p) => p.dueId === offlineDueId);
+    expect(mine).toBeDefined();
+    expect(mine?.residentName).toBe("DU Resident A");
+    expect(mine?.flatNumber).toBe("DU-101");
+  });
+
+  // Role gating (admin-only) is enforced by adminProcedure in the router and
+  // covered in the trpc permissions suite; what the service owes us is
+  // ownership scoping — a resident cannot pay someone else's flat's due.
+  it("a resident cannot submit a receipt against another flat's due", async () => {
+    await expectTRPCError(
+      paymentService.submitOfflinePayment(residentB, {
+        dueId: offlineDueId,
+        receiptUrl: receipt(9),
+      }),
+      "NOT_FOUND",
+    );
+  });
+
+  it("rejecting leaves the due payable and lets the resident try again", async () => {
+    const pending = await prisma.payment.findFirst({
+      where: { dueId: offlineDueId, status: "PENDING_VERIFICATION" },
+    });
+    const rejected = await paymentService.decideOfflinePayment(admin, {
+      paymentId: pending!.id,
+      approve: false,
+      rejectionReason: "Receipt is unreadable",
+    });
+    expect(rejected.status).toBe("REJECTED");
+    expect(rejected.rejectionReason).toBe("Receipt is unreadable");
+
+    const due = await prisma.maintenanceDue.findUnique({ where: { id: offlineDueId } });
+    expect(due?.status).not.toBe("PAID");
+
+    // The resident is told why, so they can fix it.
+    const note = await prisma.notification.findFirst({
+      where: { userId: residentA.id, type: "PAYMENT_REJECTED" },
+    });
+    expect(note?.body).toContain("unreadable");
+
+    // And the block on re-submitting is lifted with the rejection.
+    const retry = await paymentService.submitOfflinePayment(residentA, {
+      dueId: offlineDueId,
+      receiptUrl: receipt(3),
+    });
+    expect(retry.status).toBe("PENDING_VERIFICATION");
+  });
+
+  it("a second admin decision on a decided receipt conflicts", async () => {
+    const decided = await prisma.payment.findFirst({
+      where: { dueId: offlineDueId, status: "REJECTED" },
+    });
+    await expectTRPCError(
+      paymentService.decideOfflinePayment(admin, {
+        paymentId: decided!.id,
+        approve: true,
+      }),
+      "CONFLICT",
+    );
+  });
+
+  it("approving marks the payment SUCCESS and the due PAID together", async () => {
+    const pending = await prisma.payment.findFirst({
+      where: { dueId: offlineDueId, status: "PENDING_VERIFICATION" },
+    });
+    const approved = await paymentService.decideOfflinePayment(admin, {
+      paymentId: pending!.id,
+      approve: true,
+    });
+    expect(approved.status).toBe("SUCCESS");
+    expect(approved.paidAt).not.toBeNull();
+    expect(approved.verifiedAt).not.toBeNull();
+
+    const due = await prisma.maintenanceDue.findUnique({ where: { id: offlineDueId } });
+    expect(due?.status).toBe("PAID");
+
+    const note = await prisma.notification.findFirst({
+      where: { userId: residentA.id, type: "PAYMENT_VERIFIED" },
+    });
+    expect(note).not.toBeNull();
+  });
+
+  it("a paid due takes no further receipts", async () => {
+    await expectTRPCError(
+      paymentService.submitOfflinePayment(residentA, {
+        dueId: offlineDueId,
+        receiptUrl: receipt(4),
+      }),
+      "CONFLICT",
+    );
+  });
+});
