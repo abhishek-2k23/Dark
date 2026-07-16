@@ -43,7 +43,8 @@
       "camera": "Camera access is off. Turn it on in Settings to take a photo.",
       "library": "Photo access is off. Turn it on in Settings to choose a photo."
     },
-    "viewPhoto": "View photo"
+    "viewPhoto": "View photo",
+    "uploadFailed": "Upload failed: {{reason}}"
   },
   "tabs": {
     "home": "Home",

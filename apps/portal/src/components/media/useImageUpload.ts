@@ -5,6 +5,7 @@ import { Alert } from "react-native";
 import {
   FileTooLargeError,
   PermissionDeniedError,
+  UploadFailedError,
   pickAndUploadImage,
   pickAndUploadImages,
   type PickOptions,
@@ -73,7 +74,14 @@ export function useImageUpload(options: UseImageUploadOptions): UseImageUpload {
           showToast(t(`media.permission.${err.source}`), "error");
         } else if (err instanceof FileTooLargeError) {
           showToast(t("media.tooLarge"), "error");
+        } else if (err instanceof UploadFailedError) {
+          // Cloudinary answered and said no. Show its reason: toErrorMessage
+          // would see no httpStatus on it and wrongly report a dead network,
+          // hiding the only thing that explains the failure.
+          showToast(t("media.uploadFailed", { reason: err.message }), "error");
         } else {
+          // Everything else: a genuine transport failure, or a tRPC error from
+          // getSignature (which carries httpStatus and a curated message).
           showToast(toErrorMessage(err, t), "error");
         }
       } finally {
