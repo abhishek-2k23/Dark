@@ -55,11 +55,25 @@ export function isMailerConfigured(): boolean {
   return resolveTransport() !== null;
 }
 
+/**
+ * An inline image, referenced from the HTML as `cid:<cid>`. Embedding rather
+ * than linking matters for the guest pass: a QR has to render even when the
+ * client blocks remote images, and many clients strip `data:` URIs outright.
+ */
+export interface MailAttachment {
+  filename: string;
+  content: Buffer;
+  /** Referenced as `cid:<value>` in the HTML; presence makes it inline. */
+  cid?: string;
+  contentType?: string;
+}
+
 export interface MailMessage {
   to: string;
   subject: string;
   text: string;
   html?: string;
+  attachments?: MailAttachment[];
 }
 
 /**
@@ -84,6 +98,15 @@ export async function sendMail(msg: MailMessage): Promise<void> {
       subject: msg.subject,
       text: msg.text,
       html: msg.html,
+      attachments: msg.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        cid: a.cid,
+        contentType: a.contentType,
+        // Only inline what the HTML actually references; anything else stays a
+        // regular attachment.
+        contentDisposition: a.cid ? ("inline" as const) : ("attachment" as const),
+      })),
     });
     logger.info("Email sent", { to: msg.to, subject: msg.subject });
   } catch (err) {

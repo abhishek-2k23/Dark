@@ -79,6 +79,15 @@ export default function TicketsList() {
                   size={44}
                 />
                 <View className="flex-1 gap-0.5">
+                  {/* The reference leads: it's what a resident matches against
+                      when they're chasing one specific complaint. */}
+                  <Text
+                    variant="caption"
+                    color="primary"
+                    style={{ fontFamily: "monospace" }}
+                  >
+                    {tk.referenceCode}
+                  </Text>
                   <Text variant="title" numberOfLines={1}>
                     {tk.title}
                   </Text>

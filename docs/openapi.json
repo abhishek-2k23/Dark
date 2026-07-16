@@ -2178,6 +2178,17 @@
                       "type": "string",
                       "description": "Society name"
                     },
+                    "logoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Society logo URL, if set"
+                    },
                     "address": {
                       "type": "string",
                       "description": "Street address"
@@ -2202,6 +2213,7 @@
                   "required": [
                     "id",
                     "name",
+                    "logoUrl",
                     "address",
                     "city",
                     "state",
@@ -2271,6 +2283,18 @@
                     "minLength": 1,
                     "description": "New society name"
                   },
+                  "logoUrl": {
+                    "description": "New logo URL (Cloudinary LOGO kind); null clears it",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "address": {
                     "type": "string",
                     "minLength": 1,
@@ -2312,6 +2336,17 @@
                       "type": "string",
                       "description": "Society name"
                     },
+                    "logoUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Society logo URL, if set"
+                    },
                     "address": {
                       "type": "string",
                       "description": "Street address"
@@ -2336,6 +2371,7 @@
                   "required": [
                     "id",
                     "name",
+                    "logoUrl",
                     "address",
                     "city",
                     "state",
@@ -4519,9 +4555,16 @@
                     "description": "New display name"
                   },
                   "avatarUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "New profile photo URL (Cloudinary, Phase 9)"
+                    "description": "New profile photo URL (Cloudinary, Phase 9); null clears it",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "emergencyContactName": {
                     "type": "string",
@@ -5132,9 +5175,16 @@
                     "description": "New age"
                   },
                   "photoUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "New photo URL"
+                    "description": "New photo URL; null clears it",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }
@@ -7759,6 +7809,12 @@
                     "pattern": "^\\d{10}$",
                     "description": "Expected guest's 10-digit phone"
                   },
+                  "guestEmail": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+                    "description": "Emails the pass (QR + code) straight to the guest when given"
+                  },
                   "validFrom": {
                     "type": "string",
                     "format": "date-time",
@@ -7813,6 +7869,17 @@
                       ],
                       "description": "Expected guest's phone"
                     },
+                    "guestEmail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Guest's email, if the pass was emailed to them"
+                    },
                     "validFrom": {
                       "type": "string",
                       "description": "ISO start of the validity window"
@@ -7859,6 +7926,7 @@
                     "id",
                     "guestName",
                     "guestPhone",
+                    "guestEmail",
                     "validFrom",
                     "validTo",
                     "vehicleNumber",
@@ -7994,6 +8062,17 @@
                             ],
                             "description": "Expected guest's phone"
                           },
+                          "guestEmail": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Guest's email, if the pass was emailed to them"
+                          },
                           "validFrom": {
                             "type": "string",
                             "description": "ISO start of the validity window"
@@ -8040,6 +8119,7 @@
                           "id",
                           "guestName",
                           "guestPhone",
+                          "guestEmail",
                           "validFrom",
                           "validTo",
                           "vehicleNumber",
@@ -8191,6 +8271,17 @@
                           ],
                           "description": "Expected guest's phone"
                         },
+                        "guestEmail": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Guest's email, if the pass was emailed to them"
+                        },
                         "validFrom": {
                           "type": "string",
                           "description": "ISO start of the validity window"
@@ -8237,6 +8328,7 @@
                         "id",
                         "guestName",
                         "guestPhone",
+                        "guestEmail",
                         "validFrom",
                         "validTo",
                         "vehicleNumber",
@@ -8515,6 +8607,17 @@
                       ],
                       "description": "Expected guest's phone"
                     },
+                    "guestEmail": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Guest's email, if the pass was emailed to them"
+                    },
                     "validFrom": {
                       "type": "string",
                       "description": "ISO start of the validity window"
@@ -8561,6 +8664,7 @@
                     "id",
                     "guestName",
                     "guestPhone",
+                    "guestEmail",
                     "validFrom",
                     "validTo",
                     "vehicleNumber",
@@ -8835,6 +8939,10 @@
                       "type": "string",
                       "description": "Ticket id"
                     },
+                    "referenceCode": {
+                      "type": "string",
+                      "description": "Human-readable handle, e.g. TKT-4B7Q2M — quote this when following up"
+                    },
                     "category": {
                       "type": "string",
                       "enum": [
@@ -8952,6 +9060,7 @@
                   },
                   "required": [
                     "id",
+                    "referenceCode",
                     "category",
                     "title",
                     "description",
@@ -9107,6 +9216,10 @@
                             "type": "string",
                             "description": "Ticket id"
                           },
+                          "referenceCode": {
+                            "type": "string",
+                            "description": "Human-readable handle, e.g. TKT-4B7Q2M — quote this when following up"
+                          },
                           "category": {
                             "type": "string",
                             "enum": [
@@ -9224,6 +9337,7 @@
                         },
                         "required": [
                           "id",
+                          "referenceCode",
                           "category",
                           "title",
                           "description",
@@ -9354,6 +9468,10 @@
                     "id": {
                       "type": "string",
                       "description": "Ticket id"
+                    },
+                    "referenceCode": {
+                      "type": "string",
+                      "description": "Human-readable handle, e.g. TKT-4B7Q2M — quote this when following up"
                     },
                     "category": {
                       "type": "string",
@@ -9501,6 +9619,13 @@
                             "type": "string",
                             "description": "Comment text"
                           },
+                          "photoUrls": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Photo URLs attached to the comment"
+                          },
                           "createdAt": {
                             "type": "string",
                             "description": "ISO creation time"
@@ -9510,6 +9635,7 @@
                           "id",
                           "author",
                           "message",
+                          "photoUrls",
                           "createdAt"
                         ],
                         "additionalProperties": false,
@@ -9520,6 +9646,7 @@
                   },
                   "required": [
                     "id",
+                    "referenceCode",
                     "category",
                     "title",
                     "description",
@@ -9656,6 +9783,10 @@
                       "type": "string",
                       "description": "Ticket id"
                     },
+                    "referenceCode": {
+                      "type": "string",
+                      "description": "Human-readable handle, e.g. TKT-4B7Q2M — quote this when following up"
+                    },
                     "category": {
                       "type": "string",
                       "enum": [
@@ -9773,6 +9904,7 @@
                   },
                   "required": [
                     "id",
+                    "referenceCode",
                     "category",
                     "title",
                     "description",
@@ -9893,6 +10025,10 @@
                       "type": "string",
                       "description": "Ticket id"
                     },
+                    "referenceCode": {
+                      "type": "string",
+                      "description": "Human-readable handle, e.g. TKT-4B7Q2M — quote this when following up"
+                    },
                     "category": {
                       "type": "string",
                       "enum": [
@@ -10010,6 +10146,7 @@
                   },
                   "required": [
                     "id",
+                    "referenceCode",
                     "category",
                     "title",
                     "description",
@@ -10110,6 +10247,15 @@
                     "type": "string",
                     "minLength": 1,
                     "description": "Comment text"
+                  },
+                  "photoUrls": {
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "description": "Photo URLs (Cloudinary TICKET kind) — e.g. proof the issue is fixed"
                   }
                 },
                 "required": [
@@ -10154,6 +10300,13 @@
                       "type": "string",
                       "description": "Comment text"
                     },
+                    "photoUrls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Photo URLs attached to the comment"
+                    },
                     "createdAt": {
                       "type": "string",
                       "description": "ISO creation time"
@@ -10163,6 +10316,7 @@
                     "id",
                     "author",
                     "message",
+                    "photoUrls",
                     "createdAt"
                   ],
                   "additionalProperties": false,
@@ -10245,6 +10399,18 @@
                     "minLength": 1,
                     "description": "Notice body text"
                   },
+                  "imageUrl": {
+                    "description": "Banner image URL (Cloudinary NOTICE kind)",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "category": {
                     "type": "string",
                     "enum": [
@@ -10294,6 +10460,17 @@
                     "body": {
                       "type": "string",
                       "description": "Notice body text"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Banner image URL, if set"
                     },
                     "category": {
                       "type": "string",
@@ -10352,6 +10529,7 @@
                     "id",
                     "title",
                     "body",
+                    "imageUrl",
                     "category",
                     "isPinned",
                     "publishedBy",
@@ -10479,6 +10657,17 @@
                             "type": "string",
                             "description": "Notice body text"
                           },
+                          "imageUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Banner image URL, if set"
+                          },
                           "category": {
                             "type": "string",
                             "enum": [
@@ -10536,6 +10725,7 @@
                           "id",
                           "title",
                           "body",
+                          "imageUrl",
                           "category",
                           "isPinned",
                           "publishedBy",
@@ -10664,6 +10854,18 @@
                     "minLength": 1,
                     "description": "New body"
                   },
+                  "imageUrl": {
+                    "description": "New banner image URL; null clears it",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "category": {
                     "type": "string",
                     "enum": [
@@ -10715,6 +10917,17 @@
                     "body": {
                       "type": "string",
                       "description": "Notice body text"
+                    },
+                    "imageUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Banner image URL, if set"
                     },
                     "category": {
                       "type": "string",
@@ -10773,6 +10986,7 @@
                     "id",
                     "title",
                     "body",
+                    "imageUrl",
                     "category",
                     "isPinned",
                     "publishedBy",
@@ -13414,7 +13628,7 @@
                       "CARD",
                       "NETBANKING"
                     ],
-                    "description": "Payment method"
+                    "description": "Gateway payment method"
                   }
                 },
                 "required": [
@@ -13461,9 +13675,10 @@
                           "enum": [
                             "UPI",
                             "CARD",
-                            "NETBANKING"
+                            "NETBANKING",
+                            "OFFLINE"
                           ],
-                          "description": "Payment method"
+                          "description": "Payment method — OFFLINE means paid outside the app and evidenced by a receipt"
                         },
                         "transactionId": {
                           "anyOf": [
@@ -13480,10 +13695,12 @@
                           "type": "string",
                           "enum": [
                             "INITIATED",
+                            "PENDING_VERIFICATION",
                             "SUCCESS",
-                            "FAILED"
+                            "FAILED",
+                            "REJECTED"
                           ],
-                          "description": "Payment status"
+                          "description": "Payment status. PENDING_VERIFICATION and REJECTED apply to OFFLINE payments only: a receipt awaiting an admin decision, and one an admin turned down"
                         },
                         "paidAt": {
                           "anyOf": [
@@ -13495,6 +13712,50 @@
                             }
                           ],
                           "description": "ISO time the payment succeeded, if it did"
+                        },
+                        "receiptUrl": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Uploaded receipt (OFFLINE payments only)"
+                        },
+                        "note": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Resident's note attached to an offline receipt"
+                        },
+                        "rejectionReason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Why an admin rejected the receipt, if they did"
+                        },
+                        "verifiedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "ISO time an admin decided on the receipt"
                         },
                         "createdAt": {
                           "type": "string",
@@ -13511,6 +13772,10 @@
                         "transactionId",
                         "status",
                         "paidAt",
+                        "receiptUrl",
+                        "note",
+                        "rejectionReason",
+                        "verifiedAt",
                         "createdAt"
                       ],
                       "additionalProperties": false,
@@ -13547,6 +13812,732 @@
                     "gateway"
                   ],
                   "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/offline": {
+      "post": {
+        "operationId": "payment-submitOffline",
+        "summary": "Submit a receipt for a payment made outside the app",
+        "description": "For dues settled by cash, cheque, or a direct transfer. Upload the receipt via the signed upload flow (kind RECEIPT) and send the URL here. The payment is recorded as OFFLINE/PENDING_VERIFICATION and the due STAYS PAYABLE until an admin verifies it — a receipt is a claim, not a settlement. Errors: 400 for a foreign media URL, 403 if not a resident, 404 for a due outside the caller's flat, 409 if the due is already paid or already has a receipt awaiting verification, 412 if the account has no resident profile.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dueId": {
+                    "type": "string",
+                    "description": "Id of the due being settled offline"
+                  },
+                  "receiptUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Receipt image URL (Cloudinary RECEIPT kind)"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "description": "Optional note for the admin, e.g. 'paid by cheque #123 to the office'"
+                  }
+                },
+                "required": [
+                  "dueId",
+                  "receiptUrl"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Payment id"
+                    },
+                    "dueId": {
+                      "type": "string",
+                      "description": "Due this payment is against"
+                    },
+                    "dueMonth": {
+                      "type": "number",
+                      "description": "Billing month of the due"
+                    },
+                    "dueYear": {
+                      "type": "number",
+                      "description": "Billing year of the due"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "Amount of the payment"
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "UPI",
+                        "CARD",
+                        "NETBANKING",
+                        "OFFLINE"
+                      ],
+                      "description": "Payment method — OFFLINE means paid outside the app and evidenced by a receipt"
+                    },
+                    "transactionId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Gateway transaction id, once known"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "INITIATED",
+                        "PENDING_VERIFICATION",
+                        "SUCCESS",
+                        "FAILED",
+                        "REJECTED"
+                      ],
+                      "description": "Payment status. PENDING_VERIFICATION and REJECTED apply to OFFLINE payments only: a receipt awaiting an admin decision, and one an admin turned down"
+                    },
+                    "paidAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the payment succeeded, if it did"
+                    },
+                    "receiptUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Uploaded receipt (OFFLINE payments only)"
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident's note attached to an offline receipt"
+                    },
+                    "rejectionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why an admin rejected the receipt, if they did"
+                    },
+                    "verifiedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time an admin decided on the receipt"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the payment was initiated"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "dueId",
+                    "dueMonth",
+                    "dueYear",
+                    "amount",
+                    "method",
+                    "transactionId",
+                    "status",
+                    "paidAt",
+                    "receiptUrl",
+                    "note",
+                    "rejectionReason",
+                    "verifiedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A payment attempt against a due"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/offline/pending": {
+      "get": {
+        "operationId": "payment-pendingOffline",
+        "summary": "List offline receipts awaiting verification",
+        "description": "The admin verification queue for the caller's society, oldest first — the resident who has waited longest is the one whose due is closest to going overdue. Cursor-paginated. Errors: 403 if not an admin, 412 if the account has no society.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 20,
+              "description": "Page size",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "description": "Id of the last payment from the previous page"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Payment id"
+                          },
+                          "dueId": {
+                            "type": "string",
+                            "description": "Due this payment is against"
+                          },
+                          "dueMonth": {
+                            "type": "number",
+                            "description": "Billing month of the due"
+                          },
+                          "dueYear": {
+                            "type": "number",
+                            "description": "Billing year of the due"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Amount of the payment"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "UPI",
+                              "CARD",
+                              "NETBANKING",
+                              "OFFLINE"
+                            ],
+                            "description": "Payment method — OFFLINE means paid outside the app and evidenced by a receipt"
+                          },
+                          "transactionId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Gateway transaction id, once known"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "INITIATED",
+                              "PENDING_VERIFICATION",
+                              "SUCCESS",
+                              "FAILED",
+                              "REJECTED"
+                            ],
+                            "description": "Payment status. PENDING_VERIFICATION and REJECTED apply to OFFLINE payments only: a receipt awaiting an admin decision, and one an admin turned down"
+                          },
+                          "paidAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO time the payment succeeded, if it did"
+                          },
+                          "receiptUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Uploaded receipt (OFFLINE payments only)"
+                          },
+                          "note": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Resident's note attached to an offline receipt"
+                          },
+                          "rejectionReason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Why an admin rejected the receipt, if they did"
+                          },
+                          "verifiedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO time an admin decided on the receipt"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO time the payment was initiated"
+                          },
+                          "residentName": {
+                            "type": "string",
+                            "description": "Who submitted the receipt"
+                          },
+                          "flatNumber": {
+                            "type": "string",
+                            "description": "Flat number"
+                          },
+                          "towerName": {
+                            "type": "string",
+                            "description": "Tower name"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "dueId",
+                          "dueMonth",
+                          "dueYear",
+                          "amount",
+                          "method",
+                          "transactionId",
+                          "status",
+                          "paidAt",
+                          "receiptUrl",
+                          "note",
+                          "rejectionReason",
+                          "verifiedAt",
+                          "createdAt",
+                          "residentName",
+                          "flatNumber",
+                          "towerName"
+                        ],
+                        "additionalProperties": false,
+                        "description": "An offline receipt awaiting an admin decision"
+                      },
+                      "description": "Receipts on this page"
+                    },
+                    "nextCursor": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Cursor for the next page, or null"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/offline/decide": {
+      "post": {
+        "operationId": "payment-decideOffline",
+        "summary": "Verify or reject an offline payment receipt",
+        "description": "Approving marks the payment SUCCESS and its due PAID in one transaction, so the two can never disagree. Rejecting marks it REJECTED, leaves the due payable, and lets the resident submit again. Either way the resident is notified. Errors: 400 if the payment is not OFFLINE, 403 if not an admin, 404 for a payment outside the admin's society, 409 if it has already been decided.",
+        "tags": [
+          "Dues"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "paymentId": {
+                    "type": "string",
+                    "description": "Id of the offline payment to decide on"
+                  },
+                  "approve": {
+                    "type": "boolean",
+                    "description": "true verifies the receipt and marks the due PAID; false rejects it"
+                  },
+                  "rejectionReason": {
+                    "type": "string",
+                    "maxLength": 300,
+                    "description": "Shown to the resident when rejecting"
+                  }
+                },
+                "required": [
+                  "paymentId",
+                  "approve"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "Payment id"
+                    },
+                    "dueId": {
+                      "type": "string",
+                      "description": "Due this payment is against"
+                    },
+                    "dueMonth": {
+                      "type": "number",
+                      "description": "Billing month of the due"
+                    },
+                    "dueYear": {
+                      "type": "number",
+                      "description": "Billing year of the due"
+                    },
+                    "amount": {
+                      "type": "number",
+                      "description": "Amount of the payment"
+                    },
+                    "method": {
+                      "type": "string",
+                      "enum": [
+                        "UPI",
+                        "CARD",
+                        "NETBANKING",
+                        "OFFLINE"
+                      ],
+                      "description": "Payment method — OFFLINE means paid outside the app and evidenced by a receipt"
+                    },
+                    "transactionId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Gateway transaction id, once known"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "INITIATED",
+                        "PENDING_VERIFICATION",
+                        "SUCCESS",
+                        "FAILED",
+                        "REJECTED"
+                      ],
+                      "description": "Payment status. PENDING_VERIFICATION and REJECTED apply to OFFLINE payments only: a receipt awaiting an admin decision, and one an admin turned down"
+                    },
+                    "paidAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time the payment succeeded, if it did"
+                    },
+                    "receiptUrl": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Uploaded receipt (OFFLINE payments only)"
+                    },
+                    "note": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Resident's note attached to an offline receipt"
+                    },
+                    "rejectionReason": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Why an admin rejected the receipt, if they did"
+                    },
+                    "verifiedAt": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "ISO time an admin decided on the receipt"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "description": "ISO time the payment was initiated"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "dueId",
+                    "dueMonth",
+                    "dueYear",
+                    "amount",
+                    "method",
+                    "transactionId",
+                    "status",
+                    "paidAt",
+                    "receiptUrl",
+                    "note",
+                    "rejectionReason",
+                    "verifiedAt",
+                    "createdAt"
+                  ],
+                  "additionalProperties": false,
+                  "description": "A payment attempt against a due"
                 }
               }
             }
@@ -13660,8 +14651,10 @@
                       "type": "string",
                       "enum": [
                         "INITIATED",
+                        "PENDING_VERIFICATION",
                         "SUCCESS",
-                        "FAILED"
+                        "FAILED",
+                        "REJECTED"
                       ],
                       "description": "Payment status after processing"
                     },
@@ -13799,9 +14792,10 @@
                             "enum": [
                               "UPI",
                               "CARD",
-                              "NETBANKING"
+                              "NETBANKING",
+                              "OFFLINE"
                             ],
-                            "description": "Payment method"
+                            "description": "Payment method — OFFLINE means paid outside the app and evidenced by a receipt"
                           },
                           "transactionId": {
                             "anyOf": [
@@ -13818,10 +14812,12 @@
                             "type": "string",
                             "enum": [
                               "INITIATED",
+                              "PENDING_VERIFICATION",
                               "SUCCESS",
-                              "FAILED"
+                              "FAILED",
+                              "REJECTED"
                             ],
-                            "description": "Payment status"
+                            "description": "Payment status. PENDING_VERIFICATION and REJECTED apply to OFFLINE payments only: a receipt awaiting an admin decision, and one an admin turned down"
                           },
                           "paidAt": {
                             "anyOf": [
@@ -13833,6 +14829,50 @@
                               }
                             ],
                             "description": "ISO time the payment succeeded, if it did"
+                          },
+                          "receiptUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Uploaded receipt (OFFLINE payments only)"
+                          },
+                          "note": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Resident's note attached to an offline receipt"
+                          },
+                          "rejectionReason": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Why an admin rejected the receipt, if they did"
+                          },
+                          "verifiedAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO time an admin decided on the receipt"
                           },
                           "createdAt": {
                             "type": "string",
@@ -13849,6 +14889,10 @@
                           "transactionId",
                           "status",
                           "paidAt",
+                          "receiptUrl",
+                          "note",
+                          "rejectionReason",
+                          "verifiedAt",
                           "createdAt"
                         ],
                         "additionalProperties": false,
@@ -14294,9 +15338,16 @@
                     "description": "New 10-digit phone"
                   },
                   "photoUrl": {
-                    "type": "string",
-                    "format": "uri",
-                    "description": "New photo URL"
+                    "description": "New photo URL; null clears it",
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "isVerified": {
                     "type": "boolean",
@@ -14788,6 +15839,8 @@
                               "NOTICE_PUBLISHED",
                               "POLL_CREATED",
                               "DUE_GENERATED",
+                              "PAYMENT_VERIFIED",
+                              "PAYMENT_REJECTED",
                               "BOOKING_CONFIRMED",
                               "GENERAL"
                             ],
@@ -14954,6 +16007,8 @@
                         "NOTICE_PUBLISHED",
                         "POLL_CREATED",
                         "DUE_GENERATED",
+                        "PAYMENT_VERIFIED",
+                        "PAYMENT_REJECTED",
                         "BOOKING_CONFIRMED",
                         "GENERAL"
                       ],
@@ -15160,9 +16215,12 @@
                       "AVATAR",
                       "VISITOR",
                       "TICKET",
-                      "NOTICE"
+                      "NOTICE",
+                      "AMENITY",
+                      "RECEIPT",
+                      "LOGO"
                     ],
-                    "description": "What the image is for — picks the Cloudinary folder and transformation: AVATAR (square face-crop), VISITOR (fixed aspect), TICKET (size-capped original), NOTICE (banner aspect)"
+                    "description": "What the image is for — picks the Cloudinary folder and transformation: AVATAR (square face-crop), VISITOR (fixed aspect), TICKET (size-capped original), NOTICE (banner aspect), AMENITY (3:2 gallery), RECEIPT (size-capped, max quality so small print stays legible), LOGO (fit, no crop)"
                   }
                 },
                 "required": [

@@ -68,6 +68,7 @@ const PreApprovalModel = z
     id: z.string().describe("Pre-approval id"),
     guestName: z.string().describe("Expected guest's name"),
     guestPhone: z.string().nullable().describe("Expected guest's phone"),
+    guestEmail: z.string().nullable().describe("Guest's email, if the pass was emailed to them"),
     validFrom: z.string().describe("ISO start of the validity window"),
     validTo: z.string().describe("ISO end of the validity window"),
     vehicleNumber: z.string().nullable().describe("Expected vehicle number, if any"),
@@ -112,6 +113,10 @@ const HistoryInput = z.object({
 const CreatePreApprovalInput = z.object({
   guestName: z.string().min(1).describe("Expected guest's full name"),
   guestPhone: phoneSchema.describe("Expected guest's 10-digit phone"),
+  guestEmail: z
+    .email()
+    .describe("Emails the pass (QR + code) straight to the guest when given")
+    .optional(),
   validFrom: z.iso.datetime().describe("ISO start of the validity window"),
   validTo: z.iso.datetime().describe("ISO end of the validity window"),
   vehicleNumber: z.string().describe("Expected vehicle number, if known").optional(),

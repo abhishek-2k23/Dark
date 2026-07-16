@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { prisma, type Prisma, type User, type PreApprovalStatus } from "@repo/database";
+import { sendGuestPassEmail } from "@repo/mailer";
+import { logger } from "@repo/logger";
 
 import { toVisitorInfo, visitorInclude, type VisitorInfo } from "./visitor.service";
 
@@ -16,6 +18,7 @@ export interface PreApprovalInfo {
   id: string;
   guestName: string;
   guestPhone: string | null;
+  guestEmail: string | null;
   validFrom: string;
   validTo: string;
   vehicleNumber: string | null;
@@ -32,6 +35,7 @@ function toPreApprovalInfo(row: PreApprovalRow): PreApprovalInfo {
     id: row.id,
     guestName: row.guestName,
     guestPhone: row.guestPhone,
+    guestEmail: row.guestEmail,
     validFrom: row.validFrom.toISOString(),
     validTo: row.validTo.toISOString(),
     vehicleNumber: row.vehicleNumber,
@@ -61,6 +65,7 @@ export async function createPreApproval(
   input: {
     guestName: string;
     guestPhone: string;
+    guestEmail?: string;
     validFrom: string;
     validTo: string;
     vehicleNumber?: string;
@@ -89,13 +94,55 @@ export async function createPreApproval(
       flatId: profile.flatId,
       guestName: input.guestName,
       guestPhone: input.guestPhone,
+      guestEmail: input.guestEmail,
       validFrom,
       validTo,
       vehicleNumber: input.vehicleNumber,
       qrCode: crypto.randomBytes(16).toString("hex"),
     },
   });
+
+  if (input.guestEmail) {
+    await emailPassToGuest(preApproval, actor, profile.flatId);
+  }
+
   return toPreApprovalInfo(preApproval);
+}
+
+/**
+ * Best-effort delivery of the pass to the guest. Never throws: the pass
+ * already exists and is visible in the app, so a mail failure must not fail
+ * the creation the resident just made — they can always show the QR
+ * themselves.
+ */
+async function emailPassToGuest(
+  preApproval: PreApprovalRow,
+  actor: User,
+  flatId: string,
+): Promise<void> {
+  try {
+    const flat = await prisma.flat.findUnique({
+      where: { id: flatId },
+      include: { tower: { include: { society: { select: { name: true } } } } },
+    });
+    if (!flat) return;
+
+    await sendGuestPassEmail({
+      to: preApproval.guestEmail!,
+      guestName: preApproval.guestName,
+      societyName: flat.tower.society.name,
+      flatLabel: `${flat.tower.name}-${flat.flatNumber}`,
+      hostName: actor.name,
+      qrCode: preApproval.qrCode,
+      validFrom: preApproval.validFrom,
+      validTo: preApproval.validTo,
+    });
+  } catch (err) {
+    logger.error("Failed to email guest pass", {
+      preApprovalId: preApproval.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 /**

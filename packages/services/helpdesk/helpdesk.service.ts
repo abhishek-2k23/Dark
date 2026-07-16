@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import {
   prisma,
@@ -9,6 +10,8 @@ import {
 } from "@repo/database";
 
 import { assertCloudinaryUrls } from "@repo/cloudinary";
+import { logger } from "@repo/logger";
+import { sendTicketRaisedEmail } from "@repo/mailer";
 
 import { notifyUser } from "../notification/notification.service";
 
@@ -29,6 +32,7 @@ type TicketRow = Prisma.HelpdeskTicketGetPayload<{ include: typeof ticketInclude
 
 export interface TicketInfo {
   id: string;
+  referenceCode: string;
   category: TicketCategory;
   title: string;
   description: string;
@@ -49,12 +53,14 @@ export interface TicketCommentInfo {
   id: string;
   author: { id: string; name: string };
   message: string;
+  photoUrls: string[];
   createdAt: string;
 }
 
 function toTicketInfo(ticket: TicketRow): TicketInfo {
   return {
     id: ticket.id,
+    referenceCode: ticket.referenceCode,
     category: ticket.category,
     title: ticket.title,
     description: ticket.description,
@@ -86,6 +92,20 @@ async function actorResidentProfile(actor: User) {
   return profile;
 }
 
+/**
+ * Characters a person can read off a screen and type back without ambiguity:
+ * Crockford-style, with I/L/O/U removed so nothing collides with 1/0 or gets
+ * misheard on a phone call to the office.
+ */
+const CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+
+function generateReferenceCode(): string {
+  const bytes = crypto.randomBytes(6);
+  let out = "";
+  for (const b of bytes) out += CODE_ALPHABET[b % CODE_ALPHABET.length];
+  return `TKT-${out}`;
+}
+
 export async function createTicket(
   actor: User,
   input: {
@@ -98,18 +118,59 @@ export async function createTicket(
 ): Promise<TicketInfo> {
   assertCloudinaryUrls(input.photoUrls);
   const profile = await actorResidentProfile(actor);
-  const ticket = await prisma.helpdeskTicket.create({
-    data: {
-      residentId: profile.id,
-      flatId: profile.flatId,
-      category: input.category,
-      title: input.title,
-      description: input.description,
-      photoUrls: input.photoUrls ?? [],
-      priority: input.priority ?? "MEDIUM",
-    },
-    include: ticketInclude,
-  });
+
+  // 32^6 codes makes a collision vanishingly unlikely, but "unlikely" is not
+  // "impossible" and the column is unique — so retry rather than 500 on the
+  // unlucky ticket.
+  let ticket: TicketRow | undefined;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      ticket = await prisma.helpdeskTicket.create({
+        data: {
+          referenceCode: generateReferenceCode(),
+          residentId: profile.id,
+          flatId: profile.flatId,
+          category: input.category,
+          title: input.title,
+          description: input.description,
+          photoUrls: input.photoUrls ?? [],
+          priority: input.priority ?? "MEDIUM",
+        },
+        include: ticketInclude,
+      });
+      break;
+    } catch (err) {
+      // Matched on shape rather than `instanceof`: pnpm can resolve @prisma/client
+      // more than once, and an instanceof across two copies silently fails.
+      const e = err as { code?: string; meta?: { target?: unknown } };
+      const isCodeCollision =
+        e?.code === "P2002" && String(e.meta?.target ?? "").includes("referenceCode");
+      if (!isCodeCollision) throw err;
+    }
+  }
+  if (!ticket) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Could not allocate a ticket reference — please try again",
+    });
+  }
+
+  // Best-effort: the ticket exists and is visible in the app, so a mail
+  // failure must not fail the raise.
+  if (actor.email) {
+    void sendTicketRaisedEmail({
+      to: actor.email,
+      referenceCode: ticket.referenceCode,
+      title: ticket.title,
+      category: ticket.category,
+    }).catch((err: unknown) => {
+      logger.error("Failed to email ticket reference", {
+        ticketId: ticket!.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }
+
   return toTicketInfo(ticket);
 }
 
@@ -198,6 +259,7 @@ export async function getTicket(
       id: c.id,
       author: c.author,
       message: c.message,
+      photoUrls: c.photoUrls,
       createdAt: c.createdAt.toISOString(),
     })),
   };
@@ -269,17 +331,24 @@ export async function assignTicket(
 
 export async function addComment(
   actor: User,
-  input: { ticketId: string; message: string },
+  input: { ticketId: string; message: string; photoUrls?: string[] },
 ): Promise<TicketCommentInfo> {
+  assertCloudinaryUrls(input.photoUrls);
   const ticket = await requireAccessibleTicket(actor, input.ticketId);
   const comment = await prisma.ticketComment.create({
-    data: { ticketId: ticket.id, authorId: actor.id, message: input.message },
+    data: {
+      ticketId: ticket.id,
+      authorId: actor.id,
+      message: input.message,
+      photoUrls: input.photoUrls ?? [],
+    },
     include: { author: { select: { id: true, name: true } } },
   });
   return {
     id: comment.id,
     author: comment.author,
     message: comment.message,
+    photoUrls: comment.photoUrls,
     createdAt: comment.createdAt.toISOString(),
   };
 }

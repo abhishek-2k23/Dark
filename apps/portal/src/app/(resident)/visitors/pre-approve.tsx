@@ -2,13 +2,12 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
-import QRCode from "react-native-qrcode-svg";
 
+import { GatePass } from "@/components/GatePass";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Button,
   Card,
-  IconCircle,
   Input,
   PhoneInput,
   Screen,
@@ -16,7 +15,6 @@ import {
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
-import { formatDateTime } from "@/utils/format";
 
 /** Selectable chip row. */
 function Chips<T extends string>({
@@ -71,6 +69,7 @@ export default function PreApproveScreen() {
 
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
   const [vehicle, setVehicle] = useState("");
   const [start, setStart] = useState<StartKey>("now");
   const [duration, setDuration] = useState<DurationH>("4");
@@ -95,34 +94,33 @@ export default function PreApproveScreen() {
     create.mutate({
       guestName: guestName.trim(),
       guestPhone: guestPhone.trim(),
+      guestEmail: guestEmail.trim() || undefined,
       validFrom: from.toISOString(),
       validTo: to.toISOString(),
       vehicleNumber: vehicle.trim() || undefined,
     });
   };
 
-  // Success view: the shareable QR pass.
+  // Success view: the pass itself, drawn as a ticket.
   if (pass) {
     return (
       <Screen scroll contentClassName="gap-5 pb-8">
         <StackHeader title={t("passes.readyTitle")} />
-        <View className="items-center gap-4 pt-4">
-          <IconCircle name="checkmark-circle-outline" tone="success" size={64} />
-          <View className="items-center gap-1">
-            <Text variant="h1" align="center">
-              {pass.guestName}
-            </Text>
-            <Text variant="body" color="secondary" align="center">
-              {formatDateTime(pass.validFrom)} → {formatDateTime(pass.validTo)}
-            </Text>
-          </View>
-          <View className="rounded-3xl bg-white p-5">
-            <QRCode value={pass.qrCode} size={220} />
-          </View>
-          <Text variant="bodySmall" color="secondary" align="center" className="px-6">
-            {t("passes.qrHint")}
+
+        <GatePass
+          guestName={pass.guestName}
+          qrCode={pass.qrCode}
+          validFrom={pass.validFrom}
+          validTo={pass.validTo}
+          vehicleNumber={pass.vehicleNumber}
+        />
+
+        {pass.guestEmail && (
+          <Text variant="bodySmall" color="secondary" align="center">
+            {t("passes.emailedTo", { email: pass.guestEmail })}
           </Text>
-        </View>
+        )}
+
         <Button
           label={t("common.done")}
           variant="primary"
@@ -155,6 +153,18 @@ export default function PreApproveScreen() {
           placeholder="9876543210"
           value={guestPhone}
           onChangeText={setGuestPhone}
+        />
+        {/* Given an address, the guest gets the pass themselves — no
+            forwarding, and nothing to fumble for at the gate. */}
+        <Input
+          label={t("passes.guestEmail")}
+          labelHint={t("common.optional")}
+          leftIcon="mail-outline"
+          placeholder="guest@example.com"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          value={guestEmail}
+          onChangeText={setGuestEmail}
         />
 
         <View className="gap-2">
