@@ -21,6 +21,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { NotificationsListener } from "@/components/NotificationsListener";
 import { ToastHost } from "@/components/ToastHost";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { useOTAUpdates } from "@/lib/useOTAUpdates";
@@ -99,6 +100,7 @@ export default function RootLayout() {
               <ErrorBoundary>
                 <ThemedStack />
               </ErrorBoundary>
+              <NotificationsListener />
               <ToastHost />
             </LanguageProvider>
           </ThemeProvider>

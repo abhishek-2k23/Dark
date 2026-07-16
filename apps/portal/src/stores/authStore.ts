@@ -3,6 +3,10 @@ import type { inferRouterOutputs } from "@trpc/server";
 import { create } from "zustand";
 
 import { registerRefreshHandler, setAccessToken } from "@/lib/authToken";
+import {
+  registerForPushNotifications,
+  unregisterForPushNotifications,
+} from "@/lib/push";
 import { deleteItem, getItem, setItem, STORAGE_KEYS } from "@/lib/secureStore";
 import { api } from "@/lib/trpc";
 
@@ -49,6 +53,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     setAccessToken(session.accessToken);
     await setItem(STORAGE_KEYS.refreshToken, session.refreshToken);
     set({ status: "authenticated", user: session.user });
+    // Sync this device's push token for the now-signed-in user. Fire-and-forget:
+    // it's best-effort and must never delay the session becoming usable. Safe to
+    // repeat on token refresh — the server upserts by (user, token).
+    void registerForPushNotifications();
   },
 
   refresh: async () => {
@@ -70,6 +78,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: async () => {
+    // Drop this device's push token first, while the access token is still valid
+    // (the mutation is authenticated). Awaited but internally best-effort, so a
+    // failure here can't block sign-out.
+    await unregisterForPushNotifications();
+
     const refreshToken = await getItem(STORAGE_KEYS.refreshToken);
     if (refreshToken) {
       // Best-effort server-side revocation; never block sign-out on it.

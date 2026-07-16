@@ -9,7 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { notificationHref, notificationTypeIcon } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
-export default function AdminNotificationsScreen() {
+export default function GuardNotificationsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const utils = trpc.useUtils();
@@ -22,9 +22,7 @@ export default function AdminNotificationsScreen() {
   const unreadCount = q.data?.pages[0]?.unreadCount ?? 0;
 
   const invalidate = () => void utils.notification.list.invalidate();
-  const markRead = trpc.notification.markRead.useMutation({
-    onSuccess: invalidate,
-  });
+  const markRead = trpc.notification.markRead.useMutation({ onSuccess: invalidate });
   const markAllRead = trpc.notification.markAllRead.useMutation({
     onSuccess: invalidate,
   });
@@ -59,7 +57,7 @@ export default function AdminNotificationsScreen() {
       ) : (
         <View className="gap-3">
           {items.map((n) => {
-            const href = notificationHref("ADMIN", n.type, n.data);
+            const href = notificationHref("GUARD", n.type, n.data);
             return (
               <Card
                 key={n.id}
@@ -76,10 +74,7 @@ export default function AdminNotificationsScreen() {
                   size={40}
                 />
                 <View className="flex-1 gap-0.5">
-                  <Text
-                    variant={n.isRead ? "subtitle" : "title"}
-                    numberOfLines={2}
-                  >
+                  <Text variant={n.isRead ? "subtitle" : "title"} numberOfLines={2}>
                     {n.title}
                   </Text>
                   <Text variant="bodySmall" color="secondary" numberOfLines={2}>

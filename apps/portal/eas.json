@@ -11,7 +11,9 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com",
         "EXPO_PUBLIC_WEB_URL": "https://prangan.iamabhishek01.dev",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "118807053113-oeadu87jfqktnnuv445vv8q9c4m4hf3h.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "118807053113-oeadu87jfqktnnuv445vv8q9c4m4hf3h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "118807053113-80g7gahcc7b0t38mgdloid1tbgbq8egd.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.118807053113-80g7gahcc7b0t38mgdloid1tbgbq8egd"
       },
       "android": {
         "buildType": "apk"
@@ -23,7 +25,9 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com",
         "EXPO_PUBLIC_WEB_URL": "https://prangan.iamabhishek01.dev",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "118807053113-oeadu87jfqktnnuv445vv8q9c4m4hf3h.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "118807053113-oeadu87jfqktnnuv445vv8q9c4m4hf3h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "118807053113-80g7gahcc7b0t38mgdloid1tbgbq8egd.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.118807053113-80g7gahcc7b0t38mgdloid1tbgbq8egd"
       },
       "android": {
         "buildType": "apk"
@@ -35,7 +39,9 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://dark-9k8o.onrender.com",
         "EXPO_PUBLIC_WEB_URL": "https://prangan.iamabhishek01.dev",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "118807053113-oeadu87jfqktnnuv445vv8q9c4m4hf3h.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "118807053113-oeadu87jfqktnnuv445vv8q9c4m4hf3h.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "118807053113-80g7gahcc7b0t38mgdloid1tbgbq8egd.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME": "com.googleusercontent.apps.118807053113-80g7gahcc7b0t38mgdloid1tbgbq8egd"
       }
     }
   },

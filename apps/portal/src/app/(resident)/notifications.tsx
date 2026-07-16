@@ -6,19 +6,8 @@ import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
 import { Button, Card, IconCircle, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
-import { notificationTypeIcon } from "@/utils/domain";
+import { notificationHref, notificationTypeIcon } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
-
-/** Best-effort deep link from a notification's data payload. */
-function hrefFor(type: string, data: unknown): string | null {
-  const d = (data ?? {}) as Record<string, string>;
-  if (d.visitorId) return `/(resident)/visitors/${d.visitorId}`;
-  if (d.ticketId) return `/(resident)/tickets/${d.ticketId}`;
-  if (d.noticeId) return `/(resident)/notices/${d.noticeId}`;
-  if (d.pollId) return `/(resident)/polls/${d.pollId}`;
-  if (type === "DUE_GENERATED") return "/(resident)/(tabs)/payments";
-  return null;
-}
 
 export default function NotificationsScreen() {
   const { t } = useTranslation();
@@ -68,7 +57,7 @@ export default function NotificationsScreen() {
       ) : (
         <View className="gap-3">
           {items.map((n) => {
-            const href = hrefFor(n.type, n.data);
+            const href = notificationHref("RESIDENT", n.type, n.data);
             return (
               <Card
                 key={n.id}

@@ -46,7 +46,10 @@ export async function notifyUsers(userIds: string[], payload: NotifyPayload): Pr
         to: t.token,
         title: payload.title,
         body: payload.body,
-        data: payload.data,
+        // Carry the notification type alongside the deep-link ids so the app can
+        // route a tapped push the same way the in-app inbox routes its rows
+        // (the inbox reads `type` from its own column; a push has only `data`).
+        data: { ...payload.data, type: payload.type },
       }));
 
     for (const chunk of expo().chunkPushNotifications(messages)) {
@@ -97,6 +100,21 @@ export async function registerPushToken(
     where: { userId_token: { userId: actor.id, token: input.token } },
     create: { userId: actor.id, token: input.token, deviceType: input.deviceType },
     update: { deviceType: input.deviceType },
+  });
+}
+
+/**
+ * Remove a device's push token for the caller (called on sign-out so the next
+ * user on a shared device doesn't inherit the previous user's pushes). Scoped
+ * to (user, token); a token that isn't the caller's is silently ignored so
+ * logout never fails on it.
+ */
+export async function unregisterPushToken(
+  actor: User,
+  input: { token: string },
+): Promise<void> {
+  await prisma.pushToken.deleteMany({
+    where: { userId: actor.id, token: input.token },
   });
 }
 

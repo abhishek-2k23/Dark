@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { SectionHeader } from "@/components/SectionHeader";
 import {
@@ -14,7 +14,7 @@ import {
   Text,
   type IconName,
 } from "@/components/ui";
-import { hueFor, type NeonHue } from "@/theme";
+import { hueFor, useTheme, type NeonHue } from "@/theme";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { visitorPurposeIcon } from "@/utils/domain";
@@ -111,8 +111,11 @@ export default function GuardDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const { colors } = useTheme();
 
   const me = trpc.profile.me.useQuery();
+  const unread = trpc.notification.list.useQuery({ limit: 1 });
+  const unreadCount = unread.data?.unreadCount ?? 0;
   const today = trpc.visitor.history.useQuery(
     { period: "TODAY", limit: 100 },
     { refetchInterval: 30_000 },
@@ -133,7 +136,7 @@ export default function GuardDashboard() {
       {/* Header */}
       <View className="flex-row items-center gap-3">
         <Avatar uri={user?.avatarUrl} name={user?.name} size={44} />
-        <View className="shrink">
+        <View className="shrink flex-1">
           <Text variant="caption" color="secondary" numberOfLines={1}>
             {gate
               ? t("guard.onGate", { gate })
@@ -143,6 +146,22 @@ export default function GuardDashboard() {
             {t(greetingKey(), { name: user?.name?.split(" ")[0] ?? "" })}
           </Text>
         </View>
+        <Pressable
+          onPress={() => router.push("/(guard)/notifications" as never)}
+          hitSlop={8}
+          accessibilityLabel={t("notifications.title")}
+          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+          style={{
+            backgroundColor: colors.glassFill,
+            borderWidth: 1,
+            borderColor: colors.glassBorder,
+          }}
+        >
+          <Icon name="notifications-outline" size={22} color="content" />
+          {unreadCount > 0 && (
+            <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
+          )}
+        </Pressable>
       </View>
 
       {/* Today's stats */}
