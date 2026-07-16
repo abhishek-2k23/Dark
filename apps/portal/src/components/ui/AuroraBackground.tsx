@@ -18,9 +18,21 @@ export interface AuroraBackgroundProps {
   variant?: AuroraVariant;
   /** Override the blob colors (raw color strings; defaults to `colors.aurora`). */
   hues?: string[];
+  /** Render only the first N blobs of the preset (e.g. 1 for a lone glow). */
+  count?: number;
+  /** Fully custom blob specs; overrides the `variant` preset (which still
+   *  picks the intensity). */
+  specs?: BlobSpec[];
+  /**
+   * Coordinate space the blobs roam, defaulting to the window. Pass these when
+   * the aurora fills a clipped sub-region (like the bottom strip of the login
+   * screen) so the blobs wander that region instead of a mostly-offscreen one.
+   */
+  width?: number;
+  height?: number;
 }
 
-interface BlobSpec {
+export interface BlobSpec {
   /** Blob diameter as a fraction of screen width. Well over 1 — these are
    *  wide, soft clouds, not discs. */
   size: number;
@@ -41,6 +53,13 @@ interface BlobSpec {
   breatheMs: number;
   /** Peak-to-trough scale swing, e.g. 0.2 → scales between 0.9x and 1.1x. */
   breatheScale: number;
+  /**
+   * Shifts the blob's rest position from the bounds' center, as a fraction of
+   * the bounds height (positive = down). Lets a blob sit low in a clipped
+   * strip so its falloff reaches zero before the strip's top edge — otherwise
+   * the clip cuts the glow into a visible straight line.
+   */
+  offsetY?: number;
 }
 
 /**
@@ -283,7 +302,7 @@ function DriftingBlob({
       style={{
         position: "absolute",
         left: (screenW - diameter) / 2,
-        top: (screenH - diameter) / 2,
+        top: (screenH - diameter) / 2 + (spec.offsetY ?? 0) * screenH,
         width: diameter,
         height: diameter,
         opacity: glow,
@@ -324,13 +343,20 @@ function DriftingBlob({
 export const AuroraBackground = memo(function AuroraBackground({
   variant = "default",
   hues,
+  count,
+  specs,
+  width: boundsW,
+  height: boundsH,
 }: AuroraBackgroundProps) {
   const { colors, scheme } = useTheme();
-  const { width, height } = useWindowDimensions();
+  const { width: windowW, height: windowH } = useWindowDimensions();
   const paused = useReduceMotion();
+  const width = boundsW ?? windowW;
+  const height = boundsH ?? windowH;
 
   const blobColors = hues?.length ? hues : colors.aurora;
-  const blobs = LAYOUT[variant];
+  const preset = specs ?? LAYOUT[variant];
+  const blobs = preset.slice(0, count ?? preset.length);
 
   // Higher than a hard-edged blob would need: the gaussian falloff spreads the
   // same alpha over a much wider radius, so the peak has to be brighter for the

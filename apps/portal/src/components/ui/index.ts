@@ -29,6 +29,7 @@ export {
   AuroraBackground,
   type AuroraBackgroundProps,
   type AuroraVariant,
+  type BlobSpec,
 } from "./AuroraBackground";
 export { NeonTile, type NeonTileProps } from "./NeonTile";
 export { Skeleton, type SkeletonProps } from "./Skeleton";

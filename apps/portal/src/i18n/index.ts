@@ -35,6 +35,14 @@ if (!i18n.isInitialized) {
     // React Native has no Suspense-friendly file loading; keep it eager.
     react: { useSuspense: false },
   });
+} else {
+  // Fast Refresh re-runs this module when a locale JSON changes, but the guard
+  // above skips init — leaving i18next serving the bundles captured at app
+  // start, so newly added strings render as raw keys until a full restart.
+  // Re-register the (fresh) bundles instead.
+  for (const [lng, ns] of Object.entries(resources)) {
+    i18n.addResourceBundle(lng, "translation", ns.translation, true, true);
+  }
 }
 
 export default i18n;
