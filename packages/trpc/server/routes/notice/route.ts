@@ -15,6 +15,7 @@ const NoticeModel = z
     id: z.string().describe("Notice id"),
     title: z.string().describe("Notice title"),
     body: z.string().describe("Notice body text"),
+    imageUrl: z.string().nullable().describe("Banner image URL, if set"),
     category: NoticeCategoryEnum,
     isPinned: z.boolean().describe("Pinned notices sort to the top"),
     publishedBy: z
@@ -35,6 +36,7 @@ const NoticeModel = z
 const CreateNoticeInput = z.object({
   title: z.string().min(1).describe("Notice title"),
   body: z.string().min(1).describe("Notice body text"),
+  imageUrl: z.url().nullish().describe("Banner image URL (Cloudinary NOTICE kind)"),
   category: NoticeCategoryEnum,
   isPinned: z.boolean().describe("Pin to the top of the board (default false)").optional(),
   scheduledAt: z.iso
@@ -47,6 +49,7 @@ const UpdateNoticeInput = z.object({
   noticeId: z.string().describe("Id of the notice to update"),
   title: z.string().min(1).describe("New title").optional(),
   body: z.string().min(1).describe("New body").optional(),
+  imageUrl: z.url().nullish().describe("New banner image URL; null clears it"),
   category: NoticeCategoryEnum.optional(),
   isPinned: z.boolean().describe("New pinned state").optional(),
   scheduledAt: z.iso

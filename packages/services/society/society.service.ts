@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type User, type FlatType } from "@repo/database";
+import { assertCloudinaryUrl } from "@repo/cloudinary";
 
 /**
  * Society/tower/flat management. Every function takes the acting admin as
@@ -21,6 +22,7 @@ function actorSocietyId(actor: User): string {
 export interface SocietyInfo {
   id: string;
   name: string;
+  logoUrl: string | null;
   address: string;
   city: string;
   state: string;
@@ -40,6 +42,7 @@ export async function getSociety(actor: User): Promise<SocietyInfo> {
   return {
     id: society.id,
     name: society.name,
+    logoUrl: society.logoUrl,
     address: society.address,
     city: society.city,
     state: society.state,
@@ -52,12 +55,15 @@ export async function updateSociety(
   actor: User,
   input: {
     name?: string;
+    /** undefined leaves the current logo alone; null clears it. */
+    logoUrl?: string | null;
     address?: string;
     city?: string;
     state?: string;
     pincode?: string;
   },
 ): Promise<SocietyInfo> {
+  assertCloudinaryUrl(input.logoUrl);
   const societyId = actorSocietyId(actor);
   await prisma.society.update({ where: { id: societyId }, data: input });
   return getSociety(actor);

@@ -34,7 +34,7 @@ const UpdateProviderInput = z.object({
   name: z.string().min(1).describe("New name").optional(),
   category: ServiceCategoryEnum.optional(),
   phone: phoneSchema.describe("New 10-digit phone").optional(),
-  photoUrl: z.url().describe("New photo URL").optional(),
+  photoUrl: z.url().nullish().describe("New photo URL; null clears it"),
   isVerified: z.boolean().describe("New verification state").optional(),
 });
 

@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type Prisma, type User, type NoticeCategory } from "@repo/database";
+import { assertCloudinaryUrl } from "@repo/cloudinary";
 
 import { notifyUsers, societyResidentUserIds } from "../notification/notification.service";
 
@@ -19,6 +20,7 @@ export interface NoticeInfo {
   id: string;
   title: string;
   body: string;
+  imageUrl: string | null;
   category: NoticeCategory;
   isPinned: boolean;
   publishedBy: { id: string; name: string };
@@ -32,6 +34,7 @@ function toNoticeInfo(notice: NoticeRow): NoticeInfo {
     id: notice.id,
     title: notice.title,
     body: notice.body,
+    imageUrl: notice.imageUrl,
     category: notice.category,
     isPinned: notice.isPinned,
     publishedBy: notice.publishedByAdmin,
@@ -56,11 +59,13 @@ export async function createNotice(
   input: {
     title: string;
     body: string;
+    imageUrl?: string | null;
     category: NoticeCategory;
     isPinned?: boolean;
     scheduledAt?: string;
   },
 ): Promise<NoticeInfo> {
+  assertCloudinaryUrl(input.imageUrl);
   const societyId = actorSocietyId(actor);
   const scheduledAt = input.scheduledAt ? new Date(input.scheduledAt) : null;
   if (scheduledAt && scheduledAt <= new Date()) {
@@ -75,6 +80,7 @@ export async function createNotice(
       societyId,
       title: input.title,
       body: input.body,
+      imageUrl: input.imageUrl,
       category: input.category,
       isPinned: input.isPinned ?? false,
       scheduledAt,
@@ -114,11 +120,14 @@ export async function updateNotice(
     noticeId: string;
     title?: string;
     body?: string;
+    /** undefined leaves the current banner alone; null clears it. */
+    imageUrl?: string | null;
     category?: NoticeCategory;
     isPinned?: boolean;
     scheduledAt?: string | null;
   },
 ): Promise<NoticeInfo> {
+  assertCloudinaryUrl(input.imageUrl);
   const notice = await requireOwnSocietyNotice(actor, input.noticeId);
 
   let scheduledAt: Date | null | undefined;
@@ -138,6 +147,7 @@ export async function updateNotice(
     data: {
       title: input.title,
       body: input.body,
+      imageUrl: input.imageUrl,
       category: input.category,
       isPinned: input.isPinned,
       scheduledAt,

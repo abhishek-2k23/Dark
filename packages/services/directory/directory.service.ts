@@ -88,7 +88,8 @@ export async function updateServiceProvider(
     name?: string;
     category?: ServiceCategory;
     phone?: string;
-    photoUrl?: string;
+    /** undefined leaves the current photo alone; null clears it. */
+    photoUrl?: string | null;
     isVerified?: boolean;
   },
 ): Promise<ServiceProviderInfo> {
