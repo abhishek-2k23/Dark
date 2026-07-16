@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { EmptyState, Loading } from "@/components/ListState";
+import { AvatarPicker } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Button,
@@ -131,6 +132,7 @@ export default function RegisterVisitor() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [vehicle, setVehicle] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const register = trpc.visitor.register.useMutation({
     onSuccess: (v) => {
@@ -156,6 +158,7 @@ export default function RegisterVisitor() {
       name: name.trim(),
       phone: phone.trim(),
       vehicleNumber: vehicle.trim() || undefined,
+      photoUrl: photoUrl ?? undefined,
     });
   };
 
@@ -167,6 +170,19 @@ export default function RegisterVisitor() {
 
       {flat && (
         <Card className="gap-4">
+          {/* First field on the form: the photo is the whole point of the
+              resident's approve/deny decision, and taking it while the visitor
+              is still standing there is easier than remembering to go back. */}
+          <AvatarPicker
+            value={photoUrl}
+            onChange={setPhotoUrl}
+            name={name}
+            size={104}
+            kind="VISITOR"
+            forceSource="camera"
+            label={t("guard.visitorPhotoHint")}
+          />
+
           <View className="gap-2">
             <Text variant="subtitle" color="primary">
               {t("visitors.purpose")}
@@ -231,9 +247,6 @@ export default function RegisterVisitor() {
             onPress={onSubmit}
             fullWidth
           />
-          <Text variant="caption" color="tertiary" align="center">
-            {t("guard.photoDeferred")}
-          </Text>
         </Card>
       )}
     </Screen>

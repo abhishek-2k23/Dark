@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
@@ -41,6 +42,14 @@ export default function NoticeDetail() {
               />
             </View>
           </View>
+          {notice.imageUrl && (
+            <Image
+              source={{ uri: notice.imageUrl }}
+              style={{ width: "100%", aspectRatio: 3, borderRadius: 12 }}
+              contentFit="cover"
+              transition={150}
+            />
+          )}
           <Divider />
           <Text variant="bodyLarge">{notice.body}</Text>
           <Text variant="caption" color="tertiary">

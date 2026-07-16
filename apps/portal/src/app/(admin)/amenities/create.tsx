@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, View } from "react-native";
 
+import { PhotoGrid } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import { Button, Card, Icon, Input, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
@@ -24,6 +25,7 @@ export default function CreateAmenity() {
   const [rules, setRules] = useState("");
   const [price, setPrice] = useState("");
   const [isActive, setIsActive] = useState(true);
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function CreateAmenity() {
       setRules(a.rules ?? "");
       setPrice(a.pricePerSlot != null ? String(a.pricePerSlot) : "");
       setIsActive(a.isActive);
+      setPhotoUrls(a.photoUrls);
       setLoaded(true);
     }
   }, [list.data, id, isEdit, loaded]);
@@ -96,6 +99,7 @@ export default function CreateAmenity() {
         rules: rules.trim() || undefined,
         pricePerSlot: priceNum ?? null,
         isActive,
+        photoUrls,
       });
     } else {
       create.mutate({
@@ -104,6 +108,7 @@ export default function CreateAmenity() {
         rules: rules.trim() || undefined,
         ...(priceNum != null ? { pricePerSlot: priceNum } : {}),
         isActive,
+        photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
       });
     }
   };
@@ -113,6 +118,15 @@ export default function CreateAmenity() {
       <StackHeader title={isEdit ? t("admin.editAmenity") : t("admin.newAmenity")} />
 
       <Card className="gap-4">
+        {/* Residents book what they can see — an amenity with no photos reads
+            as an empty card in the list. */}
+        <PhotoGrid
+          value={photoUrls}
+          onChange={setPhotoUrls}
+          kind="AMENITY"
+          label={t("admin.amenityPhotos")}
+          max={5}
+        />
         <Input
           label={t("admin.amenityName")}
           leftIcon="tennisball-outline"

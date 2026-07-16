@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ErrorState, Loading } from "@/components/ListState";
+import { ImageField } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import { Button, Card, Input, Screen } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
@@ -20,6 +21,7 @@ export default function EditSociety() {
     state: "",
     pincode: "",
   });
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (q.data) {
@@ -30,6 +32,7 @@ export default function EditSociety() {
         state: q.data.state,
         pincode: q.data.pincode,
       });
+      setLogoUrl(q.data.logoUrl ?? null);
     }
   }, [q.data]);
 
@@ -54,6 +57,18 @@ export default function EditSociety() {
         <ErrorState message={q.error.message} onRetry={q.refetch} />
       ) : (
         <Card className="gap-4">
+          {/* c_fit, so a wordmark keeps its shape instead of being cropped
+              square — hence "contain" here too. */}
+          <ImageField
+            value={logoUrl}
+            onChange={setLogoUrl}
+            kind="LOGO"
+            label={t("admin.societyLogo")}
+            labelHint={t("common.optional")}
+            hint={t("admin.societyLogoHint")}
+            aspect={[2, 1]}
+            contentFit="contain"
+          />
           <Input
             label={t("admin.societyName")}
             leftIcon="business-outline"
@@ -86,6 +101,7 @@ export default function EditSociety() {
               }
               update.mutate({
                 name: form.name.trim(),
+                logoUrl,
                 address: form.address.trim(),
                 city: form.city.trim(),
                 state: form.state.trim(),

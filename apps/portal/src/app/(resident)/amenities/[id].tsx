@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { ErrorState, Loading } from "@/components/ListState";
+import { PhotoStrip } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Badge,
@@ -89,6 +90,7 @@ export default function AmenityDetail() {
                 />
               </View>
             </View>
+            <PhotoStrip urls={amenity.photoUrls} size={96} />
             {amenity.description && (
               <Text variant="body" color="secondary">
                 {amenity.description}

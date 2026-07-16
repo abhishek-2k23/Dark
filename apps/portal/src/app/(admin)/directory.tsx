@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
+import { AvatarPicker } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
 import {
   Badge,
@@ -29,6 +30,7 @@ function AddProviderForm({ onDone }: { onDone: () => void }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [category, setCategory] = useState<Category>("MAID");
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const create = trpc.serviceProvider.create.useMutation({
     onSuccess: () => {
@@ -41,6 +43,15 @@ function AddProviderForm({ onDone }: { onDone: () => void }) {
 
   return (
     <Card className="gap-3">
+      {/* A face turns the directory from a phone list into people the
+          household will actually recognise at the door. */}
+      <AvatarPicker
+        value={photoUrl}
+        onChange={setPhotoUrl}
+        name={name}
+        size={72}
+        label={t("admin.providerPhotoHint")}
+      />
       <Input
         label={t("signup.name")}
         leftIcon="person-outline"
@@ -82,7 +93,12 @@ function AddProviderForm({ onDone }: { onDone: () => void }) {
             showToast(t("admin.providerMissing"), "error");
             return;
           }
-          create.mutate({ name: name.trim(), phone: phone.trim(), category });
+          create.mutate({
+            name: name.trim(),
+            phone: phone.trim(),
+            category,
+            photoUrl: photoUrl ?? undefined,
+          });
         }}
         fullWidth
       />
