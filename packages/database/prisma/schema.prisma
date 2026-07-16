@@ -108,12 +108,21 @@ enum PaymentMethod {
   UPI
   CARD
   NETBANKING
+  // Paid outside the app (cash/cheque/direct transfer) and evidenced by an
+  // uploaded receipt an admin has to verify. Never touches the gateway.
+  OFFLINE
 }
 
 enum PaymentStatus {
   INITIATED
+  // OFFLINE only: receipt uploaded, waiting on an admin decision. The due
+  // stays payable until then, so nobody is marked paid on their own say-so.
+  PENDING_VERIFICATION
   SUCCESS
   FAILED
+  // OFFLINE only: an admin rejected the receipt. The due stays payable and
+  // the resident may submit again.
+  REJECTED
 }
 
 enum ServiceCategory {
@@ -130,6 +139,8 @@ enum DeviceType {
 }
 
 enum NotificationType {
+  PAYMENT_VERIFIED
+  PAYMENT_REJECTED
   VISITOR_PENDING
   VISITOR_APPROVED
   VISITOR_DENIED
@@ -149,6 +160,7 @@ enum NotificationType {
 model Society {
   id        String   @id @default(cuid())
   name      String
+  logoUrl   String?
   address   String
   city      String
   state     String
@@ -236,6 +248,7 @@ model User {
   createdPolls          Poll[]
   sentInvites           PendingResidentInvite[]
   addedServiceProviders ServiceProvider[]
+  verifiedPayments      Payment[]               @relation("PaymentVerifiedByAdmin")
   notifications         Notification[]
 }
 
@@ -393,6 +406,9 @@ model GuestPreApproval {
   flat          Flat              @relation(fields: [flatId], references: [id])
   guestName     String
   guestPhone    String?
+  // Optional: when given, the pass (QR + code) is emailed to the guest so they
+  // can show it at the gate without the resident forwarding anything.
+  guestEmail    String?
   validFrom     DateTime
   validTo       DateTime
   vehicleNumber String?
@@ -410,6 +426,9 @@ model GuestPreApproval {
 
 model HelpdeskTicket {
   id           String          @id @default(cuid())
+  // Human-readable handle for the ticket: printed on the detail screen, encoded
+  // in its QR, and emailed to the resident so they can quote it to the office.
+  referenceCode String         @unique
   residentId   String
   resident     ResidentProfile @relation(fields: [residentId], references: [id])
   flatId       String
@@ -439,6 +458,7 @@ model TicketComment {
   authorId  String
   author    User           @relation(fields: [authorId], references: [id])
   message   String
+  photoUrls String[]
   createdAt DateTime       @default(now())
 
   @@index([ticketId])
@@ -450,6 +470,7 @@ model Notice {
   society            Society        @relation(fields: [societyId], references: [id])
   title              String
   body               String
+  imageUrl           String?
   category           NoticeCategory
   isPinned           Boolean        @default(false)
   publishedByAdminId String
@@ -568,10 +589,21 @@ model Payment {
   transactionId String?         @unique
   status        PaymentStatus   @default(INITIATED)
   paidAt        DateTime?
+
+  // OFFLINE payments only — the receipt and the admin's decision on it.
+  receiptUrl      String?
+  note            String?
+  verifiedByAdminId String?
+  verifiedByAdmin   User?     @relation("PaymentVerifiedByAdmin", fields: [verifiedByAdminId], references: [id])
+  verifiedAt        DateTime?
+  rejectionReason   String?
+
   createdAt     DateTime        @default(now())
 
   @@index([dueId])
   @@index([residentId])
+  // Drives the admin verification queue.
+  @@index([status])
 }
 
 // ---------------------------------------------------------------------------
