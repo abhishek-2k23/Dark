@@ -82,6 +82,15 @@ export async function societyResidentUserIds(societyId: string): Promise<string[
   return users.map((u) => u.id);
 }
 
+/** Active admins of a society. */
+export async function societyAdminUserIds(societyId: string): Promise<string[]> {
+  const users = await prisma.user.findMany({
+    where: { societyId, role: "ADMIN", isActive: true },
+    select: { id: true },
+  });
+  return users.map((u) => u.id);
+}
+
 // ---------------------------------------------------------------------------
 // Client-facing: push tokens and the notification inbox
 // ---------------------------------------------------------------------------

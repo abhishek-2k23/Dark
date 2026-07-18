@@ -1,7 +1,10 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type JoinRequestStatus, type User } from "@repo/database";
 
-import { notifyUsers } from "../notification/notification.service";
+import {
+  notifyUsers,
+  societyAdminUserIds,
+} from "../notification/notification.service";
 
 /**
  * Society join requests — the resident-initiated counterpart to the admin's
@@ -129,19 +132,12 @@ export async function submitJoinRequest(
     },
   });
 
-  const admins = await prisma.user.findMany({
-    where: { societyId, role: "ADMIN", isActive: true },
-    select: { id: true },
+  await notifyUsers(await societyAdminUserIds(societyId), {
+    type: "JOIN_REQUEST_RECEIVED",
+    title: "Join request",
+    body: `${actor.name} asked to join your society.`,
+    data: { joinRequestId: request.id },
   });
-  await notifyUsers(
-    admins.map((a) => a.id),
-    {
-      type: "JOIN_REQUEST_RECEIVED",
-      title: "Join request",
-      body: `${actor.name} asked to join your society.`,
-      data: { joinRequestId: request.id },
-    },
-  );
 
   return { submitted: true };
 }

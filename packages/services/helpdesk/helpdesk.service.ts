@@ -13,7 +13,10 @@ import { assertCloudinaryUrls } from "@repo/cloudinary";
 import { logger } from "@repo/logger";
 import { sendTicketRaisedEmail } from "@repo/mailer";
 
-import { notifyUser } from "../notification/notification.service";
+import {
+  notifyUsers,
+  societyAdminUserIds,
+} from "../notification/notification.service";
 
 /**
  * Helpdesk tickets. Residents raise tickets for their own flat; admins see
@@ -90,6 +93,24 @@ async function actorResidentProfile(actor: User) {
     });
   }
   return profile;
+}
+
+/**
+ * Everyone with a stake in a ticket — the raising resident, the assignee (if
+ * any) and the society's admins — minus the actor, so nobody is notified about
+ * their own action.
+ */
+async function ticketAudience(
+  ticket: TicketRow,
+  excludeUserId: string,
+): Promise<string[]> {
+  const ids = new Set([
+    ticket.resident.user.id,
+    ...(ticket.assignedTo ? [ticket.assignedTo.id] : []),
+    ...(await societyAdminUserIds(ticket.flat.tower.societyId)),
+  ]);
+  ids.delete(excludeUserId);
+  return [...ids];
 }
 
 /**
@@ -170,6 +191,13 @@ export async function createTicket(
       });
     });
   }
+
+  await notifyUsers(await ticketAudience(ticket, actor.id), {
+    type: "TICKET_RAISED",
+    title: "New complaint",
+    body: `${actor.name} raised '${ticket.title}' (${ticket.referenceCode})`,
+    data: { ticketId: ticket.id },
+  });
 
   return toTicketInfo(ticket);
 }
@@ -287,7 +315,7 @@ export async function updateTicketStatus(
     include: ticketInclude,
   });
 
-  await notifyUser(updated.resident.user.id, {
+  await notifyUsers(await ticketAudience(updated, actor.id), {
     type: "TICKET_STATUS_CHANGED",
     title: `Ticket ${input.status.toLowerCase().replace("_", " ")}`,
     body: `'${updated.title}' is now ${input.status.toLowerCase().replace("_", " ")}`,
@@ -326,6 +354,26 @@ export async function assignTicket(
     data: { assignedToId: assignee.id },
     include: ticketInclude,
   });
+
+  // The new assignee gets a personal "it's yours now"; the resident learns who
+  // is on their complaint. Nobody hears about their own action.
+  if (assignee.id !== actor.id) {
+    await notifyUsers([assignee.id], {
+      type: "TICKET_ASSIGNED",
+      title: "Complaint assigned to you",
+      body: `'${updated.title}' (${updated.referenceCode}) was assigned to you`,
+      data: { ticketId: updated.id },
+    });
+  }
+  if (updated.resident.user.id !== actor.id) {
+    await notifyUsers([updated.resident.user.id], {
+      type: "TICKET_ASSIGNED",
+      title: "Complaint assigned",
+      body: `'${updated.title}' was assigned to ${assignee.name}`,
+      data: { ticketId: updated.id },
+    });
+  }
+
   return toTicketInfo(updated);
 }
 
@@ -344,6 +392,16 @@ export async function addComment(
     },
     include: { author: { select: { id: true, name: true } } },
   });
+
+  const preview =
+    input.message.length > 120 ? `${input.message.slice(0, 119)}…` : input.message;
+  await notifyUsers(await ticketAudience(ticket, actor.id), {
+    type: "TICKET_COMMENT",
+    title: `New comment on '${ticket.title}'`,
+    body: `${actor.name}: ${preview}`,
+    data: { ticketId: ticket.id },
+  });
+
   return {
     id: comment.id,
     author: comment.author,
