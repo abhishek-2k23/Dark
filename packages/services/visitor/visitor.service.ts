@@ -196,6 +196,14 @@ export async function markEntry(
     data: { entryTime: new Date() },
     include: visitorInclude,
   });
+
+  await notifyUsers(await flatResidentUserIds(visitor.flatId), {
+    type: "VISITOR_ARRIVED",
+    title: "Visitor entered",
+    body: `${updated.name} has entered — checked in at the gate`,
+    data: { visitorId: updated.id },
+  });
+
   return toVisitorInfo(updated);
 }
 

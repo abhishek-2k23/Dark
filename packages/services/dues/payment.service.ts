@@ -11,7 +11,10 @@ import {
 import { logger } from "@repo/logger";
 import { assertCloudinaryUrl } from "@repo/cloudinary";
 
-import { notifyUsers } from "../notification/notification.service";
+import {
+  notifyUsers,
+  societyAdminUserIds,
+} from "../notification/notification.service";
 
 /**
  * Payments against maintenance dues.
@@ -338,6 +341,15 @@ export async function submitOfflinePayment(
     },
     include: paymentInclude,
   });
+
+  if (actor.societyId) {
+    await notifyUsers(await societyAdminUserIds(actor.societyId), {
+      type: "PAYMENT_SUBMITTED",
+      title: "Receipt awaiting verification",
+      body: `${actor.name} submitted a receipt for ${due.month}/${due.year} maintenance`,
+      data: { paymentId: payment.id },
+    });
+  }
 
   return toPaymentInfo(payment);
 }

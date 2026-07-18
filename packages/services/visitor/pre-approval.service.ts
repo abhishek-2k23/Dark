@@ -4,6 +4,7 @@ import { prisma, type Prisma, type User, type PreApprovalStatus } from "@repo/da
 import { sendGuestPassEmail } from "@repo/mailer";
 import { logger } from "@repo/logger";
 
+import { notifyUser } from "../notification/notification.service";
 import { toVisitorInfo, visitorInclude, type VisitorInfo } from "./visitor.service";
 
 /**
@@ -211,6 +212,13 @@ export async function verifyPreApproval(
       include: visitorInclude,
     }),
   ]);
+
+  await notifyUser(preApproval.resident.userId, {
+    type: "VISITOR_ARRIVED",
+    title: "Your guest has arrived",
+    body: `${preApproval.guestName} was checked in at the gate`,
+    data: { visitorId: visitor.id },
+  });
 
   return { preApproval: toPreApprovalInfo(used), visitor: toVisitorInfo(visitor) };
 }

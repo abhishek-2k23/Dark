@@ -106,6 +106,9 @@ export const notificationTypeIcon: Record<string, IconName> = {
   VISITOR_PENDING: "walk-outline",
   VISITOR_APPROVED: "checkmark-circle-outline",
   VISITOR_DENIED: "close-circle-outline",
+  VISITOR_ARRIVED: "enter-outline",
+  PAYMENT_SUBMITTED: "receipt-outline",
+  BOOKING_CANCELLED: "close-circle-outline",
   TICKET_RAISED: "construct-outline",
   TICKET_STATUS_CHANGED: "construct-outline",
   TICKET_COMMENT: "chatbubble-outline",
@@ -160,6 +163,8 @@ export function notificationHref(
     if (type === "PAYMENT_VERIFIED" || type === "PAYMENT_REJECTED") {
       return "/(admin)/payments/verify";
     }
+    if (type === "PAYMENT_SUBMITTED") return "/(admin)/payments/verify";
+    if (type.startsWith("BOOKING")) return "/(admin)/amenities";
     if (type === "JOIN_REQUEST_RECEIVED") return "/(admin)/join-requests";
     return null;
   }

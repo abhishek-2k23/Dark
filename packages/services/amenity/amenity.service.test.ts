@@ -63,6 +63,7 @@ afterAll(async () => {
   await prisma.amenity.deleteMany({ where: { societyId } });
   const users = await prisma.user.findMany({ where: { societyId }, select: { id: true } });
   const userIds = users.map((u) => u.id);
+  await prisma.notification.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.residentProfile.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
   await prisma.flat.deleteMany({ where: { tower: { societyId } } });

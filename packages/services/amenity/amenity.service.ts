@@ -2,6 +2,11 @@ import { TRPCError } from "@trpc/server";
 import { prisma, type Prisma, type User, type BookingStatus } from "@repo/database";
 import { assertCloudinaryUrls } from "@repo/cloudinary";
 
+import {
+  notifyUsers,
+  societyAdminUserIds,
+} from "../notification/notification.service";
+
 /**
  * Amenities and slot bookings. Admins manage amenities; residents book
  * slots ("HH:mm" times on a calendar date). Overlapping BOOKED slots on the
@@ -258,6 +263,13 @@ export async function createBooking(
     });
   });
 
+  await notifyUsers(await societyAdminUserIds(amenity.societyId), {
+    type: "BOOKING_CONFIRMED",
+    title: "New amenity booking",
+    body: `${actor.name} booked ${amenity.name} · ${input.date} ${input.startTime}–${input.endTime}`,
+    data: { amenityId: amenity.id },
+  });
+
   return toBookingInfo(booking);
 }
 
@@ -288,6 +300,14 @@ export async function cancelBooking(
     data: { status: "CANCELLED" },
     include: bookingInclude,
   });
+
+  await notifyUsers(await societyAdminUserIds(actorSocietyId(actor)), {
+    type: "BOOKING_CANCELLED",
+    title: "Booking cancelled",
+    body: `${actor.name} cancelled ${cancelled.amenity.name} · ${booking.date.toISOString().slice(0, 10)} ${booking.startTime}–${booking.endTime}`,
+    data: { amenityId: cancelled.amenityId },
+  });
+
   return toBookingInfo(cancelled);
 }
 

@@ -1,5 +1,5 @@
 import { Redirect } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
@@ -41,7 +41,19 @@ export default function NoSocietyScreen() {
 
   const mine = trpc.joinRequest.mine.useQuery(undefined, {
     enabled: status === "authenticated" && !user?.societyId,
+    // While an answer is pending, poll so the approval lands without anyone
+    // pressing "Check again" — the push notification usually beats this, but
+    // polling covers denied notification permissions and silent failures.
+    refetchInterval: (q) =>
+      q.state.data?.status === "PENDING" ? 20_000 : false,
   });
+
+  // The poll (or a refetch) saw the approval — only a session refresh carries
+  // the new societyId into the auth store, and that is what redirects below.
+  const approved = mine.data?.status === "APPROVED";
+  useEffect(() => {
+    if (approved && !user?.societyId) void refresh();
+  }, [approved, user?.societyId, refresh]);
 
   const submit = trpc.joinRequest.submit.useMutation({
     onSuccess: () => {
