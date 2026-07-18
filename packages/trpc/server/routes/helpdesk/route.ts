@@ -43,6 +43,14 @@ const TicketModel = z
     raisedBy: UserRefModel.describe("Resident who raised the ticket"),
     assignedTo: UserRefModel.nullable().describe("Staff member working the ticket, if assigned"),
     commentCount: z.number().describe("Number of comments on the ticket"),
+    latestComment: z
+      .object({
+        authorName: z.string().describe("Who wrote it"),
+        message: z.string().describe("Comment text"),
+        createdAt: z.string().describe("ISO creation time"),
+      })
+      .nullable()
+      .describe("Newest comment as a list-card preview; null when none"),
     createdAt: z.string().describe("ISO creation time"),
     updatedAt: z.string().describe("ISO last-update time"),
   })

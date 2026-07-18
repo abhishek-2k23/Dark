@@ -9484,6 +9484,37 @@
                       "type": "number",
                       "description": "Number of comments on the ticket"
                     },
+                    "latestComment": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "authorName": {
+                              "type": "string",
+                              "description": "Who wrote it"
+                            },
+                            "message": {
+                              "type": "string",
+                              "description": "Comment text"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "description": "ISO creation time"
+                            }
+                          },
+                          "required": [
+                            "authorName",
+                            "message",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Newest comment as a list-card preview; null when none"
+                    },
                     "createdAt": {
                       "type": "string",
                       "description": "ISO creation time"
@@ -9508,6 +9539,7 @@
                     "raisedBy",
                     "assignedTo",
                     "commentCount",
+                    "latestComment",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -9761,6 +9793,37 @@
                             "type": "number",
                             "description": "Number of comments on the ticket"
                           },
+                          "latestComment": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "authorName": {
+                                    "type": "string",
+                                    "description": "Who wrote it"
+                                  },
+                                  "message": {
+                                    "type": "string",
+                                    "description": "Comment text"
+                                  },
+                                  "createdAt": {
+                                    "type": "string",
+                                    "description": "ISO creation time"
+                                  }
+                                },
+                                "required": [
+                                  "authorName",
+                                  "message",
+                                  "createdAt"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Newest comment as a list-card preview; null when none"
+                          },
                           "createdAt": {
                             "type": "string",
                             "description": "ISO creation time"
@@ -9785,6 +9848,7 @@
                           "raisedBy",
                           "assignedTo",
                           "commentCount",
+                          "latestComment",
                           "createdAt",
                           "updatedAt"
                         ],
@@ -10014,6 +10078,37 @@
                       "type": "number",
                       "description": "Number of comments on the ticket"
                     },
+                    "latestComment": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "authorName": {
+                              "type": "string",
+                              "description": "Who wrote it"
+                            },
+                            "message": {
+                              "type": "string",
+                              "description": "Comment text"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "description": "ISO creation time"
+                            }
+                          },
+                          "required": [
+                            "authorName",
+                            "message",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Newest comment as a list-card preview; null when none"
+                    },
                     "createdAt": {
                       "type": "string",
                       "description": "ISO creation time"
@@ -10094,6 +10189,7 @@
                     "raisedBy",
                     "assignedTo",
                     "commentCount",
+                    "latestComment",
                     "createdAt",
                     "updatedAt",
                     "comments"
@@ -10328,6 +10424,37 @@
                       "type": "number",
                       "description": "Number of comments on the ticket"
                     },
+                    "latestComment": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "authorName": {
+                              "type": "string",
+                              "description": "Who wrote it"
+                            },
+                            "message": {
+                              "type": "string",
+                              "description": "Comment text"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "description": "ISO creation time"
+                            }
+                          },
+                          "required": [
+                            "authorName",
+                            "message",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Newest comment as a list-card preview; null when none"
+                    },
                     "createdAt": {
                       "type": "string",
                       "description": "ISO creation time"
@@ -10352,6 +10479,7 @@
                     "raisedBy",
                     "assignedTo",
                     "commentCount",
+                    "latestComment",
                     "createdAt",
                     "updatedAt"
                   ],
@@ -10570,6 +10698,37 @@
                       "type": "number",
                       "description": "Number of comments on the ticket"
                     },
+                    "latestComment": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "authorName": {
+                              "type": "string",
+                              "description": "Who wrote it"
+                            },
+                            "message": {
+                              "type": "string",
+                              "description": "Comment text"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "description": "ISO creation time"
+                            }
+                          },
+                          "required": [
+                            "authorName",
+                            "message",
+                            "createdAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Newest comment as a list-card preview; null when none"
+                    },
                     "createdAt": {
                       "type": "string",
                       "description": "ISO creation time"
@@ -10594,6 +10753,7 @@
                     "raisedBy",
                     "assignedTo",
                     "commentCount",
+                    "latestComment",
                     "createdAt",
                     "updatedAt"
                   ],

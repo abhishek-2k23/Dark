@@ -1,14 +1,16 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, ScrollView, View } from "react-native";
+import { View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
 import {
+  Avatar,
   Badge,
   Button,
   Card,
+  Divider,
+  Icon,
   IconCircle,
   Screen,
   Text,
@@ -17,16 +19,12 @@ import { trpc } from "@/lib/trpc";
 import { ticketCategoryIcon, ticketStatusTone } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
-const STATUSES = ["ALL", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] as const;
-type StatusFilter = (typeof STATUSES)[number];
-
 export default function ComplaintsBoard() {
   const { t } = useTranslation();
   const router = useRouter();
-  const [status, setStatus] = useState<StatusFilter>("ALL");
 
   const q = trpc.ticket.list.useInfiniteQuery(
-    { status: status === "ALL" ? undefined : status, limit: 20 },
+    { limit: 20 },
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   );
 
@@ -35,30 +33,6 @@ export default function ComplaintsBoard() {
   return (
     <Screen scroll contentClassName="gap-4 pb-8">
       <StackHeader title={t("admin.complaints")} />
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-2"
-        className="-mx-5 px-5"
-      >
-        {STATUSES.map((s) => {
-          const active = s === status;
-          return (
-            <Pressable
-              key={s}
-              onPress={() => setStatus(s)}
-              className={`rounded-full border px-4 py-2 active:opacity-80 ${
-                active ? "border-primary bg-primary-soft" : "border-border bg-surface"
-              }`}
-            >
-              <Text variant="subtitle" color={active ? "primary" : "secondary"}>
-                {s === "ALL" ? t("visitors.all") : t(`enums.ticketStatus.${s}`)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
 
       {q.isLoading ? (
         <Loading />
@@ -72,9 +46,10 @@ export default function ComplaintsBoard() {
             <Card
               key={tk.id}
               onPress={() => router.push(`/(admin)/tickets/${tk.id}`)}
-              className="gap-2"
+              className="gap-3"
             >
-              <View className="flex-row items-center gap-3">
+              {/* Title line: category, summary, reference, status. */}
+              <View className="flex-row items-start gap-3">
                 <IconCircle
                   name={ticketCategoryIcon[tk.category] ?? "build-outline"}
                   tone="primary"
@@ -84,32 +59,103 @@ export default function ComplaintsBoard() {
                   <Text variant="title" numberOfLines={1}>
                     {tk.title}
                   </Text>
-                  <Text variant="caption" color="secondary" numberOfLines={1}>
-                    {t("guard.flatLine", {
-                      tower: tk.towerName,
-                      flat: tk.flatNumber,
-                    })}{" "}
-                    · {formatDateTime(tk.createdAt)}
+                  <Text variant="caption" color="tertiary" numberOfLines={1}>
+                    {tk.referenceCode} · {formatDateTime(tk.createdAt)}
                   </Text>
                 </View>
                 <Badge
                   label={t(`enums.ticketStatus.${tk.status}`)}
                   tone={ticketStatusTone[tk.status] ?? "neutral"}
+                  dot
                   uppercase
                   size="sm"
                 />
               </View>
-              <View className="flex-row flex-wrap items-center gap-2">
+
+              {/* Who raised it, and who is working it. */}
+              <View className="flex-row gap-3">
+                <View className="flex-1 flex-row items-center gap-2.5">
+                  <Avatar name={tk.raisedBy.name} size={32} />
+                  <View className="flex-1">
+                    <Text variant="overline" color="tertiary">
+                      {t("tickets.raisedByLabel")}
+                    </Text>
+                    <Text variant="subtitle" numberOfLines={1}>
+                      {tk.raisedBy.name}
+                    </Text>
+                    <Text variant="caption" color="secondary" numberOfLines={1}>
+                      {t("guard.flatLine", {
+                        tower: tk.towerName,
+                        flat: tk.flatNumber,
+                      })}
+                    </Text>
+                  </View>
+                </View>
+                <View className="flex-1 flex-row items-center gap-2.5">
+                  {tk.assignedTo ? (
+                    <Avatar name={tk.assignedTo.name} size={32} ring />
+                  ) : (
+                    <IconCircle name="person-outline" tone="neutral" size={32} />
+                  )}
+                  <View className="flex-1">
+                    <Text variant="overline" color="tertiary">
+                      {t("tickets.assignedToLabel")}
+                    </Text>
+                    <Text
+                      variant="subtitle"
+                      color={tk.assignedTo ? undefined : "tertiary"}
+                      numberOfLines={1}
+                    >
+                      {tk.assignedTo?.name ?? t("tickets.unassigned")}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <Divider />
+
+              {/* Conversation preview: the newest comment, or a quiet nudge. */}
+              {tk.latestComment ? (
+                <View className="gap-1 rounded-xl bg-surface-muted p-3">
+                  <View className="flex-row items-center gap-1.5">
+                    <Icon name="chatbubble-outline" size={13} color="tertiary" />
+                    <Text
+                      variant="caption"
+                      color="tertiary"
+                      numberOfLines={1}
+                      className="flex-1"
+                    >
+                      {tk.latestComment.authorName} ·{" "}
+                      {formatDateTime(tk.latestComment.createdAt)}
+                    </Text>
+                    <Text variant="caption" color="tertiary">
+                      {t("tickets.comments", { count: tk.commentCount })}
+                    </Text>
+                  </View>
+                  <Text variant="bodySmall" color="secondary" numberOfLines={2}>
+                    {tk.latestComment.message}
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center gap-1.5">
+                  <Icon name="chatbubble-outline" size={13} color="tertiary" />
+                  <Text variant="caption" color="tertiary">
+                    {t("tickets.noComments")}
+                  </Text>
+                </View>
+              )}
+
+              <View className="flex-row items-center gap-2">
                 <Badge
                   label={t(`enums.ticketPriority.${tk.priority}`)}
                   tone={tk.priority === "HIGH" ? "danger" : "neutral"}
                   size="sm"
                 />
-                {tk.assignedTo && (
-                  <Text variant="caption" color="tertiary">
-                    {t("tickets.assignedTo", { name: tk.assignedTo.name })}
-                  </Text>
-                )}
+                <Badge
+                  label={t(`enums.ticketCategory.${tk.category}`)}
+                  tone="primary"
+                  size="sm"
+                />
               </View>
             </Card>
           ))}

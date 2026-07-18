@@ -29,6 +29,16 @@ const ticketInclude = {
   resident: { include: { user: { select: { id: true, name: true } } } },
   assignedTo: { select: { id: true, name: true } },
   _count: { select: { comments: true } },
+  // Latest comment only — the admin board shows it as a conversation preview.
+  comments: {
+    orderBy: { createdAt: "desc" as const },
+    take: 1,
+    select: {
+      message: true,
+      createdAt: true,
+      author: { select: { name: true } },
+    },
+  },
 } satisfies Prisma.HelpdeskTicketInclude;
 
 type TicketRow = Prisma.HelpdeskTicketGetPayload<{ include: typeof ticketInclude }>;
@@ -48,6 +58,8 @@ export interface TicketInfo {
   raisedBy: { id: string; name: string };
   assignedTo: { id: string; name: string } | null;
   commentCount: number;
+  /** Newest comment, as a preview for list cards. Null when there are none. */
+  latestComment: { authorName: string; message: string; createdAt: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,6 +88,13 @@ function toTicketInfo(ticket: TicketRow): TicketInfo {
     raisedBy: ticket.resident.user,
     assignedTo: ticket.assignedTo,
     commentCount: ticket._count.comments,
+    latestComment: ticket.comments[0]
+      ? {
+          authorName: ticket.comments[0].author.name,
+          message: ticket.comments[0].message,
+          createdAt: ticket.comments[0].createdAt.toISOString(),
+        }
+      : null,
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),
   };
