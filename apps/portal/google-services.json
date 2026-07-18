@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1009774242772",
+    "project_id": "prangan-c1809",
+    "storage_bucket": "prangan-c1809.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1009774242772:android:bfc59853d47a260bc34441",
+        "android_client_info": {
+          "package_name": "com.prangan.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDNhT8Oe4oJfW_spIhDe-4j68Qkuwxxj_E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
