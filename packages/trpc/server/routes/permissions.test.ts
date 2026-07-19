@@ -105,7 +105,7 @@ const residentOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
     endTime: "11:00",
   }),
   caller.amenityBooking.cancel({ bookingId: "x" }),
-  caller.payment.initiate({ dueId: "x", method: "UPI" }),
+  caller.payment.initiate({ targetKind: "DUE", targetId: "x", method: "UPI" }),
   caller.payment.history({ limit: 20 }),
 ];
 

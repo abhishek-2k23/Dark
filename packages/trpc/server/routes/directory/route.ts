@@ -1,7 +1,7 @@
 import { directoryService } from "@repo/services";
 
 import { phoneSchema, z } from "../../schema";
-import { adminProcedure, protectedProcedure, router } from "../../trpc";
+import { adminProcedure, subscribedAdminProcedure, protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
 const path = generatePath("v1/service-providers");
@@ -18,6 +18,10 @@ const ServiceProviderModel = z
     phone: z.string().describe("Contact phone number"),
     photoUrl: z.string().nullable().describe("Photo URL, if set"),
     isVerified: z.boolean().describe("Whether the society admin has verified this provider"),
+    upiVpa: z
+      .string()
+      .nullable()
+      .describe("UPI ID residents can pay directly; null means they can only pay offline"),
   })
   .describe("A staff/service provider in the society directory");
 
@@ -27,6 +31,10 @@ const CreateProviderInput = z.object({
   phone: phoneSchema.describe("Contact's 10-digit phone number"),
   photoUrl: z.url().describe("Photo URL (Cloudinary, Phase 9)").optional(),
   isVerified: z.boolean().describe("Mark as admin-verified (default false)").optional(),
+  upiVpa: z
+    .string()
+    .describe("Optional UPI ID (name@bank) so residents can pay this person directly")
+    .optional(),
 });
 
 const UpdateProviderInput = z.object({
@@ -36,6 +44,7 @@ const UpdateProviderInput = z.object({
   phone: phoneSchema.describe("New 10-digit phone").optional(),
   photoUrl: z.url().nullish().describe("New photo URL; null clears it"),
   isVerified: z.boolean().describe("New verification state").optional(),
+  upiVpa: z.string().nullish().describe("New UPI ID; null clears it and closes the UPI rail"),
 });
 
 const ProviderIdInput = z.object({
@@ -51,7 +60,7 @@ const SuccessModel = z.object({
 });
 
 export const serviceProviderRouter = router({
-  create: adminProcedure
+  create: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -68,7 +77,7 @@ export const serviceProviderRouter = router({
     .output(ServiceProviderModel)
     .mutation(({ ctx, input }) => directoryService.createServiceProvider(ctx.user, input)),
 
-  update: adminProcedure
+  update: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "PATCH",
@@ -85,7 +94,7 @@ export const serviceProviderRouter = router({
     .output(ServiceProviderModel)
     .mutation(({ ctx, input }) => directoryService.updateServiceProvider(ctx.user, input)),
 
-  delete: adminProcedure
+  delete: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "DELETE",

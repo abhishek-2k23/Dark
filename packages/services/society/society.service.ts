@@ -1,6 +1,13 @@
 import { TRPCError } from "@trpc/server";
-import { prisma, type User, type FlatType } from "@repo/database";
+import {
+  prisma,
+  type User,
+  type FlatType,
+  type PayoutOnboardingStatus,
+} from "@repo/database";
 import { assertCloudinaryUrl } from "@repo/cloudinary";
+
+import { assertValidVpa } from "../dues/upi";
 
 /**
  * Society/tower/flat management. Every function takes the acting admin as
@@ -28,6 +35,11 @@ export interface SocietyInfo {
   state: string;
   pincode: string;
   towerCount: number;
+  /** Payouts — see docs/payments.md. Both optional and independent. */
+  upiVpa: string | null;
+  payoutStatus: PayoutOnboardingStatus;
+  /** Whether residents can be offered the gateway rail right now. */
+  gatewayReady: boolean;
 }
 
 export async function getSociety(actor: User): Promise<SocietyInfo> {
@@ -48,6 +60,9 @@ export async function getSociety(actor: User): Promise<SocietyInfo> {
     state: society.state,
     pincode: society.pincode,
     towerCount: society._count.towers,
+    upiVpa: society.upiVpa,
+    payoutStatus: society.payoutStatus,
+    gatewayReady: society.payoutStatus === "ACTIVE" && society.razorpayAccountId !== null,
   };
 }
 
@@ -61,9 +76,18 @@ export async function updateSociety(
     city?: string;
     state?: string;
     pincode?: string;
+    /**
+     * undefined leaves the current VPA alone; null clears it (closing the
+     * UPI-direct rail and leaving residents on offline).
+     */
+    upiVpa?: string | null;
   },
 ): Promise<SocietyInfo> {
   assertCloudinaryUrl(input.logoUrl);
+  // Money sent to a mistyped VPA is gone and cannot be recalled. Shape is the
+  // only thing checkable without a gateway lookup, so the UI also asks for it
+  // twice and shows the payee name the payer's UPI app resolves.
+  if (input.upiVpa) assertValidVpa(input.upiVpa);
   const societyId = actorSocietyId(actor);
   await prisma.society.update({ where: { id: societyId }, data: input });
   return getSociety(actor);

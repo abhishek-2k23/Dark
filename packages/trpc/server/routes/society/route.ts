@@ -1,7 +1,7 @@
 import { societyService } from "@repo/services";
 
 import { z, zodUndefinedModel } from "../../schema";
-import { adminProcedure, router } from "../../trpc";
+import { adminProcedure, subscribedAdminProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
 const societyPath = generatePath("v1/society");
@@ -26,6 +26,19 @@ const SocietyModel = z
     state: z.string().describe("State"),
     pincode: z.string().describe("Postal code"),
     towerCount: z.number().describe("Number of towers in the society"),
+    upiVpa: z
+      .string()
+      .nullable()
+      .describe("Society's UPI ID for direct payments; null means residents pay offline only"),
+    payoutStatus: z
+      .enum(["NOT_STARTED", "CREATED", "ACTIVE", "SUSPENDED"])
+      .describe(
+        "Razorpay Route onboarding state. Only ACTIVE can receive gateway money — CREATED " +
+          "means the linked account exists but its KYC form is still outstanding",
+      ),
+    gatewayReady: z
+      .boolean()
+      .describe("Whether residents can be offered the gateway rail right now"),
   })
   .describe("A housing society");
 
@@ -60,6 +73,10 @@ const UpdateSocietyInput = z.object({
   city: z.string().min(1).describe("New city").optional(),
   state: z.string().min(1).describe("New state").optional(),
   pincode: z.string().min(1).describe("New postal code").optional(),
+  upiVpa: z
+    .string()
+    .nullish()
+    .describe("Society's UPI ID (name@bank) for direct payments; null clears it"),
 });
 
 const CreateTowerInput = z.object({
@@ -113,7 +130,7 @@ export const societyRouter = router({
     .output(SocietyModel)
     .query(({ ctx }) => societyService.getSociety(ctx.user)),
 
-  update: adminProcedure
+  update: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "PATCH",
@@ -133,7 +150,7 @@ export const societyRouter = router({
 });
 
 export const towerRouter = router({
-  create: adminProcedure
+  create: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -150,7 +167,7 @@ export const towerRouter = router({
     .output(TowerModel)
     .mutation(({ ctx, input }) => societyService.createTower(ctx.user, input)),
 
-  update: adminProcedure
+  update: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "PATCH",
@@ -186,7 +203,7 @@ export const towerRouter = router({
 });
 
 export const flatRouter = router({
-  create: adminProcedure
+  create: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -204,7 +221,7 @@ export const flatRouter = router({
     .output(FlatModel)
     .mutation(({ ctx, input }) => societyService.createFlat(ctx.user, input)),
 
-  update: adminProcedure
+  update: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "PATCH",

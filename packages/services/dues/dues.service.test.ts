@@ -26,6 +26,12 @@ async function expectTRPCError(promise: Promise<unknown>, code: string) {
 
 beforeAll(async () => {
   process.env.PAYMENT_WEBHOOK_SECRET = "test-webhook-secret";
+  // This file exercises the MOCK gateway end to end. The repo .env now carries
+  // real Razorpay test-mode credentials, and with them present initiatePayment
+  // would call the live API and fail on the fixture's fake linked-account id.
+  // Opting out explicitly beats depending on the ambient environment.
+  delete process.env.RAZORPAY_KEY_ID;
+  delete process.env.RAZORPAY_KEY_SECRET;
 
   const society = await prisma.society.create({
     data: {
@@ -34,6 +40,12 @@ beforeAll(async () => {
       city: "Testville",
       state: "TS",
       pincode: "000001",
+      // The gateway rail is closed unless the society has an ACTIVE Razorpay
+      // linked account, so the gateway tests below need one. A society without
+      // this is covered separately by "gateway rail is closed…".
+      razorpayAccountId: `acc_test_${runId}`,
+      payoutStatus: "ACTIVE",
+      upiVpa: `dusociety${runId}@testbank`,
     },
   });
   societyId = society.id;
@@ -150,7 +162,8 @@ describe("payment flow", () => {
 
   it("resident initiates a payment for their own due and gets a mock session", async () => {
     const { payment, gateway } = await paymentService.initiatePayment(residentA, {
-      dueId,
+      kind: "DUE",
+      id: dueId,
       method: "UPI",
     });
     paymentId = payment.id;
@@ -162,7 +175,7 @@ describe("payment flow", () => {
 
   it("a resident cannot pay another flat's due", async () => {
     await expectTRPCError(
-      paymentService.initiatePayment(residentB, { dueId, method: "UPI" }),
+      paymentService.initiatePayment(residentB, { kind: "DUE", id: dueId, method: "UPI" }),
       "NOT_FOUND",
     );
   });
@@ -193,7 +206,7 @@ describe("payment flow", () => {
         transactionId: txn,
       }),
     });
-    expect(result).toEqual({ paymentStatus: "SUCCESS", dueStatus: "PAID" });
+    expect(result).toEqual({ paymentStatus: "SUCCESS", targetSettled: true });
 
     const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
     expect(payment?.paidAt).not.toBeNull();
@@ -214,7 +227,7 @@ describe("payment flow", () => {
         transactionId: txn,
       }),
     });
-    expect(replay).toEqual({ paymentStatus: "SUCCESS", dueStatus: "PAID" });
+    expect(replay).toEqual({ paymentStatus: "SUCCESS", targetSettled: true });
 
     const after = await prisma.payment.findUnique({ where: { id: paymentId } });
     expect(after?.paidAt?.toISOString()).toBe(before?.paidAt?.toISOString());
@@ -239,7 +252,7 @@ describe("payment flow", () => {
 
   it("initiating a payment for a PAID due is rejected", async () => {
     await expectTRPCError(
-      paymentService.initiatePayment(residentA, { dueId, method: "CARD" }),
+      paymentService.initiatePayment(residentA, { kind: "DUE", id: dueId, method: "CARD" }),
       "CONFLICT",
     );
   });
@@ -249,7 +262,8 @@ describe("payment flow", () => {
       where: { flat: { flatNumber: "DU-102" }, month: 3, year: 2030 },
     });
     const { payment } = await paymentService.initiatePayment(residentB, {
-      dueId: dueB!.id,
+      kind: "DUE",
+      id: dueB!.id,
       method: "NETBANKING",
     });
 
@@ -265,11 +279,15 @@ describe("payment flow", () => {
       }),
     });
     expect(result.paymentStatus).toBe("FAILED");
-    expect(result.dueStatus).toBe("PENDING");
+    expect(result.targetSettled).toBe(false);
+    // The due itself must stay payable, not just be "unsettled".
+    const afterFailure = await prisma.maintenanceDue.findUnique({ where: { id: dueB!.id } });
+    expect(afterFailure!.status).toBe("PENDING");
 
     // The due can still be paid with a fresh attempt.
     const retry = await paymentService.initiatePayment(residentB, {
-      dueId: dueB!.id,
+      kind: "DUE",
+      id: dueB!.id,
       method: "UPI",
     });
     expect(retry.payment.status).toBe("INITIATED");
@@ -326,7 +344,8 @@ describe("offline payments", () => {
   it("rejects a receipt URL that is not from our Cloudinary cloud", async () => {
     await expectTRPCError(
       paymentService.submitOfflinePayment(residentA, {
-        dueId: offlineDueId,
+        kind: "DUE",
+        id: offlineDueId,
         receiptUrl: "https://evil.example.com/receipt.jpg",
       }),
       "BAD_REQUEST",
@@ -336,7 +355,8 @@ describe("offline payments", () => {
   it("refuses OFFLINE at the gateway — it has no checkout", async () => {
     await expectTRPCError(
       paymentService.initiatePayment(residentA, {
-        dueId: offlineDueId,
+        kind: "DUE",
+        id: offlineDueId,
         method: "OFFLINE",
       }),
       "BAD_REQUEST",
@@ -345,7 +365,8 @@ describe("offline payments", () => {
 
   it("a submitted receipt awaits verification and leaves the due payable", async () => {
     const payment = await paymentService.submitOfflinePayment(residentA, {
-      dueId: offlineDueId,
+      kind: "DUE",
+      id: offlineDueId,
       receiptUrl: receipt(),
       note: "Paid by cheque 4471 at the office",
     });
@@ -361,7 +382,8 @@ describe("offline payments", () => {
   it("refuses a second receipt while one is still awaiting a decision", async () => {
     await expectTRPCError(
       paymentService.submitOfflinePayment(residentA, {
-        dueId: offlineDueId,
+        kind: "DUE",
+        id: offlineDueId,
         receiptUrl: receipt(2),
       }),
       "CONFLICT",
@@ -393,7 +415,7 @@ describe("offline payments", () => {
   });
 
   it("lists the receipt in the admin queue, scoped to the society", async () => {
-    const queue = await paymentService.listPendingOfflinePayments(admin, { limit: 20 });
+    const queue = await paymentService.listPendingPayments(admin, { limit: 20 });
     const mine = queue.items.find((p) => p.dueId === offlineDueId);
     expect(mine).toBeDefined();
     expect(mine?.residentName).toBe("DU Resident A");
@@ -406,7 +428,8 @@ describe("offline payments", () => {
   it("a resident cannot submit a receipt against another flat's due", async () => {
     await expectTRPCError(
       paymentService.submitOfflinePayment(residentB, {
-        dueId: offlineDueId,
+        kind: "DUE",
+        id: offlineDueId,
         receiptUrl: receipt(9),
       }),
       "NOT_FOUND",
@@ -417,7 +440,7 @@ describe("offline payments", () => {
     const pending = await prisma.payment.findFirst({
       where: { dueId: offlineDueId, status: "PENDING_VERIFICATION" },
     });
-    const rejected = await paymentService.decideOfflinePayment(admin, {
+    const rejected = await paymentService.decideManualPayment(admin, {
       paymentId: pending!.id,
       approve: false,
       rejectionReason: "Receipt is unreadable",
@@ -436,7 +459,8 @@ describe("offline payments", () => {
 
     // And the block on re-submitting is lifted with the rejection.
     const retry = await paymentService.submitOfflinePayment(residentA, {
-      dueId: offlineDueId,
+      kind: "DUE",
+      id: offlineDueId,
       receiptUrl: receipt(3),
     });
     expect(retry.status).toBe("PENDING_VERIFICATION");
@@ -447,7 +471,7 @@ describe("offline payments", () => {
       where: { dueId: offlineDueId, status: "REJECTED" },
     });
     await expectTRPCError(
-      paymentService.decideOfflinePayment(admin, {
+      paymentService.decideManualPayment(admin, {
         paymentId: decided!.id,
         approve: true,
       }),
@@ -459,7 +483,7 @@ describe("offline payments", () => {
     const pending = await prisma.payment.findFirst({
       where: { dueId: offlineDueId, status: "PENDING_VERIFICATION" },
     });
-    const approved = await paymentService.decideOfflinePayment(admin, {
+    const approved = await paymentService.decideManualPayment(admin, {
       paymentId: pending!.id,
       approve: true,
     });
@@ -479,7 +503,8 @@ describe("offline payments", () => {
   it("a paid due takes no further receipts", async () => {
     await expectTRPCError(
       paymentService.submitOfflinePayment(residentA, {
-        dueId: offlineDueId,
+        kind: "DUE",
+        id: offlineDueId,
         receiptUrl: receipt(4),
       }),
       "CONFLICT",
