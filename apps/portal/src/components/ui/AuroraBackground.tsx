@@ -7,9 +7,19 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
+import Reanimated, {
+  cancelAnimation,
+  Easing as ReEasing,
+  useAnimatedProps,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import Svg, { Defs, Path, RadialGradient, Stop } from "react-native-svg";
 
 import { useTheme } from "@/theme";
+
+const AnimatedPath = Reanimated.createAnimatedComponent(Path);
 
 export type AuroraVariant = "default" | "hero" | "subtle";
 
@@ -23,26 +33,16 @@ export interface AuroraBackgroundProps {
   /** Fully custom free-roaming blob specs; overrides the `variant` preset
    *  (which still picks the intensity). */
   specs?: BlobSpec[];
-  /**
-   * Coordinate space the blobs roam, defaulting to the window. Pass these when
-   * the aurora fills a clipped sub-region (like the bottom strip of the login
-   * screen) so the blobs wander that region instead of a mostly-offscreen one.
-   */
   width?: number;
   height?: number;
 }
 
-/** A free-roaming blob, used only via the `specs` prop (e.g. the login glow). */
+/** A free-roaming blob. Both the built-in presets and custom `specs` are these. */
 export interface BlobSpec {
   /** Blob diameter as a fraction of screen width. */
   size: number;
-  /** How far the blob roams, as a fraction of screen width/height. At 1 its
-   *  center travels the full span, edge to edge. */
   travelX: number;
   travelY: number;
-  /** Independent periods for the two axes. Because they don't divide evenly,
-   *  the blob traces an open Lissajous path that keeps landing somewhere new
-   *  instead of retracing a loop. */
   xMs: number;
   yMs: number;
   /** Start an axis at the far end, so this blob runs against the others on it
@@ -67,78 +67,118 @@ export interface BlobSpec {
   offsetY?: number;
 }
 
-/** One disc riding the rotating formation of a preset variant. */
-interface OrbitBlobSpec {
-  /** Disc diameter as a fraction of screen width — small circles, not clouds. */
-  size: number;
-  /** Distance from the formation center, as a fraction of screen width. */
-  radius: number;
-  /** Fixed seat on the ring, in degrees. */
-  angleDeg: number;
-  /** Time for one breathe half-cycle (swell or shrink). */
-  breatheMs: number;
-  /** Peak-to-trough scale swing, e.g. 0.2 → scales between 0.9x and 1.1x. */
-  breatheScale: number;
-}
-
-interface ClusterSpec {
-  /** One full revolution of the formation. */
-  rotateMs: number;
-  /** Formation-center drift span, as fractions of screen width/height. */
-  driftX: number;
-  driftY: number;
-  /** Periods of the center's two drift axes (mismatched → open path). */
-  xMs: number;
-  yMs: number;
-  blobs: OrbitBlobSpec[];
-}
-
-/**
- * The presets are rotating formations: three small discs sit 120° apart on a
- * ring, the ring spins continuously, and the formation's center wanders the
- * screen on an open Lissajous path. Every disc therefore sweeps the whole
- * screen over time — yet no two can ever meet, because their separation along
- * the ring (≥ the chord between seats, minus nothing: seats are rigid) always
- * exceeds the sum of their visible radii, breathing included. Collision-free
- * by construction, not by luck.
- */
-const CLUSTERS: Record<AuroraVariant, ClusterSpec> = {
-  default: {
-    rotateMs: 22_000,
-    driftX: 0.3,
-    driftY: 0.5,
-    xMs: 7_500,
-    yMs: 9_500,
-    blobs: [
-      { size: 0.55, radius: 0.36, angleDeg: -90, breatheMs: 4_200, breatheScale: 0.14 },
-      { size: 0.6, radius: 0.4, angleDeg: 30, breatheMs: 5_100, breatheScale: 0.14 },
-      { size: 0.5, radius: 0.34, angleDeg: 150, breatheMs: 3_500, breatheScale: 0.12 },
-    ],
-  },
-  hero: {
-    rotateMs: 16_000,
-    driftX: 0.3,
-    driftY: 0.5,
-    xMs: 5_500,
-    yMs: 7_500,
-    blobs: [
-      { size: 0.6, radius: 0.38, angleDeg: -90, breatheMs: 3_300, breatheScale: 0.18 },
-      { size: 0.65, radius: 0.42, angleDeg: 30, breatheMs: 4_100, breatheScale: 0.2 },
-      { size: 0.55, radius: 0.36, angleDeg: 150, breatheMs: 2_800, breatheScale: 0.16 },
-    ],
-  },
-  subtle: {
-    rotateMs: 32_000,
-    driftX: 0.25,
-    driftY: 0.4,
-    xMs: 11_000,
-    yMs: 14_000,
-    blobs: [
-      { size: 0.45, radius: 0.34, angleDeg: -90, breatheMs: 6_500, breatheScale: 0.1 },
-      { size: 0.5, radius: 0.38, angleDeg: 30, breatheMs: 7_800, breatheScale: 0.1 },
-      { size: 0.42, radius: 0.32, angleDeg: 150, breatheMs: 5_600, breatheScale: 0.08 },
-    ],
-  },
+const PRESETS: Record<AuroraVariant, BlobSpec[]> = {
+  default: [
+    {
+      size: 0.62,
+      travelX: 0.7,
+      travelY: 0.58,
+      offsetX: -0.18,
+      offsetY: -0.22,
+      xMs: 9_000,
+      yMs: 12_500,
+      breatheMs: 4_200,
+      breatheScale: 0.14,
+    },
+    {
+      size: 0.68,
+      travelX: 0.78,
+      travelY: 0.64,
+      offsetX: 0.2,
+      offsetY: -0.04,
+      xMs: 11_500,
+      yMs: 9_800,
+      flipX: true,
+      breatheMs: 5_100,
+      breatheScale: 0.14,
+    },
+    {
+      size: 0.56,
+      travelX: 0.66,
+      travelY: 0.72,
+      offsetX: -0.04,
+      offsetY: 0.24,
+      xMs: 13_000,
+      yMs: 15_500,
+      flipY: true,
+      breatheMs: 3_500,
+      breatheScale: 0.12,
+    },
+  ],
+  hero: [
+    {
+      size: 0.68,
+      travelX: 0.78,
+      travelY: 0.62,
+      offsetX: -0.2,
+      offsetY: -0.24,
+      xMs: 6_500,
+      yMs: 9_000,
+      breatheMs: 3_300,
+      breatheScale: 0.18,
+    },
+    {
+      size: 0.74,
+      travelX: 0.86,
+      travelY: 0.7,
+      offsetX: 0.22,
+      offsetY: -0.02,
+      xMs: 8_200,
+      yMs: 7_000,
+      flipX: true,
+      breatheMs: 4_100,
+      breatheScale: 0.2,
+    },
+    {
+      size: 0.6,
+      travelX: 0.72,
+      travelY: 0.8,
+      offsetX: -0.03,
+      offsetY: 0.26,
+      xMs: 9_400,
+      yMs: 11_000,
+      flipY: true,
+      breatheMs: 2_800,
+      breatheScale: 0.16,
+    },
+  ],
+  subtle: [
+    {
+      size: 0.5,
+      travelX: 0.58,
+      travelY: 0.48,
+      offsetX: -0.16,
+      offsetY: -0.2,
+      xMs: 13_000,
+      yMs: 17_500,
+      breatheMs: 6_500,
+      breatheScale: 0.1,
+    },
+    {
+      size: 0.56,
+      travelX: 0.64,
+      travelY: 0.54,
+      offsetX: 0.18,
+      offsetY: -0.03,
+      xMs: 16_000,
+      yMs: 13_500,
+      flipX: true,
+      breatheMs: 7_800,
+      breatheScale: 0.1,
+    },
+    {
+      size: 0.46,
+      travelX: 0.56,
+      travelY: 0.6,
+      offsetX: -0.03,
+      offsetY: 0.22,
+      xMs: 18_500,
+      yMs: 21_000,
+      flipY: true,
+      breatheMs: 5_600,
+      breatheScale: 0.08,
+    },
+  ],
 };
 
 const INTENSITY: Record<AuroraVariant, number> = {
@@ -147,12 +187,7 @@ const INTENSITY: Record<AuroraVariant, number> = {
   subtle: 0.6,
 };
 
-/**
- * Radial falloff for a disc, as {offset, alpha multiplier} pairs. The core
- * holds most of the alpha and the fade is packed into the outer part of the
- * radius, so each glow reads as a small, soft-edged circle rather than a wide
- * cloud with a long shadowy skirt. Still just an SVG gradient — no blur cost.
- */
+
 const FALLOFF: { offset: string; alpha: number }[] = [
   { offset: "0%", alpha: 1 },
   { offset: "35%", alpha: 0.8 },
@@ -162,11 +197,65 @@ const FALLOFF: { offset: string; alpha: number }[] = [
   { offset: "100%", alpha: 0 },
 ];
 
-/**
- * Tracks the OS "reduce motion" setting. The aurora animates forever, so it is
- * exactly the kind of ambient motion that setting exists to switch off — when
- * enabled we render the same composition, just frozen at its start pose.
- */
+const LOBES = 7;
+
+
+const MORPH_PERIOD_RATIO = 2.7;
+
+
+const MORPH_DEPTH = 0.2;
+const HARMONICS: { freq: number; amp: number }[] = [
+  { freq: 1, amp: 0.5 },
+  { freq: 2, amp: 0.26 },
+  { freq: 3, amp: 0.14 },
+  { freq: 5, amp: 0.1 },
+];
+
+function canvasFor(diameter: number): number {
+  return diameter * (1 + MORPH_DEPTH);
+}
+function buildBlobPath(
+  t: number,
+  seed: number,
+  radius: number,
+  depth: number,
+  center: number,
+): string {
+  "worklet";
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const phase = 2 * Math.PI * t;
+
+  for (let i = 0; i < LOBES; i++) {
+    let n = 0;
+    for (let h = 0; h < HARMONICS.length; h++) {
+      const { freq, amp } = HARMONICS[h]!;
+      // Each lobe and each blob gets its own offset, so no two lobes pulse
+      // together and no two blobs share a silhouette.
+      n += amp * Math.sin(freq * phase + seed * (h + 1.3) + i * (1.9 + h * 0.7));
+    }
+    const r = radius * (1 + depth * n);
+    const a = (i / LOBES) * 2 * Math.PI;
+    xs.push(center + r * Math.cos(a));
+    ys.push(center + r * Math.sin(a));
+  }
+
+  let d = `M${xs[0]!.toFixed(2)},${ys[0]!.toFixed(2)}`;
+  for (let i = 0; i < LOBES; i++) {
+    const i0 = (i - 1 + LOBES) % LOBES;
+    const i1 = i;
+    const i2 = (i + 1) % LOBES;
+    const i3 = (i + 2) % LOBES;
+    // Catmull-Rom → Bézier: the 1/6 factor is what makes the tangents continuous
+    // across each join.
+    const c1x = xs[i1]! + (xs[i2]! - xs[i0]!) / 6;
+    const c1y = ys[i1]! + (ys[i2]! - ys[i0]!) / 6;
+    const c2x = xs[i2]! - (xs[i3]! - xs[i1]!) / 6;
+    const c2y = ys[i2]! - (ys[i3]! - ys[i1]!) / 6;
+    d += `C${c1x.toFixed(2)},${c1y.toFixed(2)} ${c2x.toFixed(2)},${c2y.toFixed(2)} ${xs[i2]!.toFixed(2)},${ys[i2]!.toFixed(2)}`;
+  }
+  return `${d}Z`;
+}
 function useReduceMotion(): boolean {
   const [reduce, setReduce] = useState(false);
 
@@ -187,12 +276,6 @@ function useReduceMotion(): boolean {
 
   return reduce;
 }
-
-/**
- * Drives a 0→1→0 oscillation. `Easing.inOut` makes each pass ease out as it
- * approaches the end and accelerate away from it — the blob decelerates into a
- * turn instead of hitting the edge and snapping back.
- */
 function useOscillator(durationMs: number, paused: boolean) {
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -216,50 +299,50 @@ function useOscillator(durationMs: number, paused: boolean) {
 
   return progress;
 }
-
-/**
- * Drives a continuous 0→1 loop at constant speed — one revolution per cycle.
- * The 1→0 wrap is invisible because a full turn returns the formation to an
- * identical pose.
- */
-function useSpin(durationMs: number, paused: boolean) {
-  const progress = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (paused) {
-      progress.setValue(0);
-      return;
-    }
-    const loop = Animated.loop(
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: durationMs,
-        easing: Easing.linear,
-        useNativeDriver: true,
-        isInteraction: false,
-      }),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [progress, durationMs, paused]);
-
-  return progress;
-}
-
-/** The shared soft-edged disc: an SVG radial gradient, nothing else. */
-function GlowDisc({
+function GlowBlob({
   diameter,
   color,
   opacity,
   id,
+  seed,
+  morphMs,
+  paused,
 }: {
   diameter: number;
   color: string;
   opacity: number;
   id: string;
+  seed: number;
+  morphMs: number;
+  paused: boolean;
 }) {
+  const t = useSharedValue(0);
+  const radius = diameter / 2;
+  const canvas = canvasFor(diameter);
+
+  useEffect(() => {
+    if (paused) {
+      cancelAnimation(t);
+      // Frozen at phase 0 — still an amoeba, just a still one.
+      t.value = 0;
+      return;
+    }
+    t.value = withRepeat(
+      // Linear: the harmonics supply the character, so easing here would only
+      // make the whole shape surge and stall once per loop.
+      withTiming(1, { duration: morphMs, easing: ReEasing.linear }),
+      -1,
+      false,
+    );
+    return () => cancelAnimation(t);
+  }, [t, morphMs, paused]);
+
+  const animatedProps = useAnimatedProps(() => ({
+    d: buildBlobPath(t.value, seed, radius, MORPH_DEPTH, canvas / 2),
+  }));
+
   return (
-    <Svg width={diameter} height={diameter}>
+    <Svg width={canvas} height={canvas}>
       <Defs>
         <RadialGradient id={id}>
           {FALLOFF.map((stop) => (
@@ -272,74 +355,11 @@ function GlowDisc({
           ))}
         </RadialGradient>
       </Defs>
-      <Circle cx="50%" cy="50%" r="50%" fill={`url(#${id})`} />
+      <AnimatedPath animatedProps={animatedProps} fill={`url(#${id})`} />
     </Svg>
   );
 }
 
-/**
- * One disc breathing in place at its seat on the ring. The formation's parent
- * view supplies all the travel (drift + rotation); the disc only swells and
- * dims on its own clock so the trio doesn't pulse in unison.
- */
-function OrbitBlob({
-  spec,
-  color,
-  opacity,
-  screenW,
-  screenH,
-  id,
-  paused,
-}: {
-  spec: OrbitBlobSpec;
-  color: string;
-  opacity: number;
-  screenW: number;
-  screenH: number;
-  id: string;
-  paused: boolean;
-}) {
-  const breathe = useOscillator(spec.breatheMs, paused);
-
-  const scale = breathe.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1 - spec.breatheScale / 2, 1 + spec.breatheScale / 2],
-  });
-  // Dims as it shrinks — sells the swell far more than scale alone does.
-  const glow = breathe.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.72, 1],
-  });
-
-  const diameter = spec.size * screenW;
-  const angle = (spec.angleDeg * Math.PI) / 180;
-  const cx = screenW / 2 + spec.radius * screenW * Math.cos(angle);
-  const cy = screenH / 2 + spec.radius * screenW * Math.sin(angle);
-
-  return (
-    <Animated.View
-      style={{
-        position: "absolute",
-        left: cx - diameter / 2,
-        top: cy - diameter / 2,
-        width: diameter,
-        height: diameter,
-        opacity: glow,
-        transform: [{ scale }],
-      }}
-    >
-      <GlowDisc diameter={diameter} color={color} opacity={opacity} id={id} />
-    </Animated.View>
-  );
-}
-
-/**
- * One free-roaming disc for custom `specs`. Position comes from two
- * independent oscillators (one per axis): with mismatched periods the pair
- * traces an open Lissajous path around the (optionally offset) anchor. A
- * third loop breathes it. All of it is core RN Animated on the native driver
- * — no worklets, and nothing touches the JS thread once started.
- */
 function DriftingBlob({
   spec,
   color,
@@ -347,6 +367,7 @@ function DriftingBlob({
   screenW,
   screenH,
   id,
+  seed,
   paused,
 }: {
   spec: BlobSpec;
@@ -355,6 +376,7 @@ function DriftingBlob({
   screenW: number;
   screenH: number;
   id: string;
+  seed: number;
   paused: boolean;
 }) {
   const x = useOscillator(spec.xMs, paused);
@@ -385,35 +407,35 @@ function DriftingBlob({
   });
 
   const diameter = spec.size * screenW;
+  // Positioned on the padded canvas, so the blob's centre still lands on its
+  // anchor rather than being nudged by the morph padding.
+  const canvas = canvasFor(diameter);
 
   return (
     <Animated.View
       style={{
         position: "absolute",
-        left: (screenW - diameter) / 2 + (spec.offsetX ?? 0) * screenW,
-        top: (screenH - diameter) / 2 + (spec.offsetY ?? 0) * screenH,
-        width: diameter,
-        height: diameter,
+        left: (screenW - canvas) / 2 + (spec.offsetX ?? 0) * screenW,
+        top: (screenH - canvas) / 2 + (spec.offsetY ?? 0) * screenH,
+        width: canvas,
+        height: canvas,
         opacity: glow,
         transform: [{ translateX }, { translateY }, { scale }],
       }}
     >
-      <GlowDisc diameter={diameter} color={color} opacity={opacity} id={id} />
+      <GlowBlob
+        diameter={diameter}
+        color={color}
+        opacity={opacity}
+        id={id}
+        seed={seed}
+        morphMs={spec.breatheMs * MORPH_PERIOD_RATIO}
+        paused={paused}
+      />
     </Animated.View>
   );
 }
 
-/**
- * Ambient colored glow behind screen content — the backdrop that makes
- * translucent glass fills read as glass without any real-time blur cost, and
- * the only source of decorative color in the app (cards are deliberately
- * neutral; see `GlassCard`).
- *
- * Three small soft-edged discs — one per aurora color — ride a slowly spinning
- * formation whose center wanders the whole screen, so every disc visits every
- * region without any two ever touching. Rendered once per screen (inside
- * `Screen`) over the flat theme background, absolutely positioned and inert.
- */
 export const AuroraBackground = memo(function AuroraBackground({
   variant = "default",
   hues,
@@ -428,86 +450,35 @@ export const AuroraBackground = memo(function AuroraBackground({
   const width = boundsW ?? windowW;
   const height = boundsH ?? windowH;
 
-  // Hooks must run unconditionally; when custom specs bypass the formation,
-  // its three drivers are simply kept paused instead of skipped.
-  const cluster = CLUSTERS[variant];
-  const clusterPaused = paused || !!specs;
-  const rotate = useSpin(cluster.rotateMs, clusterPaused);
-  const driftXOsc = useOscillator(cluster.xMs, clusterPaused);
-  const driftYOsc = useOscillator(cluster.yMs, clusterPaused);
+  // Presets and custom specs are the same kind of thing now, so there is one
+  // render path rather than a formation branch and a free-roaming branch.
+  const blobs = (specs ?? PRESETS[variant]).slice(
+    0,
+    count ?? (specs ?? PRESETS[variant]).length,
+  );
 
   const blobColors = hues?.length ? hues : colors.aurora;
 
-  // Higher than a hard-edged disc would need: the falloff still spreads the
-  // alpha across the radius, so the peak has to be brighter for the glow to
-  // register at all.
-  const baseOpacity = (scheme === "dark" ? 0.3 : 0.36) * INTENSITY[variant];
-
-  if (specs) {
-    const blobs = specs.slice(0, count ?? specs.length);
-    return (
-      <View
-        style={[StyleSheet.absoluteFill, { overflow: "hidden" }]}
-        pointerEvents="none"
-      >
-        {blobs.map((spec, i) => (
-          <DriftingBlob
-            key={`${variant}-${i}`}
-            id={`aurora-${variant}-${i}`}
-            spec={spec}
-            color={blobColors[i % blobColors.length]!}
-            opacity={baseOpacity}
-            screenW={width}
-            screenH={height}
-            paused={paused}
-          />
-        ))}
-      </View>
-    );
-  }
-
-  const blobs = cluster.blobs.slice(0, count ?? cluster.blobs.length);
-  const rotation = rotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
-  const ampX = (cluster.driftX * width) / 2;
-  const ampY = (cluster.driftY * height) / 2;
-  const translateX = driftXOsc.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-ampX, ampX],
-  });
-  const translateY = driftYOsc.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-ampY, ampY],
-  });
+  const baseOpacity = (scheme === "dark" ? 0.18 : 0.22) * INTENSITY[variant];
 
   return (
     <View
       style={[StyleSheet.absoluteFill, { overflow: "hidden" }]}
       pointerEvents="none"
     >
-      {/* Drift first, then spin: rotation happens about the view's own center,
-          so the formation revolves around wherever the drift has carried it. */}
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          { transform: [{ translateX }, { translateY }, { rotate: rotation }] },
-        ]}
-      >
-        {blobs.map((spec, i) => (
-          <OrbitBlob
-            key={`${variant}-${i}`}
-            id={`aurora-${variant}-${i}`}
-            spec={spec}
-            color={blobColors[i % blobColors.length]!}
-            opacity={baseOpacity}
-            screenW={width}
-            screenH={height}
-            paused={paused}
-          />
-        ))}
-      </Animated.View>
+      {blobs.map((spec, i) => (
+        <DriftingBlob
+          key={`${variant}-${i}`}
+          id={`aurora-${variant}-${i}`}
+          spec={spec}
+          color={blobColors[i % blobColors.length]!}
+          opacity={baseOpacity}
+          screenW={width}
+          screenH={height}
+          seed={i * 2.4}
+          paused={paused}
+        />
+      ))}
     </View>
   );
 });
