@@ -74,5 +74,15 @@
     "lint": "expo lint",
     "check-types": "tsc --noEmit"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "react-native-razorpay"
+        ],
+        "listUnknownPackages": true
+      }
+    }
+  }
 }

@@ -418,6 +418,33 @@ behaves as documented for our payload.
 
 ---
 
+## Mobile checkout notes
+
+**`react-native-razorpay` is excluded from `expo-doctor`'s React Native Directory
+check** (`expo.doctor.reactNativeDirectoryCheck.exclude` in `apps/portal/package.json`).
+
+The Directory reports it as "Unsupported on New Architecture". That metadata is stale.
+Version 3.0.0 ships genuine TurboModule specs — `src/NativeRazorpayCheckout.ts` and
+`src/NativeRazorpayEventEmitter.ts` both use `TurboModuleRegistry.getEnforcing`, and
+`package.json` declares `codegenConfig` for both platforms. `RazorpayCheckout.js` also
+branches on new-arch detection at runtime with an old-arch fallback.
+
+Re-check this on upgrade: if the Directory entry is corrected, drop the exclusion rather
+than carrying a permanent suppression.
+
+Two operational consequences of the native module:
+
+- **It cannot ship over OTA.** `eas update` will not deliver it; existing installs need a
+  new `eas build`.
+- **`apps/portal/android/` goes stale** whenever native deps change. EAS prebuilds fresh
+  so cloud builds are fine, but local `expo run:android` needs
+  `npx expo prebuild --clean` first.
+
+`LSApplicationQueriesSchemes` in `app.config.ts` lists the UPI apps Razorpay's iOS
+checkout probes for. iOS will not report an app as installed unless its scheme is
+declared, so without it the UPI option silently disappears on iOS and users are pushed to
+card.
+
 ## References
 
 - [Transfer funds to linked accounts](https://razorpay.com/docs/payments/route/transfer-funds-to-linked-accounts/)
