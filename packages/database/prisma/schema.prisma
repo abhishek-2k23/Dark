@@ -93,8 +93,14 @@ enum NoticeCategory {
 }
 
 enum BookingStatus {
+  // Chargeable amenities only: the slot is held while payment is outstanding.
+  // Overlap checks treat this as occupying the slot, so two residents can't
+  // both pay for it. Free amenities go straight to BOOKED.
+  PENDING_PAYMENT
   BOOKED
   CANCELLED
+  // A PENDING_PAYMENT hold that lapsed before payment landed; slot released.
+  EXPIRED
   COMPLETED
 }
 
@@ -105,9 +111,15 @@ enum DueStatus {
 }
 
 enum PaymentMethod {
+  // Gateway methods — money moves through Razorpay and settles to the payee's
+  // linked account. Only these ever produce a checkout session.
   UPI
   CARD
   NETBANKING
+  // Peer-to-peer UPI: the payer opens their own UPI app via a deep link and
+  // pays the payee's VPA directly. We never touch the money, so the payer's
+  // UTR is a claim that still has to be confirmed by a human.
+  UPI_DIRECT
   // Paid outside the app (cash/cheque/direct transfer) and evidenced by an
   // uploaded receipt an admin has to verify. Never touches the gateway.
   OFFLINE
@@ -115,14 +127,51 @@ enum PaymentMethod {
 
 enum PaymentStatus {
   INITIATED
-  // OFFLINE only: receipt uploaded, waiting on an admin decision. The due
-  // stays payable until then, so nobody is marked paid on their own say-so.
+  // Manual rails only (OFFLINE, UPI_DIRECT): evidence submitted, waiting on a
+  // human decision. The target stays payable until then, so nobody is marked
+  // paid on their own say-so.
   PENDING_VERIFICATION
   SUCCESS
   FAILED
-  // OFFLINE only: an admin rejected the receipt. The due stays payable and
-  // the resident may submit again.
+  // Manual rails only: a decision-maker turned the evidence down, or reversed
+  // a self-attested payment. The target stays payable and the resident may
+  // submit again.
   REJECTED
+}
+
+/**
+ * How far along a payee is in Razorpay Route onboarding. Only ACTIVE accounts
+ * can receive gateway money — Razorpay requires the account holder to complete
+ * their own KYC form and passes a penny-test before that flips.
+ */
+enum PayoutOnboardingStatus {
+  NOT_STARTED
+  // Linked account created via API; the holder's KYC form is still outstanding.
+  CREATED
+  ACTIVE
+  SUSPENDED
+}
+
+/**
+ * A society's subscription to Portl itself.
+ *
+ * Unlike every other payment in this schema, this one is the society paying
+ * *us* for our own software — we are an ordinary merchant here, not an
+ * intermediary, so it needs no Route, no linked accounts, and none of the
+ * payment-aggregator machinery that resident payments avoid.
+ */
+enum SubscriptionStatus {
+  // Never subscribed, or a free evaluation period.
+  TRIALING
+  ACTIVE
+  // Period ended, payment outstanding. Admins keep full access and are warned;
+  // this window exists so a failed card does not lock a paying customer out.
+  GRACE
+  // Grace ran out. Admin writes are blocked; residents are unaffected and the
+  // society's data is never withheld.
+  EXPIRED
+  // Deliberately ended by the admin; runs to the end of the paid period.
+  CANCELLED
 }
 
 enum ServiceCategory {
@@ -169,6 +218,20 @@ enum NotificationType {
   POLL_CREATED
   DUE_GENERATED
   BOOKING_CONFIRMED
+  // A resident raised a bill against a service person, or self-attested paying
+  // one and an admin later reversed that.
+  SERVICE_BILL_RAISED
+  SERVICE_PAYMENT_REVERSED
+  // A chargeable booking's payment hold lapsed and the slot was released.
+  BOOKING_PAYMENT_EXPIRED
+  // Society payouts: linked account went ACTIVE, or a transfer failed and left
+  // money stranded in the platform balance (admin-facing, ops-critical).
+  PAYOUT_ACTIVATED
+  PAYOUT_TRANSFER_FAILED
+  // Society's own subscription to Portl.
+  SUBSCRIPTION_ACTIVATED
+  SUBSCRIPTION_EXPIRING
+  SUBSCRIPTION_EXPIRED
   GENERAL
 }
 
@@ -187,6 +250,14 @@ model Society {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // --- Payouts ------------------------------------------------------------
+  // Both are optional and independent: a society with neither still collects
+  // money offline. Setting a VPA opens the UPI-direct rail; an ACTIVE linked
+  // account opens the gateway rail.
+  upiVpa            String?
+  razorpayAccountId String?                @unique
+  payoutStatus      PayoutOnboardingStatus @default(NOT_STARTED)
+
   towers           Tower[]
   users            User[]
   guardProfiles    GuardProfile[]
@@ -197,6 +268,7 @@ model Society {
   amenities        Amenity[]
   serviceProviders ServiceProvider[]
   joinRequests     SocietyJoinRequest[]
+  subscription     Subscription?
 }
 
 model Tower {
@@ -294,6 +366,7 @@ model ResidentProfile {
   pollVotes     PollVote[]
   bookings      AmenityBooking[]
   payments      Payment[]
+  serviceBills  ServiceBill[]
 
   @@index([flatId])
 }
@@ -578,8 +651,12 @@ model Amenity {
   description  String?
   photoUrls    String[]
   rules        String?
+  // null = free. Free amenities bypass payment entirely and book directly.
   pricePerSlot Decimal? @db.Decimal(10, 2)
   isActive     Boolean  @default(true)
+  // Free-cancellation window. Cancelling this many hours or more before the
+  // slot refunds; inside it, no refund.
+  cancellationHours Int @default(24)
 
   bookings AmenityBooking[]
 
@@ -596,10 +673,20 @@ model AmenityBooking {
   startTime  String // "HH:mm", 24h
   endTime    String // "HH:mm", 24h
   status     BookingStatus   @default(BOOKED)
+  // Price snapshot taken when the booking was made, so a later change to
+  // Amenity.pricePerSlot can't alter what an existing booking owes. null on
+  // bookings of free amenities.
+  amountDue  Decimal?        @db.Decimal(10, 2)
+  // When a PENDING_PAYMENT hold lapses. Null once the booking is settled.
+  holdExpiresAt DateTime?
   createdAt  DateTime        @default(now())
+
+  payments Payment[]
 
   @@index([amenityId, date])
   @@index([residentId])
+  // Drives the sweep that releases lapsed holds.
+  @@index([status, holdExpiresAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -623,10 +710,23 @@ model MaintenanceDue {
   @@index([status])
 }
 
+/**
+ * A payment attempt against exactly one target: a maintenance due, an amenity
+ * booking, or a service bill. The three FKs are nullable and a CHECK
+ * constraint (see the migration) enforces that precisely one is set — keeping
+ * referential integrity while letting one payment pipeline serve all three.
+ */
 model Payment {
   id            String          @id @default(cuid())
-  dueId         String
-  due           MaintenanceDue  @relation(fields: [dueId], references: [id])
+  // onDelete: Restrict on all three — an optional FK would otherwise default to
+  // SET NULL, which nulls the only target and violates the exactly-one CHECK.
+  // Restrict fails the delete outright, which is the honest error.
+  dueId         String?
+  due           MaintenanceDue? @relation(fields: [dueId], references: [id], onDelete: Restrict)
+  bookingId     String?
+  booking       AmenityBooking? @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  serviceBillId String?
+  serviceBill   ServiceBill?    @relation(fields: [serviceBillId], references: [id], onDelete: Restrict)
   residentId    String
   resident      ResidentProfile @relation(fields: [residentId], references: [id])
   amount        Decimal         @db.Decimal(10, 2)
@@ -635,9 +735,17 @@ model Payment {
   status        PaymentStatus   @default(INITIATED)
   paidAt        DateTime?
 
-  // OFFLINE payments only — the receipt and the admin's decision on it.
-  receiptUrl      String?
-  note            String?
+  // UPI_DIRECT only — the payer-entered UTR. Evidence, not proof: the payer
+  // types it themselves, so it carries the same trust as an offline receipt.
+  upiUtr String?
+
+  // OFFLINE payments only — the uploaded receipt.
+  receiptUrl String?
+  note       String?
+
+  // The human decision on a manual-rail payment: an admin verifying/rejecting
+  // an offline receipt or a UPI-direct claim, or reversing a self-attested
+  // service-bill payment.
   verifiedByAdminId String?
   verifiedByAdmin   User?     @relation("PaymentVerifiedByAdmin", fields: [verifiedByAdminId], references: [id])
   verifiedAt        DateTime?
@@ -646,8 +754,141 @@ model Payment {
   createdAt     DateTime        @default(now())
 
   @@index([dueId])
+  @@index([bookingId])
+  @@index([serviceBillId])
   @@index([residentId])
   // Drives the admin verification queue.
+  @@index([status])
+}
+
+/**
+ * A bill a resident owes an individual service person (maid, electrician, …).
+ *
+ * Raised by the resident, not the service person: ServiceProvider is a
+ * directory row with no User behind it, so a service person cannot log in to
+ * raise a bill, confirm a payment, or complete Razorpay KYC. That is also why
+ * these are never payable on the gateway rail — only UPI-direct or offline.
+ */
+model ServiceBill {
+  id                String          @id @default(cuid())
+  serviceProviderId String
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  residentId        String
+  resident          ResidentProfile @relation(fields: [residentId], references: [id])
+  amount            Decimal         @db.Decimal(10, 2)
+  description       String?
+  // Free-text billing period, e.g. "July 2026" — service work is billed by
+  // arrangement, not on a fixed cycle, so this is a label rather than a date.
+  periodLabel String?
+  status      DueStatus @default(PENDING)
+  createdAt   DateTime  @default(now())
+
+  payments Payment[]
+
+  @@index([residentId])
+  @@index([serviceProviderId])
+}
+
+/**
+ * Gateway webhook de-duplication. Razorpay retries deliveries, so the
+ * provider's own event id is recorded here and a replay is a no-op. Keyed on
+ * the provider id itself rather than on payment status, which cannot
+ * distinguish a replay from a second legitimate event on one payment.
+ */
+model WebhookEvent {
+  id         String   @id
+  provider   String
+  receivedAt DateTime @default(now())
+
+  @@index([receivedAt])
+}
+
+// ---------------------------------------------------------------------------
+// SUBSCRIPTIONS (the society's own bill to us)
+// ---------------------------------------------------------------------------
+
+/**
+ * A purchasable plan. Rows rather than constants so prices can change without
+ * a deploy, and so a past payment can point at exactly what was sold — a
+ * hardcoded plan that later changes price rewrites history.
+ */
+model Plan {
+  id          String  @id @default(cuid())
+  code        String  @unique // stable machine key, e.g. "starter"
+  name        String
+  description String?
+  /** Price for one billing interval, in rupees. 0 is a valid free tier. */
+  price        Decimal @db.Decimal(10, 2)
+  /** Billing period length. Monthly is 1; an annual plan is 12. */
+  intervalMonths Int    @default(1)
+  /** Bullet points shown on the plan card. */
+  features    String[]
+  /** Soft cap on flats; null = unlimited. Enforcement is a later concern. */
+  maxFlats    Int?
+  isActive    Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  subscriptions Subscription[]
+  payments      SubscriptionPayment[]
+
+  @@index([isActive, sortOrder])
+}
+
+/**
+ * One per society — a society has at most one subscription, which changes plan
+ * rather than accumulating rows. Payment history lives in SubscriptionPayment.
+ */
+model Subscription {
+  id        String  @id @default(cuid())
+  societyId String  @unique
+  society   Society @relation(fields: [societyId], references: [id])
+  planId    String
+  plan      Plan    @relation(fields: [planId], references: [id])
+
+  status SubscriptionStatus @default(TRIALING)
+
+  /** Paid-through window. Access decisions read currentPeriodEnd, not payments. */
+  currentPeriodStart DateTime @default(now())
+  currentPeriodEnd   DateTime
+  /**
+   * When GRACE turns into EXPIRED. Set on entering grace so the window is
+   * fixed at that moment rather than recomputed from a config that may change.
+   */
+  graceEndsAt DateTime?
+  cancelledAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payments SubscriptionPayment[]
+
+  // Drives the sweep that moves lapsed subscriptions through grace to expiry.
+  @@index([status, currentPeriodEnd])
+}
+
+model SubscriptionPayment {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id])
+  planId         String
+  plan           Plan         @relation(fields: [planId], references: [id])
+  amount         Decimal      @db.Decimal(10, 2)
+
+  /** Razorpay's order id, created at checkout; the webhook arrives with it. */
+  razorpayOrderId   String  @unique
+  /** Razorpay's payment id, known only once captured. */
+  razorpayPaymentId String?
+
+  status PaymentStatus @default(INITIATED)
+  paidAt DateTime?
+
+  /** The window this payment bought, stamped when it succeeds. */
+  periodStart DateTime?
+  periodEnd   DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([subscriptionId])
   @@index([status])
 }
 
@@ -666,6 +907,12 @@ model ServiceProvider {
   isVerified     Boolean         @default(false)
   addedByAdminId String
   addedByAdmin   User            @relation(fields: [addedByAdminId], references: [id])
+
+  // Optional. Set = residents can pay this person over UPI-direct; unset =
+  // offline only. There is deliberately no linked account here: see ServiceBill.
+  upiVpa String?
+
+  bills ServiceBill[]
 
   @@index([societyId, category])
 }

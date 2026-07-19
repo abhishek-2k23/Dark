@@ -578,6 +578,8 @@ async function main() {
 
   const passwordHash = await argon2.hash(PASSWORD);
 
+  await seedPlans();
+
   const results = [];
   for (const spec of societies) {
     results.push(await seedSociety(spec, passwordHash));
@@ -600,3 +602,74 @@ main()
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());
+
+/**
+ * Subscription plans.
+ *
+ * ⚠️ PLACEHOLDER PRICING — these numbers are illustrative, not agreed. They
+ * live in the database precisely so correcting them is a seed edit and a
+ * re-run, never a migration or a deploy.
+ *
+ * Upserted by `code` so re-seeding an existing database updates prices in
+ * place rather than creating duplicates that societies might be pointing at.
+ */
+async function seedPlans() {
+  const plans = [
+    {
+      code: "starter",
+      name: "Starter",
+      description: "For small societies finding their feet.",
+      price: 999,
+      intervalMonths: 1,
+      maxFlats: 50,
+      sortOrder: 1,
+      features: [
+        "Up to 50 flats",
+        "Visitor management",
+        "Notices & polls",
+        "Maintenance dues",
+        "Email support",
+      ],
+    },
+    {
+      code: "growth",
+      name: "Growth",
+      description: "For established societies running day to day on Portl.",
+      price: 2499,
+      intervalMonths: 1,
+      maxFlats: 200,
+      sortOrder: 2,
+      features: [
+        "Up to 200 flats",
+        "Everything in Starter",
+        "Amenity bookings",
+        "Helpdesk & complaints",
+        "Staff directory",
+        "Priority support",
+      ],
+    },
+    {
+      code: "growth-annual",
+      name: "Growth (annual)",
+      description: "Growth, billed yearly — two months free.",
+      price: 24990,
+      intervalMonths: 12,
+      maxFlats: 200,
+      sortOrder: 3,
+      features: [
+        "Everything in Growth",
+        "Two months free vs monthly",
+        "Locked-in pricing for a year",
+      ],
+    },
+  ];
+
+  for (const plan of plans) {
+    await prisma.plan.upsert({
+      where: { code: plan.code },
+      update: plan,
+      create: plan,
+    });
+  }
+  console.log(`Seeded ${plans.length} subscription plans (PLACEHOLDER pricing).`);
+}
