@@ -330,7 +330,18 @@
     "notePlaceholder": "Note for the admin (optional) — e.g. paid by cheque #4471",
     "offlineDisclaimer": "An admin will verify this. The due stays payable until then.",
     "submitReceipt": "Submit receipt",
-    "receiptSubmittedToast": "Receipt sent for verification"
+    "receiptSubmittedToast": "Receipt sent for verification",
+    "payByUpi": "Pay by UPI",
+    "upiPayTo": "Pay {{name}}",
+    "upiExplainer": "This opens your own UPI app. The money goes straight to them — it never passes through Portl. Come back and enter the reference number afterwards.",
+    "upiOpenApp": "Open UPI app",
+    "upiNoAppToast": "No UPI app opened. You can copy the UPI ID above and pay from your bank app instead.",
+    "upiUtrPlaceholder": "UPI reference / UTR",
+    "upiSubmitUtr": "I've paid",
+    "upiVerifyDisclaimer": "An admin will check this against the society's account before the due is marked paid.",
+    "upiServiceDisclaimer": "This marks the bill paid straight away. An admin can reverse it if there's a dispute.",
+    "upiSubmittedToast": "Sent for verification",
+    "upiRecordedToast": "Payment recorded"
   },
   "community": {
     "title": "Community",
@@ -592,7 +603,9 @@
     "rejectRequestConfirm": "Decline {{name}}'s request? They won't be able to ask your society again — only an invite can admit them after this.",
     "requestApproved": "Resident admitted",
     "requestRejected": "Request declined",
-    "expiresAt": "until {{time}}"
+    "expiresAt": "until {{time}}",
+    "paidByUpi": "Paid by UPI · UTR {{utr}}",
+    "paidOffline": "Paid offline · receipt attached"
   },
   "notifications": {
     "title": "Notifications",
@@ -722,7 +735,8 @@
       "UPI": "UPI",
       "CARD": "Card",
       "NETBANKING": "Netbanking",
-      "OFFLINE": "Offline"
+      "OFFLINE": "Offline",
+      "UPI_DIRECT": "UPI (direct)"
     },
     "serviceCategory": {
       "MAID": "Maid",
@@ -783,5 +797,47 @@
     "retryAt": "You can ask them again after {{time}}.",
     "rejectedTitle": "Request declined",
     "rejectedBody": "{{society}} declined your request. Only their admin can invite you now — or try another society."
+  },
+  "billing": {
+    "title": "Billing",
+    "currentPlan": "Current plan",
+    "noPlan": "No plan yet",
+    "perMonth": "per month",
+    "perYear": "per year",
+    "renewsOn": "Renews on {{date}}",
+    "endsOn": "Access ends {{date}}",
+    "daysRemaining": "{{count}} days remaining",
+    "plans": "Plans",
+    "current": "Current",
+    "choosePlan": "Choose plan",
+    "renew": "Renew",
+    "reactivate": "Reactivate",
+    "history": "Payment history",
+    "noPayments": "No payments yet",
+    "noPaymentsBody": "Charges for your subscription will appear here.",
+    "cancelPlan": "Cancel subscription",
+    "cancelTitle": "Cancel subscription?",
+    "cancelConfirm": "You'll keep full access until {{date}} — the period you've already paid for. Nothing is refunded and nothing is cut short.",
+    "cancelledToast": "Subscription cancelled — access continues to the end of the paid period",
+    "checkoutStarted": "Order created ({{orderId}}). Payment checkout is not wired into the app yet.",
+    "graceTitle": "Payment overdue",
+    "graceBody": "Your plan has ended but everything still works until {{date}}. Renew before then to avoid interruption.",
+    "expiredTitle": "Subscription expired",
+    "expiredBody": "Admin changes are paused until you renew. Residents and guards are unaffected, and all your data is safe.",
+    "status": {
+      "NONE": "None",
+      "TRIALING": "Trial",
+      "ACTIVE": "Active",
+      "GRACE": "Overdue",
+      "EXPIRED": "Expired",
+      "CANCELLED": "Cancelled"
+    },
+    "paymentStatus": {
+      "INITIATED": "Pending",
+      "SUCCESS": "Paid",
+      "FAILED": "Failed",
+      "PENDING_VERIFICATION": "Pending",
+      "REJECTED": "Rejected"
+    }
   }
 }

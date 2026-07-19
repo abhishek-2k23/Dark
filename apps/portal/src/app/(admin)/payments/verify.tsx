@@ -9,7 +9,7 @@ import { Badge, Button, Card, Input, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 import { toErrorMessage } from "@/utils/errors";
-import { formatDateTime, formatMoney, MONTH_KEYS } from "@/utils/format";
+import { formatDateTime, formatMoney } from "@/utils/format";
 
 /**
  * The admin queue for payments residents say they made offline. Each row is a
@@ -26,13 +26,13 @@ export default function VerifyPayments() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [reason, setReason] = useState("");
 
-  const q = trpc.payment.pendingOffline.useInfiniteQuery(
+  const q = trpc.payment.pending.useInfiniteQuery(
     { limit: 20 },
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   );
   const items = q.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const decide = trpc.payment.decideOffline.useMutation({
+  const decide = trpc.payment.decide.useMutation({
     onSuccess: (p) => {
       showToast(
         p.status === "SUCCESS" ? t("admin.receiptVerified") : t("admin.receiptRejected"),
@@ -40,7 +40,7 @@ export default function VerifyPayments() {
       );
       setRejectingId(null);
       setReason("");
-      void utils.payment.pendingOffline.invalidate();
+      void utils.payment.pending.invalidate();
       void utils.due.list.invalidate();
     },
     onError: (e) => showToast(toErrorMessage(e, t), "error"),
@@ -90,15 +90,26 @@ export default function VerifyPayments() {
                       {t("guard.flatLine", { tower: p.towerName, flat: p.flatNumber })}
                     </Text>
                     <Text variant="caption" color="tertiary">
-                      {t(`months.${MONTH_KEYS[p.dueMonth - 1]}`)} {p.dueYear} ·{" "}
-                      {formatDateTime(p.createdAt)}
+                      {/* The queue now carries dues, bookings and service bills,
+                          so the server's own label is the only thing that reads
+                          correctly for all three. */}
+                      {p.targetLabel} · {formatDateTime(p.createdAt)}
+                    </Text>
+                    <Text variant="caption" color="tertiary">
+                      {p.method === "UPI_DIRECT"
+                        ? t("admin.paidByUpi", { utr: p.upiUtr ?? "—" })
+                        : t("admin.paidOffline")}
                     </Text>
                   </View>
                   <View className="items-end gap-1">
                     <Text variant="title" color="primary">
                       {formatMoney(p.amount)}
                     </Text>
-                    <Badge label={t("enums.paymentMethod.OFFLINE")} tone="warning" size="sm" />
+                    <Badge
+                      label={t(`enums.paymentMethod.${p.method}`)}
+                      tone="warning"
+                      size="sm"
+                    />
                   </View>
                 </View>
 

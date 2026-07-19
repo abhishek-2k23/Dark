@@ -17,6 +17,7 @@ import {
   Text,
   type IconName,
 } from "@/components/ui";
+import { UpiPaySheet } from "@/components/UpiPaySheet";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 import { toErrorMessage } from "@/utils/errors";
@@ -29,12 +30,71 @@ const METHODS: { value: "UPI" | "CARD" | "NETBANKING"; icon: IconName }[] = [
   { value: "NETBANKING", icon: "globe-outline" },
 ];
 
+/**
+ * Which rails to offer for one due.
+ *
+ * Asks the server rather than guessing: the gateway is only open once the
+ * society's Razorpay linked account is ACTIVE, and UPI only once it has
+ * published a VPA. Rendering a method the server would reject is how residents
+ * end up staring at a 412. Offline is always available, so this never renders
+ * an empty row even while the query is in flight.
+ */
+function DueActions({
+  dueId,
+  onGateway,
+  onUpi,
+  onOffline,
+}: {
+  dueId: string;
+  onGateway: () => void;
+  onUpi: () => void;
+  onOffline: () => void;
+}) {
+  const { t } = useTranslation();
+  const options = trpc.payment.options.useQuery({ targetKind: "DUE", targetId: dueId });
+
+  return (
+    <View className="flex-row flex-wrap gap-2">
+      {options.data?.gateway && (
+        <Button
+          label={t("payments.payNow")}
+          variant="primary"
+          size="sm"
+          className="flex-1"
+          onPress={onGateway}
+        />
+      )}
+      {options.data?.upiDirect && (
+        <Button
+          label={t("payments.payByUpi")}
+          variant="primary"
+          size="sm"
+          leftIcon="qr-code-outline"
+          className="flex-1"
+          onPress={onUpi}
+        />
+      )}
+      {/* For dues settled at the office by cash or cheque — the receipt is a
+          claim an admin still has to verify. */}
+      <Button
+        label={t("payments.paidOffline")}
+        variant="outline"
+        size="sm"
+        leftIcon="receipt-outline"
+        className="flex-1"
+        onPress={onOffline}
+      />
+    </View>
+  );
+}
+
 function DuesList() {
   const { t } = useTranslation();
   const showToast = useUIStore((s) => s.showToast);
   const utils = trpc.useUtils();
   const [payingId, setPayingId] = useState<string | null>(null);
   const [offlineId, setOfflineId] = useState<string | null>(null);
+  const [upiId, setUpiId] = useState<string | null>(null);
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [method, setMethod] = useState<"UPI" | "CARD" | "NETBANKING">("UPI");
@@ -102,6 +162,7 @@ function DuesList() {
         const payable = d.status === "PENDING" || d.status === "OVERDUE";
         const paying = payingId === d.id;
         const offline = offlineId === d.id;
+        const upi = upiId === d.id;
         return (
           <Card key={d.id} className="gap-3">
             <View className="flex-row items-center gap-3">
@@ -129,30 +190,26 @@ function DuesList() {
               </View>
             </View>
 
-            {payable && !paying && !offline && (
-              <View className="flex-row gap-2">
-                <Button
-                  label={t("payments.payNow")}
-                  variant="primary"
-                  size="sm"
-                  className="flex-1"
-                  onPress={() => setPayingId(d.id)}
-                />
-                {/* For dues settled at the office by cash or cheque — the
-                    receipt is a claim an admin still has to verify. */}
-                <Button
-                  label={t("payments.paidOffline")}
-                  variant="outline"
-                  size="sm"
-                  leftIcon="receipt-outline"
-                  className="flex-1"
-                  onPress={() => {
-                    setOfflineId(d.id);
-                    setReceiptUrl(null);
-                    setNote("");
-                  }}
-                />
-              </View>
+            {payable && !paying && !offline && !upi && (
+              <DueActions
+                dueId={d.id}
+                onGateway={() => setPayingId(d.id)}
+                onUpi={() => setUpiId(d.id)}
+                onOffline={() => {
+                  setOfflineId(d.id);
+                  setReceiptUrl(null);
+                  setNote("");
+                }}
+              />
+            )}
+
+            {upi && (
+              <UpiPaySheet
+                targetKind="DUE"
+                targetId={d.id}
+                onDone={() => setUpiId(null)}
+                onCancel={() => setUpiId(null)}
+              />
             )}
 
             {offline && (
@@ -194,7 +251,8 @@ function DuesList() {
                     onPress={() => {
                       if (!receiptUrl) return;
                       submitOffline.mutate({
-                        dueId: d.id,
+                        targetKind: "DUE",
+                        targetId: d.id,
                         receiptUrl,
                         note: note.trim() || undefined,
                       });
@@ -250,7 +308,9 @@ function DuesList() {
                     size="sm"
                     className="flex-1"
                     loading={initiate.isPending}
-                    onPress={() => initiate.mutate({ dueId: d.id, method })}
+                    onPress={() =>
+                      initiate.mutate({ targetKind: "DUE", targetId: d.id, method })
+                    }
                   />
                 </View>
               </View>
@@ -291,7 +351,12 @@ function PaymentHistory() {
           <IconCircle name="receipt-outline" tone="neutral" size={44} />
           <View className="flex-1 gap-0.5">
             <Text variant="title">
-              {t(`months.${MONTH_KEYS[p.dueMonth - 1]}`)} {p.dueYear}
+              {/* History spans dues, bookings and service bills now. Dues keep
+                  their familiar "July 2026" heading; anything else falls back
+                  to the server's label, which already reads correctly. */}
+              {p.dueMonth !== null && p.dueYear !== null
+                ? `${t(`months.${MONTH_KEYS[p.dueMonth - 1]}`)} ${p.dueYear}`
+                : p.targetLabel}
             </Text>
             <Text variant="bodySmall" color="secondary" numberOfLines={1}>
               {t(`enums.paymentMethod.${p.method}`)} ·{" "}

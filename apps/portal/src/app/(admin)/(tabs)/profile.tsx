@@ -48,6 +48,32 @@ function Row({
   );
 }
 
+/**
+ * Billing entry point. The subtitle carries the plan and status rather than a
+ * bare "Billing", because a lapsed subscription is something an admin needs to
+ * notice from the profile screen, not only after tapping through.
+ */
+function BillingRow() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const sub = trpc.subscription.get.useQuery({});
+
+  const value = !sub.data
+    ? t("common.loading")
+    : sub.data.status === "NONE"
+      ? t("billing.noPlan")
+      : `${sub.data.planName} · ${t(`billing.status.${sub.data.status}`)}`;
+
+  return (
+    <Row
+      icon="card-outline"
+      label={t("billing.title")}
+      value={value}
+      onPress={() => router.push("/(admin)/billing")}
+    />
+  );
+}
+
 export default function AdminProfileTab() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -90,6 +116,7 @@ export default function AdminProfileTab() {
               value={me.society?.name ?? t("profile.notSet")}
               onPress={() => router.push("/(admin)/society")}
             />
+            <BillingRow />
           </View>
 
           <View className="gap-2.5">
