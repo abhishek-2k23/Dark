@@ -70,7 +70,7 @@ export default function ProfileSetupScreen() {
   };
 
   const done = () =>
-    isEdit ? router.back() : router.replace("/(resident)");
+    isEdit ? router.back() : router.replace("/(resident)/(tabs)");
 
   const update = trpc.profile.update.useMutation({
     onSuccess: () => {

@@ -22,13 +22,16 @@ export function homeFor(
  * for users who don't have a society yet.
  */
 export function roleHome(role: Role | undefined): Href {
+  // Each role's landing route is the tab group, not the bare role group: a
+  // group on its own is not a route, so `/(admin)` is not in expo-router's
+  // generated Href union even though it resolves at runtime.
   switch (role) {
     case "GUARD":
-      return "/(guard)";
+      return "/(guard)/(tabs)";
     case "ADMIN":
-      return "/(admin)";
+      return "/(admin)/(tabs)";
     case "RESIDENT":
     default:
-      return "/(resident)";
+      return "/(resident)/(tabs)";
   }
 }
