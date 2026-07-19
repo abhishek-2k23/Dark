@@ -238,6 +238,46 @@ export async function createCheckout(
   };
 }
 
+/**
+ * Confirm a checkout the client just completed.
+ *
+ * The SDK's success callback carries a signature only our key secret could
+ * produce, so this is trustworthy — but it is a *fast path*, not the source of
+ * truth. A client that closes the app mid-payment never calls it, and the
+ * webhook settles that case regardless. Both routes run the same activation,
+ * and whichever arrives second is a no-op because the payment is no longer
+ * INITIATED.
+ */
+export async function verifyCheckout(
+  actor: User,
+  input: { orderId: string; paymentId: string; signature: string },
+): Promise<SubscriptionInfo> {
+  const societyId = actorSocietyId(actor);
+
+  if (!razorpay.verifyCheckoutSignature(input)) {
+    logger.info("Razorpay checkout verification failed", { orderId: input.orderId });
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Payment could not be verified",
+    });
+  }
+
+  const payment = await prisma.subscriptionPayment.findUnique({
+    where: { razorpayOrderId: input.orderId },
+    include: { subscription: true, plan: true },
+  });
+  // Scope to the caller's own society — a valid signature proves the payment
+  // is real, not that it belongs to whoever is asking.
+  if (!payment || payment.subscription.societyId !== societyId) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Payment not found" });
+  }
+
+  if (payment.status === "INITIATED") {
+    await applyCapture(payment.id, input.paymentId);
+  }
+  return getSubscription(actor);
+}
+
 // ---------------------------------------------------------------------------
 // Payment history
 // ---------------------------------------------------------------------------
@@ -373,6 +413,24 @@ export async function handleRazorpayWebhook(input: {
     return { handled: true, event };
   }
 
+  await applyCapture(payment.id, entity.id);
+  return { handled: true, event };
+}
+
+/**
+ * Turn a captured payment into an active period.
+ *
+ * Shared by the webhook and the client verification path so the two can never
+ * disagree about what a successful payment means. Idempotent by construction:
+ * both callers check the payment is still INITIATED first, so whichever
+ * arrives second does nothing.
+ */
+async function applyCapture(subscriptionPaymentId: string, razorpayPaymentId?: string) {
+  const payment = await prisma.subscriptionPayment.findUniqueOrThrow({
+    where: { id: subscriptionPaymentId },
+    include: { subscription: true, plan: true },
+  });
+
   // Extend from whichever is later: the end of the current paid period, or
   // now. Renewing early must not forfeit days already paid for, and renewing
   // after a lapse must not credit the gap.
@@ -386,7 +444,7 @@ export async function handleRazorpayWebhook(input: {
       where: { id: payment.id },
       data: {
         status: "SUCCESS",
-        razorpayPaymentId: entity.id,
+        razorpayPaymentId,
         paidAt: now,
         periodStart: base,
         periodEnd,
@@ -411,8 +469,6 @@ export async function handleRazorpayWebhook(input: {
     body: `Your ${payment.plan.name} plan is active until ${periodEnd.toDateString()}.`,
     data: { subscriptionId: payment.subscriptionId },
   });
-
-  return { handled: true, event };
 }
 
 // ---------------------------------------------------------------------------

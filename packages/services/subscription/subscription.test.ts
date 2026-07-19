@@ -284,10 +284,129 @@ describe("webhook activates the subscription", () => {
   });
 });
 
+describe("client checkout verification", () => {
+  /** Razorpay signs `order_id|payment_id` with the key secret. */
+  const sign = (orderId: string, paymentId: string, secret: string) =>
+    crypto.createHmac("sha256", secret).update(`${orderId}|${paymentId}`).digest("hex");
+
+  const KEY_SECRET = "test-key-secret";
+  let originalSecret: string | undefined;
+
+  beforeAll(() => {
+    originalSecret = process.env.RAZORPAY_KEY_SECRET;
+    process.env.RAZORPAY_KEY_SECRET = KEY_SECRET;
+    process.env.RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID ?? "rzp_test_stub";
+  });
+  afterAll(() => {
+    if (originalSecret) process.env.RAZORPAY_KEY_SECRET = originalSecret;
+  });
+
+  it("rejects a forged signature", async () => {
+    const payment = await pendingPayment(starterPlanId, `order_${runId}_v1`);
+    await expectTRPCError(
+      subscriptionService.verifyCheckout(admin, {
+        orderId: payment.razorpayOrderId,
+        paymentId: `pay_${runId}_v1`,
+        signature: "f".repeat(64),
+      }),
+      "UNAUTHORIZED",
+    );
+    // A rejected verification must leave the payment untouched.
+    const stored = await prisma.subscriptionPayment.findUniqueOrThrow({
+      where: { id: payment.id },
+    });
+    expect(stored.status).toBe("INITIATED");
+  });
+
+  it("activates the subscription on a genuine signature", async () => {
+    const payment = await prisma.subscriptionPayment.findFirstOrThrow({
+      where: { razorpayOrderId: `order_${runId}_v1` },
+    });
+    const paymentId = `pay_${runId}_v1`;
+    const result = await subscriptionService.verifyCheckout(admin, {
+      orderId: payment.razorpayOrderId,
+      paymentId,
+      signature: sign(payment.razorpayOrderId, paymentId, KEY_SECRET),
+    });
+
+    expect(result.status).toBe("ACTIVE");
+    const stored = await prisma.subscriptionPayment.findUniqueOrThrow({
+      where: { id: payment.id },
+    });
+    expect(stored.status).toBe("SUCCESS");
+    expect(stored.razorpayPaymentId).toBe(paymentId);
+  });
+
+  it("is a no-op when the webhook already settled the same payment", async () => {
+    // Both paths race in production; whichever lands second must not extend
+    // the period a second time.
+    const payment = await prisma.subscriptionPayment.findFirstOrThrow({
+      where: { razorpayOrderId: `order_${runId}_v1` },
+    });
+    const before = await subscriptionService.getSubscription(admin);
+    const paymentId = `pay_${runId}_v1`;
+
+    const after = await subscriptionService.verifyCheckout(admin, {
+      orderId: payment.razorpayOrderId,
+      paymentId,
+      signature: sign(payment.razorpayOrderId, paymentId, KEY_SECRET),
+    });
+    expect(after.currentPeriodEnd).toBe(before.currentPeriodEnd);
+  });
+
+  it("refuses an order belonging to another society", async () => {
+    // A valid signature proves the payment is real, not that it belongs to
+    // whoever is asking.
+    const otherSociety = await prisma.society.create({
+      data: {
+        name: `SB Other ${runId}`,
+        address: "2 SB St",
+        city: "Testville",
+        state: "TS",
+        pincode: "000005",
+      },
+    });
+    const otherSub = await prisma.subscription.create({
+      data: {
+        societyId: otherSociety.id,
+        planId: starterPlanId,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(),
+      },
+    });
+    const orderId = `order_${runId}_other`;
+    await prisma.subscriptionPayment.create({
+      data: {
+        subscriptionId: otherSub.id,
+        planId: starterPlanId,
+        amount: 999,
+        razorpayOrderId: orderId,
+      },
+    });
+
+    const paymentId = `pay_${runId}_other`;
+    await expectTRPCError(
+      subscriptionService.verifyCheckout(admin, {
+        orderId,
+        paymentId,
+        signature: sign(orderId, paymentId, KEY_SECRET),
+      }),
+      "NOT_FOUND",
+    );
+
+    await prisma.subscriptionPayment.deleteMany({ where: { subscriptionId: otherSub.id } });
+    await prisma.subscription.delete({ where: { id: otherSub.id } });
+    await prisma.society.delete({ where: { id: otherSociety.id } });
+  });
+});
+
 describe("payment history", () => {
   it("lists every attempt including failures, newest first", async () => {
     const history = await subscriptionService.paymentHistory(admin, { limit: 50 });
-    expect(history.items.length).toBe(3);
+    // Deliberately not asserting an exact count — every checkout test above
+    // adds a row, so a hardcoded number turns any new test into a false
+    // failure here. What matters is that failures are not hidden.
+    expect(history.items.length).toBeGreaterThanOrEqual(3);
     expect(history.items.map((p) => p.status)).toContain("FAILED");
     expect(history.items.map((p) => p.status)).toContain("SUCCESS");
     const times = history.items.map((p) => new Date(p.createdAt).getTime());

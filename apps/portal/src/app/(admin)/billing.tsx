@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
+import RazorpayCheckout, { type RazorpayError } from "react-native-razorpay";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
@@ -42,15 +43,63 @@ export default function Billing() {
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   );
 
-  const checkout = trpc.subscription.checkout.useMutation({
-    onSuccess: (session) => {
-      // The Razorpay client SDK is not wired into the Expo build yet, so this
-      // stops at the order rather than pretending money moved. The order is
-      // real: it exists in Razorpay and the webhook will settle it once the
-      // SDK opens checkout against this id.
-      showToast(t("billing.checkoutStarted", { orderId: session.orderId }), "success");
+  const me = trpc.profile.me.useQuery();
+
+  const verify = trpc.subscription.verify.useMutation({
+    onSuccess: () => {
+      showToast(t("billing.paidToast"), "success");
       void utils.subscription.get.invalidate();
       void utils.subscription.history.invalidate();
+      void utils.plan.list.invalidate();
+    },
+    onError: (e) => showToast(toErrorMessage(e, t), "error"),
+  });
+
+  const checkout = trpc.subscription.checkout.useMutation({
+    onSuccess: async (session) => {
+      try {
+        const result = await RazorpayCheckout.open({
+          key: session.keyId,
+          order_id: session.orderId,
+          // Razorpay speaks integer paise; the server sends rupees.
+          amount: Math.round(session.amount * 100),
+          currency: session.currency,
+          name: "Portl",
+          description: session.planName,
+          prefill: {
+            email: me.data?.email ?? undefined,
+            contact: me.data?.phone ?? undefined,
+            name: me.data?.name ?? undefined,
+          },
+          theme: { color: "#2563EB" },
+        });
+
+        // The callback is signed with a secret only the server holds, so this
+        // confirms the payment immediately instead of waiting on the webhook.
+        // It is a fast path, not the source of truth: if the app dies here the
+        // webhook still settles it.
+        verify.mutate({
+          orderId: result.razorpay_order_id,
+          paymentId: result.razorpay_payment_id,
+          signature: result.razorpay_signature,
+        });
+      } catch (err) {
+        const e = err as RazorpayError;
+        // Razorpay reports a user closing the sheet as an error. Treat it as
+        // what it is — a cancellation — rather than alarming them with a
+        // failure toast for something they chose to do.
+        const cancelled =
+          String(e?.code) === "0" ||
+          /cancel/i.test(e?.description ?? "") ||
+          /cancel/i.test(e?.error?.reason ?? "");
+        showToast(
+          cancelled ? t("billing.checkoutCancelled") : (e?.description ?? t("billing.checkoutFailed")),
+          cancelled ? "info" : "error",
+        );
+        // The order stays INITIATED and is simply never captured; the next
+        // attempt creates a fresh one.
+        void utils.subscription.history.invalidate();
+      }
     },
     onError: (e) => showToast(toErrorMessage(e, t), "error"),
   });
@@ -210,7 +259,9 @@ export default function Billing() {
               }
               variant={p.isCurrent ? "outline" : "primary"}
               size="sm"
-              loading={checkout.isPending && checkout.variables?.planId === p.id}
+              loading={
+                (checkout.isPending && checkout.variables?.planId === p.id) || verify.isPending
+              }
               onPress={() => checkout.mutate({ planId: p.id })}
             />
           </Card>

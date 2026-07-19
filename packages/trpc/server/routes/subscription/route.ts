@@ -135,6 +135,35 @@ export const subscriptionRouter = router({
     )
     .mutation(({ ctx, input }) => subscriptionService.createCheckout(ctx.user, input)),
 
+  verify: adminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: subPath("verify"),
+        tags: ["Billing"],
+        summary: "Confirm a checkout the client just completed",
+        description:
+          "Called by the app with the handoff Razorpay's checkout SDK returns on success. The " +
+          "signature is an HMAC of 'order_id|payment_id' with our key secret, which only the " +
+          "server holds, so a client cannot forge it. This is a fast path for immediate UI " +
+          "feedback, NOT the source of truth — a client that closes the app mid-payment never " +
+          "calls it and the webhook settles that case anyway. Both routes run the same " +
+          "activation and whichever arrives second is a no-op. Errors: 401 if the signature " +
+          "does not verify, 403 if not an admin, 404 if the order is unknown or belongs to " +
+          "another society.",
+        protect: true,
+      },
+    })
+    .input(
+      z.object({
+        orderId: z.string().describe("razorpay_order_id from the checkout callback"),
+        paymentId: z.string().describe("razorpay_payment_id from the checkout callback"),
+        signature: z.string().describe("razorpay_signature from the checkout callback"),
+      }),
+    )
+    .output(SubscriptionModel)
+    .mutation(({ ctx, input }) => subscriptionService.verifyCheckout(ctx.user, input)),
+
   history: adminProcedure
     .meta({
       openapi: {

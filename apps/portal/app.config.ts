@@ -30,6 +30,25 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: "com.prangan.app",
     supportsTablet: true,
+    infoPlist: {
+      /**
+       * iOS refuses to report an app as installed unless its scheme is
+       * declared here. Razorpay's checkout uses this to decide which UPI apps
+       * to offer — without it the UPI option looks broken on iOS even when the
+       * user has the app, and they are pushed to card instead.
+       *
+       * Only affects the subscription checkout; resident UPI payments use
+       * their own intent link from UpiPaySheet.
+       */
+      LSApplicationQueriesSchemes: [
+        "tez", // Google Pay
+        "phonepe",
+        "paytmmp", // Paytm
+        "bhim",
+        "credpay",
+        "upi",
+      ],
+    },
   },
   android: {
     package: "com.prangan.app",

@@ -819,7 +819,6 @@
     "cancelTitle": "Cancel subscription?",
     "cancelConfirm": "You'll keep full access until {{date}} — the period you've already paid for. Nothing is refunded and nothing is cut short.",
     "cancelledToast": "Subscription cancelled — access continues to the end of the paid period",
-    "checkoutStarted": "Order created ({{orderId}}). Payment checkout is not wired into the app yet.",
     "graceTitle": "Payment overdue",
     "graceBody": "Your plan has ended but everything still works until {{date}}. Renew before then to avoid interruption.",
     "expiredTitle": "Subscription expired",
@@ -838,6 +837,9 @@
       "FAILED": "Failed",
       "PENDING_VERIFICATION": "Pending",
       "REJECTED": "Rejected"
-    }
+    },
+    "paidToast": "Payment successful — your plan is active",
+    "checkoutCancelled": "Payment cancelled",
+    "checkoutFailed": "Payment could not be completed"
   }
 }

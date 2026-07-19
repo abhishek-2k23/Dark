@@ -121,6 +121,34 @@ export async function createOrder(input: {
 // ---------------------------------------------------------------------------
 
 /**
+ * Verify the handoff the Razorpay checkout SDK gives the client on success.
+ *
+ * The SDK hands the app `razorpay_order_id`, `razorpay_payment_id` and
+ * `razorpay_signature`. The signature is an HMAC of `order_id|payment_id` with
+ * our key secret — which only the server holds — so a client cannot forge one.
+ *
+ * This exists purely so the app can confirm immediately instead of waiting on
+ * a webhook that may take seconds. It is NOT the source of truth: a client can
+ * simply never call it (close the app mid-payment), so the webhook remains
+ * authoritative and both paths converge on the same state.
+ */
+export function verifyCheckoutSignature(input: {
+  orderId: string;
+  paymentId: string;
+  signature: string;
+}): boolean {
+  const { keySecret } = credentials();
+  const expected = crypto
+    .createHmac("sha256", keySecret)
+    .update(`${input.orderId}|${input.paymentId}`)
+    .digest("hex");
+  const given = Buffer.from(input.signature);
+  const want = Buffer.from(expected);
+  // Length check first: timingSafeEqual throws on a length mismatch.
+  return given.length === want.length && crypto.timingSafeEqual(given, want);
+}
+
+/**
  * Verify a Razorpay webhook.
  *
  * The signature is an HMAC-SHA256 over the RAW request body. It must be the
