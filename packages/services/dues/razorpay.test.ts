@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
 
-import { isConfigured, toPaise, fromPaise, verifyWebhookSignature } from "./razorpay";
+import {
+  buildReceipt,
+  isConfigured,
+  toPaise,
+  fromPaise,
+  verifyWebhookSignature,
+  MAX_RECEIPT_LENGTH,
+} from "./razorpay";
 
 /**
  * Pure-function coverage for the Razorpay layer: money arithmetic and webhook
@@ -33,6 +40,36 @@ describe("money conversion", () => {
 
   it("round-trips", () => {
     expect(fromPaise(toPaise(1234.56))).toBe(1234.56);
+  });
+});
+
+describe("receipt length", () => {
+  it("stays inside Razorpay's 40-character limit for a cuid", () => {
+    // The original `sub_${cuid}_${Date.now()}` was 43 chars and Razorpay
+    // rejected every checkout with "receipt: the length must be no more
+    // than 40". Nothing local caught it — only a real order does.
+    const cuid = "cmrqtsbs100013bf0f8lb00pg"; // 25 chars, a real one
+    const receipt = buildReceipt("sub", cuid);
+    expect(receipt.length).toBeLessThanOrEqual(MAX_RECEIPT_LENGTH);
+  });
+
+  it("stays inside the limit even for an absurdly long id and prefix", () => {
+    const receipt = buildReceipt("sub", "x".repeat(200));
+    expect(receipt.length).toBeLessThanOrEqual(MAX_RECEIPT_LENGTH);
+  });
+
+  it("remains traceable back to the record", () => {
+    const receipt = buildReceipt("sub", "cmrqtsbs100013bf0f8lb00pg");
+    expect(receipt.startsWith("sub_")).toBe(true);
+    // The tail of the id survives, so a dashboard receipt can be grepped.
+    expect(receipt).toContain("3bf0f8lb00pg".slice(-10));
+  });
+
+  it("throws loudly rather than silently truncating past the limit", () => {
+    // Truncating would produce an order we cannot trace back. A prefix long
+    // enough to blow the budget is a programming error, so it should surface
+    // as one here rather than as a rejected checkout in the app.
+    expect(() => buildReceipt("x".repeat(60), "abc")).toThrow(/40/);
   });
 });
 

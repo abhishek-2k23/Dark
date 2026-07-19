@@ -215,7 +215,7 @@ export async function createCheckout(
 
   const order = await razorpay.createOrder({
     amountRupees: Number(plan.price),
-    receipt: `sub_${subscription.id}_${Date.now()}`,
+    receipt: razorpay.buildReceipt("sub", subscription.id),
     notes: { societyId, subscriptionId: subscription.id, planId: plan.id },
   });
 

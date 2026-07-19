@@ -97,6 +97,36 @@ export interface RazorpayOrder {
 }
 
 /**
+ * Razorpay rejects a receipt longer than this. A cuid is 25 characters, so any
+ * `prefix_${cuid}_${timestamp}` scheme silently blows the budget — which is
+ * exactly how this was first found, as a failed checkout in the app rather
+ * than anything visible locally.
+ */
+export const MAX_RECEIPT_LENGTH = 40;
+
+/**
+ * Build a receipt that fits Razorpay's limit.
+ *
+ * The receipt is only for our own reconciliation in their dashboard; the
+ * authoritative linkage lives in `notes` (societyId, subscriptionId, planId)
+ * and in our own `razorpayOrderId` column. So a short, unique, roughly
+ * traceable token is enough — the tail of the id keeps it greppable without
+ * spending 25 characters on it.
+ */
+export function buildReceipt(prefix: string, id: string): string {
+  const receipt = `${prefix}_${id.slice(-10)}_${Date.now().toString(36)}`;
+  if (receipt.length > MAX_RECEIPT_LENGTH) {
+    // Unreachable with the current inputs, but this is a silent-failure class
+    // of bug: better a loud error here than a rejected order at checkout.
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `Receipt "${receipt}" is ${receipt.length} chars; Razorpay allows ${MAX_RECEIPT_LENGTH}`,
+    });
+  }
+  return receipt;
+}
+
+/**
  * A plain order for a subscription purchase.
  *
  * No `transfers` array: the money is ours, so there is nothing to split. That
@@ -105,9 +135,16 @@ export interface RazorpayOrder {
  */
 export async function createOrder(input: {
   amountRupees: number;
+  /** Max 40 chars — build it with `buildReceipt`. */
   receipt: string;
   notes?: Record<string, string>;
 }): Promise<RazorpayOrder> {
+  if (input.receipt.length > MAX_RECEIPT_LENGTH) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: `Receipt is ${input.receipt.length} chars; Razorpay allows ${MAX_RECEIPT_LENGTH}`,
+    });
+  }
   return call<RazorpayOrder>("POST", "/v1/orders", {
     amount: toPaise(input.amountRupees),
     currency: "INR",
