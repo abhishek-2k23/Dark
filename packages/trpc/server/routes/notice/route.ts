@@ -1,7 +1,7 @@
 import { noticeService } from "@repo/services";
 
 import { z } from "../../schema";
-import { adminProcedure, protectedProcedure, router } from "../../trpc";
+import { adminProcedure, subscribedAdminProcedure, protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
 const path = generatePath("v1/notices");
@@ -74,7 +74,7 @@ const SuccessModel = z.object({
 });
 
 export const noticeRouter = router({
-  create: adminProcedure
+  create: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -92,7 +92,7 @@ export const noticeRouter = router({
     .output(NoticeModel)
     .mutation(({ ctx, input }) => noticeService.createNotice(ctx.user, input)),
 
-  update: adminProcedure
+  update: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "PATCH",
@@ -110,7 +110,7 @@ export const noticeRouter = router({
     .output(NoticeModel)
     .mutation(({ ctx, input }) => noticeService.updateNotice(ctx.user, input)),
 
-  delete: adminProcedure
+  delete: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "DELETE",

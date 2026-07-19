@@ -13,10 +13,11 @@ import { ticketRouter } from "./routes/helpdesk/route";
 import { noticeRouter } from "./routes/notice/route";
 import { pollRouter } from "./routes/poll/route";
 import { amenityRouter, amenityBookingRouter } from "./routes/amenity/route";
-import { dueRouter, paymentRouter } from "./routes/dues/route";
+import { dueRouter, paymentRouter, serviceBillRouter } from "./routes/dues/route";
 import { serviceProviderRouter } from "./routes/directory/route";
 import { pushTokenRouter, notificationRouter } from "./routes/notification/route";
 import { uploadRouter } from "./routes/upload/route";
+import { planRouter, subscriptionRouter } from "./routes/subscription/route";
 
 export const serverRouter = router({
   health: healthRouter,
@@ -41,10 +42,13 @@ export const serverRouter = router({
   amenityBooking: amenityBookingRouter,
   due: dueRouter,
   payment: paymentRouter,
+  serviceBill: serviceBillRouter,
   serviceProvider: serviceProviderRouter,
   pushToken: pushTokenRouter,
   notification: notificationRouter,
   upload: uploadRouter,
+  plan: planRouter,
+  subscription: subscriptionRouter,
 });
 
 export { createContext } from "./context";

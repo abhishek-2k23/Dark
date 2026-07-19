@@ -1,7 +1,7 @@
 import { residentService } from "@repo/services";
 
 import { phoneSchema, z } from "../../schema";
-import { adminProcedure, router } from "../../trpc";
+import { adminProcedure, subscribedAdminProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
 const path = generatePath("v1/residents");
@@ -74,7 +74,7 @@ const ActiveStateModel = z.object({
 // ---------------------------------------------------------------------------
 
 export const residentRouter = router({
-  invite: adminProcedure
+  invite: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -120,7 +120,7 @@ export const residentRouter = router({
     )
     .query(({ ctx, input }) => residentService.listResidents(ctx.user, input)),
 
-  deactivate: adminProcedure
+  deactivate: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -140,7 +140,7 @@ export const residentRouter = router({
       residentService.setResidentActive(ctx.user, { userId: input.userId, isActive: false }),
     ),
 
-  reactivate: adminProcedure
+  reactivate: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",

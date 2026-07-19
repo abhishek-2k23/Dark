@@ -1,7 +1,7 @@
 import { pollService } from "@repo/services";
 
 import { z } from "../../schema";
-import { adminProcedure, protectedProcedure, residentProcedure, router } from "../../trpc";
+import { adminProcedure, subscribedAdminProcedure, protectedProcedure, residentProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
 const path = generatePath("v1/polls");
@@ -83,7 +83,7 @@ const ListPollsInput = z.object({
 });
 
 export const pollRouter = router({
-  create: adminProcedure
+  create: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",

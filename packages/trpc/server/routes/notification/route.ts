@@ -28,6 +28,14 @@ const NotificationTypeEnum = z
     "PAYMENT_VERIFIED",
     "PAYMENT_REJECTED",
     "BOOKING_CONFIRMED",
+    "SERVICE_BILL_RAISED",
+    "SERVICE_PAYMENT_REVERSED",
+    "BOOKING_PAYMENT_EXPIRED",
+    "PAYOUT_ACTIVATED",
+    "PAYOUT_TRANSFER_FAILED",
+    "SUBSCRIPTION_ACTIVATED",
+    "SUBSCRIPTION_EXPIRING",
+    "SUBSCRIPTION_EXPIRED",
     "GENERAL",
   ])
   .describe("What event produced this notification");

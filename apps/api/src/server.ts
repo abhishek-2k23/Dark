@@ -9,6 +9,7 @@ import { createOpenApiExpressMiddleware } from "trpc-to-openapi";
 import { apiReference } from "@scalar/express-api-reference";
 
 import { serverRouter, createContext } from "@repo/trpc/server";
+import { subscriptionService } from "@repo/services";
 
 import { env } from "./env";
 import { openApiDocument } from "./openapi";
@@ -51,6 +52,46 @@ if (env.NODE_ENV !== "prod") {
 // Prod with no ALLOWED_ORIGINS sends no CORS headers at all: browsers are
 // locked out cross-origin, while native mobile clients (which send no Origin
 // header) are unaffected.
+
+/**
+ * Razorpay's webhook signature is an HMAC over the RAW request body, so this
+ * route has to see the exact bytes Razorpay sent. It is registered BEFORE
+ * express.json() — once the JSON parser round-trips the body, key order and
+ * whitespace change and every signature check fails. This is the single most
+ * common way the integration breaks, hence the placement and this comment.
+ */
+app.post(
+  "/webhooks/razorpay",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const signature = req.header("X-Razorpay-Signature");
+    if (!signature) {
+      res.status(400).json({ error: "Missing X-Razorpay-Signature" });
+      return;
+    }
+    try {
+      const result = await subscriptionService.handleRazorpayWebhook({
+        rawBody: Buffer.isBuffer(req.body) ? req.body.toString("utf8") : String(req.body),
+        signature,
+      });
+      // Always 200 on a verified delivery, handled or not: a non-2xx makes
+      // Razorpay retry an event we have deliberately ignored.
+      res.status(200).json(result);
+    } catch (err) {
+      const code = (err as { code?: string })?.code;
+      if (code === "UNAUTHORIZED") {
+        res.status(401).json({ error: "Invalid signature" });
+        return;
+      }
+      if (code === "PRECONDITION_FAILED") {
+        res.status(412).json({ error: "Webhooks are not configured" });
+        return;
+      }
+      logger.error("Razorpay webhook handling failed", { err });
+      res.status(500).json({ error: "Webhook handling failed" });
+    }
+  },
+);
 
 app.use(express.json());
 

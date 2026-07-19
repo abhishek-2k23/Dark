@@ -1,7 +1,7 @@
 import { staffService } from "@repo/services";
 
 import { phoneSchema, z, zodUndefinedModel } from "../../schema";
-import { adminProcedure, router } from "../../trpc";
+import { adminProcedure, subscribedAdminProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
 const path = generatePath("v1/staff");
@@ -44,7 +44,7 @@ const CreateStaffInput = z.object({
 });
 
 export const staffRouter = router({
-  create: adminProcedure
+  create: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",

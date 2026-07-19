@@ -3,6 +3,7 @@ import { OpenApiMeta } from "trpc-to-openapi";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { hasMinPermission } from "@repo/auth";
+import { subscriptionService } from "@repo/services";
 import type { Role } from "@repo/database";
 
 import { createContext } from "./context";
@@ -68,6 +69,42 @@ const hasRole = (role: Role) =>
 export const residentProcedure = protectedProcedure.use(hasRole("RESIDENT"));
 export const guardProcedure = protectedProcedure.use(hasRole("GUARD"));
 export const adminProcedure = protectedProcedure.use(hasRole("ADMIN"));
+
+/**
+ * Admin mutations that a lapsed subscription blocks.
+ *
+ * Reads stay open at every status — a society's data is never withheld, and an
+ * admin must always be able to see the billing screen that lets them fix this.
+ * Only writes pause, and only once GRACE has run out into EXPIRED, so a failed
+ * card never locks a paying customer out on the day.
+ *
+ * Residents and guards are unaffected by subscription state entirely: the
+ * society's own bill is not their problem, and stopping a guard logging a
+ * visitor because an invoice lapsed would be indefensible.
+ *
+ * Deliberately NOT applied to the billing routes themselves (that would trap
+ * an expired society with no way to pay) or to reads.
+ */
+export const subscribedAdminProcedure = adminProcedure.use(
+  tRPCContext.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "You must be logged in to do this" });
+    }
+    if (ctx.user.societyId) {
+      const writable = await subscriptionService.societyWritable(ctx.user.societyId);
+      if (!writable) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message:
+            "Your society's subscription has expired. Renew from Profile → Billing to make changes again. Residents are unaffected and your data is safe.",
+        });
+      }
+    }
+    // Re-assert the narrowed user, or the chain loses adminProcedure's
+    // non-null narrowing and every downstream handler sees `user | null`.
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);
 
 /**
  * Minimum-permission-level check using the gapped numeric levels from
