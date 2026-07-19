@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 
+import { NeedsAttention } from "@/components/NeedsAttention";
 import { SectionHeader } from "@/components/SectionHeader";
 import {
   Avatar,
@@ -157,6 +158,11 @@ export default function ResidentDashboard() {
         </GlassCard>
       )}
 
+      {/* Anything that happened to this resident and hasn't been seen — a
+          ticket the admin moved, a new notice, a due raised. Renders nothing
+          when they are caught up. */}
+      <NeedsAttention role="RESIDENT" inboxHref="/(resident)/notifications" />
+
       {/* Quick actions */}
       <View className="gap-3">
         <SectionHeader title={t("dashboard.quickActions")} />
@@ -205,7 +211,8 @@ export default function ResidentDashboard() {
             return (
               <GlassCard
                 key={n.id}
-                variant="neon"
+                variant="hero"
+                radius="3xl"
                 onPress={() => router.push(`/(resident)/notices/${n.id}`)}
                 padding="lg"
                 className="w-72 gap-1"
@@ -237,11 +244,11 @@ export default function ResidentDashboard() {
             );
           })}
           {notices.data && notices.data.items.length === 0 && (
-            <Card variant="outlined" className="w-72 items-center py-6">
+            <GlassCard radius="3xl" className="w-72 items-center py-6">
               <Text variant="bodySmall" color="secondary">
                 {t("notices.empty")}
               </Text>
-            </Card>
+            </GlassCard>
           )}
         </ScrollView>
       </View>

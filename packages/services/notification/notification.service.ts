@@ -159,11 +159,13 @@ function toNotificationInfo(n: {
 
 export async function listNotifications(
   actor: User,
-  input: { cursor?: string; limit: number },
+  input: { cursor?: string; limit: number; unreadOnly?: boolean },
 ): Promise<{ items: NotificationInfo[]; nextCursor: string | null; unreadCount: number }> {
+  // `unreadCount` is deliberately counted unfiltered: it drives the bell badge,
+  // which must mean the same thing whichever way the list was asked for.
   const [notifications, unreadCount] = await Promise.all([
     prisma.notification.findMany({
-      where: { userId: actor.id },
+      where: { userId: actor.id, ...(input.unreadOnly ? { isRead: false } : {}) },
       orderBy: { createdAt: "desc" },
       take: input.limit + 1,
       ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
