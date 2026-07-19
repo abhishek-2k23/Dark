@@ -70,7 +70,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         backgroundColor: "#050508",
         image: "./assets/images/splash-icon.png",
-        imageWidth: 76,
+        // 76 was Expo's stock value for its own small mark. The Portl logo is
+        // a 1024px square that reads as a house arch — at 76 it was a speck.
+        imageWidth: 200,
+        dark: {
+          backgroundColor: "#050508",
+          image: "./assets/images/splash-icon.png",
+          imageWidth: 200,
+        },
       },
     ],
     "expo-localization",

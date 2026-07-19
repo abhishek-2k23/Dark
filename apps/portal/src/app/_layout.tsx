@@ -16,10 +16,11 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsListener } from "@/components/NotificationsListener";
 import { DialogHost } from "@/components/DialogHost";
@@ -57,6 +58,25 @@ function ThemedStack() {
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
       }}
+    />
+  );
+}
+
+/**
+ * Bridges the native launch screen and the app.
+ *
+ * Mounts inside ThemeProvider (it reads theme colours) and unmounts itself for
+ * good once the hand-off finishes — a splash that can reappear mid-session
+ * would be a bug, not a flourish.
+ */
+function SplashGate() {
+  const authStatus = useAuthStore((s) => s.status);
+  const [done, setDone] = useState(false);
+  if (done) return null;
+  return (
+    <AnimatedSplash
+      loading={authStatus === "loading"}
+      onDone={() => setDone(true)}
     />
   );
 }
@@ -105,6 +125,8 @@ export default function RootLayout() {
               <DialogHost />
               {/* After DialogHost so toasts stay visible above an open dialog. */}
               <ToastHost />
+              {/* Last child: it veils everything until hydration settles. */}
+              <SplashGate />
             </LanguageProvider>
           </ThemeProvider>
         </TRPCProvider>
