@@ -1,125 +1,192 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
 import Animated, {
   Easing,
   runOnJS,
+  useAnimatedProps,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSequence,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 
+import { Text } from "@/components/ui";
 import { useTheme } from "@/theme";
+import { LOGO_OUTLINE, LOGO_VIEWBOX } from "./logoPath";
 
 /**
  * The splash that bridges the native launch screen and the app.
  *
- * A single breath: the mark fades in, its glow swells and settles, then the
- * whole thing lifts a little and hands off. It exists to cover work we already
- * wait on (fonts, auth hydration) rather than to add ceremony — so it never
- * delays a ready app beyond one complete beat.
- */
-
-const AnimatedSvg = Animated.createAnimatedComponent(Svg);
-
-const FADE_IN_MS = 350;
-const GLOW_SWELL_MS = 450;
-const SETTLE_MS = 300;
-const HAND_OFF_MS = 260;
-
-/**
- * One complete breath. Guaranteed even when hydration finishes instantly.
+ * The mark is built rather than shown: its outline draws itself on, then the
+ * gradient artwork fills in behind the completed stroke. The outline is the
+ * real brand geometry — traced from the logo bitmap's alpha channel, not
+ * redrawn — so the drawn shape and the filled artwork line up exactly.
  *
- * "Only animate while loading is pending" on its own means a fast device shows
- * a half-drawn frame and cuts, which reads as a glitch rather than a splash.
- * Derived from the phases above so retiming one cannot leave this stale.
+ * The whole build is under three seconds and runs in the foreground while auth
+ * hydration happens behind it. Neither gates the other. Copy appears only once
+ * the build has finished AND there is still something to wait for.
  */
-const MIN_BEAT_MS = FADE_IN_MS + GLOW_SWELL_MS + SETTLE_MS;
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+// --- Build phases (must total under 3s) -------------------------------------
+const RISE_MS = 320; // container scales and fades in
+const DRAW_MS = 1350; // outline strokes itself on
+const FILL_MS = 620; // gradient artwork fades in behind it
+const SETTLE_MS = 300; // stroke recedes, mark rests
+const BUILD_MS = RISE_MS + DRAW_MS + FILL_MS + SETTLE_MS; // 2590ms
+
+const HAND_OFF_MS = 280;
+
+/** Generous over-estimate of the outline length; exactness is not required, it
+ *  only has to exceed the true length so the dash fully hides the stroke. */
+const STROKE_LEN = 6000;
+
+const LINE_HOLD_MS = 1900;
+const LINE_ENTER_MS = 380;
+
+/** Fisher–Yates. A fixed order would make the first line feel like a title. */
+function shuffle<T>(input: T[]): T[] {
+  const out = [...input];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+function SplashLine({ text }: { text: string }) {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(14);
+
+  useEffect(() => {
+    opacity.value = withTiming(1, { duration: LINE_ENTER_MS, easing: Easing.out(Easing.quad) });
+    translateY.value = withTiming(0, {
+      duration: LINE_ENTER_MS,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [opacity, translateY]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+
+  return (
+    <Animated.View style={style}>
+      <Text variant="bodySmall" color="secondary" style={styles.line}>
+        {text}
+      </Text>
+    </Animated.View>
+  );
+}
 
 export function AnimatedSplash({
   loading,
   onDone,
 }: {
-  /** Still hydrating. The splash holds past its beat while this is true. */
+  /** Still hydrating. The splash holds past the build while this is true. */
   loading: boolean;
   onDone: () => void;
 }) {
+  const { t } = useTranslation();
   const { colors, scheme } = useTheme();
   const { width, height } = useWindowDimensions();
 
-  const markOpacity = useSharedValue(0);
-  const markScale = useSharedValue(0.92);
-  const glowOpacity = useSharedValue(0);
-  const glowScale = useSharedValue(0.7);
-  const veil = useSharedValue(1);
-  const mountedAt = useRef(Date.now());
+  const iconSize = Math.min(Math.min(width, height) * 0.56, 320);
 
-  // The beat runs once on mount, independent of `loading` — otherwise a fast
-  // hydration cuts it mid-swell.
+  const containerOpacity = useSharedValue(0);
+  const containerScale = useSharedValue(0.86);
+  const dash = useSharedValue(STROKE_LEN); // full offset = nothing drawn
+  const strokeOpacity = useSharedValue(0);
+  const artOpacity = useSharedValue(0);
+  const veil = useSharedValue(1);
+
+  const mountedAt = useRef(Date.now());
+  const [buildDone, setBuildDone] = useState(false);
+
+  const lines = useMemo(() => {
+    const raw = t("splash.lines", { returnObjects: true });
+    return shuffle(Array.isArray(raw) ? (raw as string[]) : []);
+  }, [t]);
+  const [lineIndex, setLineIndex] = useState(0);
+
+  // The build runs start to finish regardless of how fast the network
+  // resolves — interrupting it halfway looks like a glitch.
   useEffect(() => {
-    markOpacity.value = withTiming(1, {
-      duration: FADE_IN_MS,
+    containerOpacity.value = withTiming(1, {
+      duration: RISE_MS,
       easing: Easing.out(Easing.cubic),
     });
-    markScale.value = withSequence(
-      withTiming(1, { duration: FADE_IN_MS + GLOW_SWELL_MS, easing: Easing.out(Easing.cubic) }),
-      // A touch past 1 on the way out, so the hand-off feels like a lift
-      // rather than a cut.
-      withDelay(0, withTiming(1.04, { duration: SETTLE_MS, easing: Easing.inOut(Easing.quad) })),
+    containerScale.value = withTiming(1, { duration: RISE_MS, easing: Easing.out(Easing.cubic) });
+
+    strokeOpacity.value = withTiming(1, { duration: RISE_MS });
+    // The draw itself: the dash offset unwinds, so the outline appears to be
+    // traced rather than faded in.
+    dash.value = withDelay(
+      RISE_MS,
+      withTiming(0, { duration: DRAW_MS, easing: Easing.inOut(Easing.cubic) }),
     );
 
-    // The breath itself: in, then partly out, so it settles rather than
-    // strobing back to nothing.
-    glowOpacity.value = withDelay(
-      FADE_IN_MS - 120,
-      withSequence(
-        withTiming(1, { duration: GLOW_SWELL_MS, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0.4, { duration: SETTLE_MS, easing: Easing.inOut(Easing.sin) }),
-      ),
+    // Artwork arrives once the outline is closed, so the mark reads as being
+    // filled in rather than cross-fading over a half-drawn shape.
+    artOpacity.value = withDelay(
+      RISE_MS + DRAW_MS,
+      withTiming(1, { duration: FILL_MS, easing: Easing.out(Easing.quad) }),
     );
-    glowScale.value = withDelay(
-      FADE_IN_MS - 120,
-      withTiming(1.15, { duration: GLOW_SWELL_MS + SETTLE_MS, easing: Easing.out(Easing.quad) }),
+    // …and the stroke recedes once the fill carries the shape.
+    strokeOpacity.value = withDelay(
+      RISE_MS + DRAW_MS + FILL_MS * 0.6,
+      withTiming(0, { duration: SETTLE_MS + FILL_MS * 0.4, easing: Easing.inOut(Easing.quad) }),
     );
-  }, [markOpacity, markScale, glowOpacity, glowScale]);
 
-  // Exit once BOTH the beat has completed and loading has finished — whichever
-  // is later. On a slow start this waits; on a fast one it still shows a whole
-  // breath.
+    const timer = setTimeout(() => setBuildDone(true), BUILD_MS);
+    return () => clearTimeout(timer);
+  }, [containerOpacity, containerScale, dash, strokeOpacity, artOpacity]);
+
+  const showLines = buildDone && loading && lines.length > 0;
+
+  useEffect(() => {
+    if (!showLines || lines.length < 2) return;
+    const id = setInterval(() => setLineIndex((i) => (i + 1) % lines.length), LINE_HOLD_MS);
+    return () => clearInterval(id);
+  }, [showLines, lines.length]);
+
+  const finish = useCallback(() => onDone(), [onDone]);
+
   useEffect(() => {
     if (loading) return;
-    // Time already spent counts toward the beat. Without this, a slow start
-    // that outlasts the animation would then wait a *second* full beat before
-    // handing off — the opposite of "never add wait".
-    const remaining = Math.max(0, MIN_BEAT_MS - (Date.now() - mountedAt.current));
+    // Elapsed time counts toward the build, so a slow start hands off
+    // immediately rather than waiting out a second one.
+    const remaining = Math.max(0, BUILD_MS - (Date.now() - mountedAt.current));
     const timer = setTimeout(() => {
       veil.value = withTiming(
         0,
         { duration: HAND_OFF_MS, easing: Easing.in(Easing.quad) },
-        (finished) => {
-          if (finished) runOnJS(onDone)();
+        (done) => {
+          if (done) runOnJS(finish)();
         },
       );
     }, remaining);
     return () => clearTimeout(timer);
-  }, [loading, onDone, veil]);
+  }, [loading, finish, veil]);
 
   const veilStyle = useAnimatedStyle(() => ({ opacity: veil.value }));
-  const markStyle = useAnimatedStyle(() => ({
-    opacity: markOpacity.value,
-    transform: [{ scale: markScale.value }],
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: containerOpacity.value,
+    transform: [{ scale: containerScale.value }],
   }));
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-    transform: [{ scale: glowScale.value }],
+  const artStyle = useAnimatedStyle(() => ({ opacity: artOpacity.value }));
+  const pathProps = useAnimatedProps(() => ({
+    strokeDashoffset: dash.value,
+    strokeOpacity: strokeOpacity.value,
   }));
 
-  // Matches the native splash background exactly in dark, so the handoff from
+  // Matches the native splash background exactly in dark, so the hand-off from
   // the OS launch screen to this one is invisible.
   const background = scheme === "dark" ? "#050508" : colors.background;
-  const glowSize = Math.min(width, height) * 0.9;
 
   return (
     <Animated.View
@@ -127,30 +194,40 @@ export function AnimatedSplash({
       pointerEvents="none"
     >
       <View style={styles.center}>
-        {/* A real radial falloff rather than a stack of translucent circles —
-            SVG gradients are GPU-cheap and avoid visible banding on OLED. */}
-        <Animated.View style={[styles.glow, { width: glowSize, height: glowSize }, glowStyle]}>
-          <AnimatedSvg width={glowSize} height={glowSize}>
-            <Defs>
-              <RadialGradient id="splashGlow" cx="50%" cy="50%" r="50%">
-                {/* The mark's own gradient endpoints, so the glow reads as
-                    light coming off the logo rather than a coloured disc. */}
-                <Stop offset="0%" stopColor={colors.primary} stopOpacity="0.55" />
-                <Stop offset="45%" stopColor={colors.primary} stopOpacity="0.18" />
-                <Stop offset="100%" stopColor={colors.primary} stopOpacity="0" />
-              </RadialGradient>
-            </Defs>
-            <Rect width="100%" height="100%" fill="url(#splashGlow)" />
-          </AnimatedSvg>
+        <Animated.View style={[{ width: iconSize, height: iconSize }, containerStyle]}>
+          {/* Artwork sits under the stroke so the outline stays crisp while it
+              draws, then takes over as the stroke recedes. */}
+          <Animated.View style={[StyleSheet.absoluteFill, artStyle]}>
+            <Image
+              source={require("../../assets/images/splash-icon.png")}
+              style={{ width: iconSize, height: iconSize }}
+              resizeMode="contain"
+            />
+          </Animated.View>
+
+          <Svg
+            width={iconSize}
+            height={iconSize}
+            viewBox={`0 0 ${LOGO_VIEWBOX} ${LOGO_VIEWBOX}`}
+            style={StyleSheet.absoluteFill}
+          >
+            <AnimatedPath
+              d={LOGO_OUTLINE}
+              fill="none"
+              stroke={colors.primary}
+              strokeWidth={10}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeDasharray={STROKE_LEN}
+              animatedProps={pathProps}
+            />
+          </Svg>
         </Animated.View>
 
-        <Animated.View style={markStyle}>
-          <Image
-            source={require("../../assets/images/splash-icon.png")}
-            style={styles.mark}
-            resizeMode="contain"
-          />
-        </Animated.View>
+        {/* Fixed height so the copy appearing cannot shift the mark. */}
+        <View style={styles.lineSlot}>
+          {showLines && <SplashLine key={lineIndex} text={lines[lineIndex % lines.length]!} />}
+        </View>
       </View>
     </Animated.View>
   );
@@ -158,6 +235,12 @@ export function AnimatedSplash({
 
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  glow: { position: "absolute", alignItems: "center", justifyContent: "center" },
-  mark: { width: 160, height: 160 },
+  lineSlot: {
+    height: 44,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    overflow: "hidden",
+  },
+  line: { textAlign: "center" },
 });

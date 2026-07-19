@@ -841,5 +841,21 @@
     "paidToast": "Payment successful — your plan is active",
     "checkoutCancelled": "Payment cancelled",
     "checkoutFailed": "Payment could not be completed"
+  },
+  "splash": {
+    "lines": [
+      "Waking up the watchman",
+      "Counting the flats, twice",
+      "Chasing last month's dues",
+      "Untangling the visitor register",
+      "Reminding 3B about parking",
+      "Watering the society garden",
+      "Sorting the notice board",
+      "Convincing the lift to work",
+      "Finding the spare gate key",
+      "Filing complaints about complaints",
+      "Rounding up committee members",
+      "Booking the hall for Diwali"
+    ]
   }
 }
