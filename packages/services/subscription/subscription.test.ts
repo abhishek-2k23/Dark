@@ -163,6 +163,42 @@ describe("checkout guards", () => {
   });
 });
 
+describe("an abandoned checkout", () => {
+  // Checkout has to create the Subscription row up front so the in-flight
+  // SubscriptionPayment has a target. That row must not read as a live plan:
+  // opening Razorpay and walking away is not buying anything.
+  it("leaves the society reporting NONE, owning no plan", async () => {
+    await prisma.subscription.create({
+      data: {
+        societyId,
+        planId: starterPlanId,
+        status: "TRIALING",
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(),
+        // activatedAt intentionally unset — nothing has been captured.
+      },
+    });
+    await pendingPayment(starterPlanId, `order_${runId}_abandoned`);
+
+    try {
+      const sub = await subscriptionService.getSubscription(admin);
+      expect(sub.status).toBe("NONE");
+      expect(sub.id).toBeNull();
+      expect(sub.planName).toBeNull();
+
+      // The picker must not badge the abandoned plan as current either.
+      const plans = await subscriptionService.listPlans(admin);
+      expect(plans.filter((p) => p.code.includes(runId)).every((p) => !p.isCurrent)).toBe(true);
+
+      // Nor may it be cancelled — there is nothing to cancel.
+      await expectTRPCError(subscriptionService.cancelSubscription(admin), "NOT_FOUND");
+    } finally {
+      await prisma.subscriptionPayment.deleteMany({ where: { subscription: { societyId } } });
+      await prisma.subscription.deleteMany({ where: { societyId } });
+    }
+  });
+});
+
 describe("webhook activates the subscription", () => {
   it("ignores a body whose signature does not match", async () => {
     const { rawBody } = webhook("payment.captured", "order_x", "pay_x", `evt-bad-${runId}`);
@@ -411,6 +447,40 @@ describe("payment history", () => {
     expect(history.items.map((p) => p.status)).toContain("SUCCESS");
     const times = history.items.map((p) => new Date(p.createdAt).getTime());
     expect([...times].sort((a, b) => b - a)).toEqual(times);
+  });
+
+  it("narrows to a single outcome when asked, leaking no other status", async () => {
+    const all = await subscriptionService.paymentHistory(admin, { limit: 50 });
+    // Guard the guard: if the suite above stopped producing a mix, a filter
+    // that silently ignored its input would still pass every assertion below.
+    expect(new Set(all.items.map((p) => p.status)).size).toBeGreaterThan(1);
+
+    for (const status of ["SUCCESS", "FAILED"] as const) {
+      const only = await subscriptionService.paymentHistory(admin, { limit: 50, status });
+      expect(only.items.length).toBeGreaterThan(0);
+      expect(only.items.every((p) => p.status === status)).toBe(true);
+      expect(only.items.length).toBe(all.items.filter((p) => p.status === status).length);
+    }
+  });
+
+  it("paginates within a filter rather than across the whole history", async () => {
+    const status = "SUCCESS" as const;
+    const total = (await subscriptionService.paymentHistory(admin, { limit: 50, status })).items;
+    if (total.length < 2) return; // nothing to page through
+
+    const first = await subscriptionService.paymentHistory(admin, { limit: 1, status });
+    expect(first.items.length).toBe(1);
+    expect(first.nextCursor).not.toBeNull();
+    expect(first.items[0]!.status).toBe(status);
+
+    const second = await subscriptionService.paymentHistory(admin, {
+      limit: 1,
+      status,
+      cursor: first.nextCursor!,
+    });
+    // The page-two row must still honour the filter and not repeat page one.
+    expect(second.items[0]!.status).toBe(status);
+    expect(second.items[0]!.id).not.toBe(first.items[0]!.id);
   });
 });
 

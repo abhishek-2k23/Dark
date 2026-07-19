@@ -856,6 +856,14 @@ model Subscription {
    */
   graceEndsAt DateTime?
   cancelledAt DateTime?
+  /**
+   * When the first payment was captured. Null means the row exists only to
+   * anchor an in-flight checkout's SubscriptionPayment FK — the society has
+   * never paid, so it is reported as NONE and owns no plan. Stamped once, in
+   * applyCapture, and never cleared: it marks "has ever been paid for", not
+   * "is currently active" (that is `status`).
+   */
+  activatedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

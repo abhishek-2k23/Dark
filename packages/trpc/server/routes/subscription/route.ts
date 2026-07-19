@@ -173,8 +173,8 @@ export const subscriptionRouter = router({
         summary: "Subscription payment history",
         description:
           "Every charge against the society's subscription, newest first, including failed " +
-          "and abandoned attempts. Cursor-paginated. Errors: 403 if not an admin, 412 if the " +
-          "account has no society.",
+          "and abandoned attempts, optionally narrowed to one outcome. Cursor-paginated. " +
+          "Errors: 403 if not an admin, 412 if the account has no society.",
         protect: true,
       },
     })
@@ -182,6 +182,10 @@ export const subscriptionRouter = router({
       z.object({
         limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
         cursor: z.string().describe("Id of the last payment from the previous page").optional(),
+        status: z
+          .enum(["INITIATED", "SUCCESS", "FAILED"])
+          .describe("Restrict to one outcome; omit for all")
+          .optional(),
       }),
     )
     .output(

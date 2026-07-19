@@ -10,6 +10,7 @@ export type LoadingVariant =
   | "dashboard"
   | "profile"
   | "detail"
+  | "billing"
   | "spinner";
 
 /** One list-row placeholder: leading circle + two text lines. */
@@ -77,6 +78,29 @@ const SKELETONS: Record<Exclude<LoadingVariant, "spinner">, () => React.JSX.Elem
         <RowSkeleton />
         <RowSkeleton />
         <RowSkeleton />
+      </View>
+    </View>
+  ),
+  /**
+   * Billing: current-plan card, a peeking row of plan cards, then history
+   * rows. The plan row is deliberately clipped rather than wrapped — it
+   * mirrors the real carousel, where the next card is part-visible.
+   */
+  billing: () => (
+    <View className="gap-4">
+      <Skeleton radius={16} className="h-28 w-full" />
+      <View className="gap-2.5">
+        <Skeleton className="h-3 w-20" />
+        <View className="flex-row gap-3 overflow-hidden">
+          <Skeleton radius={16} className="h-64 w-[72%]" />
+          <Skeleton radius={16} className="h-64 w-[72%]" />
+        </View>
+      </View>
+      <View className="gap-2.5">
+        <Skeleton className="h-3 w-24" />
+        {Array.from({ length: 3 }, (_, i) => (
+          <Skeleton key={i} radius={16} className="h-16 w-full" />
+        ))}
       </View>
     </View>
   ),

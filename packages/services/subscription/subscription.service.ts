@@ -3,6 +3,7 @@ import {
   prisma,
   type Prisma,
   type User,
+  type PaymentStatus,
   type SubscriptionStatus,
 } from "@repo/database";
 import { logger } from "@repo/logger";
@@ -64,8 +65,15 @@ export async function listPlans(actor: User): Promise<PlanInfo[]> {
   const societyId = actorSocietyId(actor);
   const [plans, subscription] = await Promise.all([
     prisma.plan.findMany({ where: { isActive: true }, orderBy: { sortOrder: "asc" } }),
-    prisma.subscription.findUnique({ where: { societyId }, select: { planId: true } }),
+    prisma.subscription.findUnique({
+      where: { societyId },
+      select: { planId: true, activatedAt: true },
+    }),
   ]);
+
+  // An unpaid row owns no plan — otherwise abandoning a checkout would leave
+  // that plan badged "current" in the picker.
+  const currentPlanId = subscription?.activatedAt ? subscription.planId : null;
 
   return plans.map((p) => ({
     id: p.id,
@@ -76,7 +84,7 @@ export async function listPlans(actor: User): Promise<PlanInfo[]> {
     intervalMonths: p.intervalMonths,
     features: p.features,
     maxFlats: p.maxFlats,
-    isCurrent: subscription?.planId === p.id,
+    isCurrent: currentPlanId === p.id,
   }));
 }
 
@@ -121,7 +129,12 @@ export async function getSubscription(actor: User): Promise<SubscriptionInfo> {
     include: { plan: true },
   });
 
-  if (!sub) {
+  // `!sub.activatedAt` is the same case as `!sub`: checkout creates the row
+  // ahead of payment purely so the SubscriptionPayment FK has a target, so an
+  // abandoned checkout leaves one behind that has never been paid for. It must
+  // not surface as a plan — reporting it would tell an admin they are on a
+  // plan they never bought.
+  if (!sub || !sub.activatedAt) {
     // A society that has never subscribed is not blocked — onboarding a
     // society and billing it are separate concerns, and locking one out
     // before it has ever seen a plan would be absurd.
@@ -198,8 +211,9 @@ export async function createCheckout(
   }
 
   // A subscription row must exist before a payment can point at it. A society
-  // buying for the first time gets one in TRIALING with a period that has
-  // already ended — it becomes real only when the webhook lands.
+  // buying for the first time gets one with a zero-length period and a null
+  // activatedAt, which reads as NONE everywhere until applyCapture stamps it —
+  // so an abandoned checkout leaves the society exactly as it was.
   const now = new Date();
   const subscription = await prisma.subscription.upsert({
     where: { societyId },
@@ -296,12 +310,20 @@ export interface SubscriptionPaymentInfo {
 
 export async function paymentHistory(
   actor: User,
-  input: { limit: number; cursor?: string },
+  input: {
+    limit: number;
+    cursor?: string;
+    /** Restrict to one payment outcome; omit for all. */
+    status?: PaymentStatus;
+  },
 ): Promise<{ items: SubscriptionPaymentInfo[]; nextCursor: string | null }> {
   const societyId = actorSocietyId(actor);
 
   const payments = await prisma.subscriptionPayment.findMany({
-    where: { subscription: { societyId } },
+    where: {
+      subscription: { societyId },
+      ...(input.status ? { status: input.status } : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: input.limit + 1,
     ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
@@ -335,7 +357,11 @@ export async function paymentHistory(
 export async function cancelSubscription(actor: User): Promise<SubscriptionInfo> {
   const societyId = actorSocietyId(actor);
   const sub = await prisma.subscription.findUnique({ where: { societyId } });
-  if (!sub) throw new TRPCError({ code: "NOT_FOUND", message: "No subscription to cancel" });
+  // An unpaid row is not a subscription — cancelling one would be cancelling a
+  // checkout the society abandoned.
+  if (!sub || !sub.activatedAt) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "No subscription to cancel" });
+  }
   if (sub.status === "CANCELLED") {
     throw new TRPCError({ code: "CONFLICT", message: "This subscription is already cancelled" });
   }
@@ -459,6 +485,9 @@ async function applyCapture(subscriptionPaymentId: string, razorpayPaymentId?: s
         currentPeriodEnd: periodEnd,
         graceEndsAt: null,
         cancelledAt: null,
+        // Stamped once, on the first capture. A renewal must not move it —
+        // it records when the society first became a customer.
+        activatedAt: payment.subscription.activatedAt ?? now,
       },
     });
   });

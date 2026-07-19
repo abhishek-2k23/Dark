@@ -815,6 +815,10 @@
     "history": "Payment history",
     "noPayments": "No payments yet",
     "noPaymentsBody": "Charges for your subscription will appear here.",
+    "noMatchingPayments": "No payments match",
+    "noMatchingPaymentsBody": "Try a different status filter.",
+    "filterAll": "All",
+    "filterBy": "Filter payments, currently {{status}}",
     "cancelPlan": "Cancel subscription",
     "cancelTitle": "Cancel subscription?",
     "cancelConfirm": "You'll keep full access until {{date}} — the period you've already paid for. Nothing is refunded and nothing is cut short.",
@@ -840,7 +844,10 @@
     },
     "paidToast": "Payment successful — your plan is active",
     "checkoutCancelled": "Payment cancelled",
-    "checkoutFailed": "Payment could not be completed"
+    "checkoutFailed": "Payment could not be completed",
+    "month": "mo",
+    "year": "yr",
+    "popular": "Popular"
   },
   "splash": {
     "lines": [
