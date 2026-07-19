@@ -151,6 +151,14 @@ export async function listAmenities(actor: User): Promise<AmenityInfo[]> {
 // Bookings
 // ---------------------------------------------------------------------------
 
+/**
+ * How long a chargeable slot stays held while its payment is outstanding.
+ *
+ * Long enough to finish a UPI hop out to another app and back; short enough
+ * that an abandoned checkout does not park a popular slot all evening.
+ */
+const PAYMENT_HOLD_MINUTES = 15;
+
 export interface BookingInfo {
   id: string;
   amenityId: string;
@@ -159,6 +167,10 @@ export interface BookingInfo {
   startTime: string; // "HH:mm"
   endTime: string; // "HH:mm"
   status: BookingStatus;
+  /** null on free amenities; the price snapshot otherwise. */
+  amountDue: number | null;
+  /** When a PENDING_PAYMENT hold lapses. Null once settled or on free slots. */
+  holdExpiresAt: string | null;
   bookedBy: { id: string; name: string; flatNumber: string };
   createdAt: string;
 }
@@ -184,6 +196,8 @@ function toBookingInfo(booking: BookingRow): BookingInfo {
     startTime: booking.startTime,
     endTime: booking.endTime,
     status: booking.status,
+    amountDue: booking.amountDue === null ? null : Number(booking.amountDue),
+    holdExpiresAt: booking.holdExpiresAt?.toISOString() ?? null,
     bookedBy: {
       id: booking.resident.user.id,
       name: booking.resident.user.name,
@@ -233,22 +247,35 @@ export async function createBooking(
     throw new TRPCError({ code: "BAD_REQUEST", message: "The slot is in the past" });
   }
 
+  // A chargeable amenity holds the slot while payment is outstanding; a free
+  // one books outright. Price is snapshotted so a later change to
+  // pricePerSlot cannot alter what an existing booking owes.
+  const chargeable = amenity.pricePerSlot !== null;
+  const now = new Date();
+
   const booking = await prisma.$transaction(async (tx) => {
-    // Overlap: an existing BOOKED slot on the same amenity+date that starts
-    // before this one ends and ends after this one starts.
+    // Overlap: an existing live slot on the same amenity+date that starts
+    // before this one ends and ends after this one starts. PENDING_PAYMENT
+    // counts as live — otherwise two residents could each pay for one slot.
     const clash = await tx.amenityBooking.findFirst({
       where: {
         amenityId: amenity.id,
         date: new Date(input.date),
-        status: "BOOKED",
+        status: { in: ["BOOKED", "PENDING_PAYMENT"] },
         startTime: { lt: input.endTime },
         endTime: { gt: input.startTime },
+        // An expired hold no longer owns the slot even if the sweep has not
+        // reached it yet, so a stale row cannot block a real booking.
+        NOT: { status: "PENDING_PAYMENT", holdExpiresAt: { lt: now } },
       },
     });
     if (clash) {
       throw new TRPCError({
         code: "CONFLICT",
-        message: `That slot overlaps an existing booking (${clash.startTime}–${clash.endTime})`,
+        message:
+          clash.status === "PENDING_PAYMENT"
+            ? `That slot is held by another resident's payment (${clash.startTime}–${clash.endTime}); try again shortly`
+            : `That slot overlaps an existing booking (${clash.startTime}–${clash.endTime})`,
       });
     }
     return tx.amenityBooking.create({
@@ -258,19 +285,62 @@ export async function createBooking(
         date: new Date(input.date),
         startTime: input.startTime,
         endTime: input.endTime,
+        ...(chargeable
+          ? {
+              status: "PENDING_PAYMENT" as const,
+              amountDue: amenity.pricePerSlot,
+              holdExpiresAt: new Date(now.getTime() + PAYMENT_HOLD_MINUTES * 60_000),
+            }
+          : {}),
       },
       include: bookingInclude,
     });
   });
 
-  await notifyUsers(await societyAdminUserIds(amenity.societyId), {
-    type: "BOOKING_CONFIRMED",
-    title: "New amenity booking",
-    body: `${actor.name} booked ${amenity.name} · ${input.date} ${input.startTime}–${input.endTime}`,
-    data: { amenityId: amenity.id },
-  });
+  // Only a settled booking is worth telling admins about — a hold may never
+  // become one, and notifying on every abandoned checkout would be noise.
+  if (!chargeable) {
+    await notifyUsers(await societyAdminUserIds(amenity.societyId), {
+      type: "BOOKING_CONFIRMED",
+      title: "New amenity booking",
+      body: `${actor.name} booked ${amenity.name} · ${input.date} ${input.startTime}–${input.endTime}`,
+      data: { amenityId: amenity.id },
+    });
+  }
 
   return toBookingInfo(booking);
+}
+
+/**
+ * Release chargeable holds whose payment never landed.
+ *
+ * Runs from the api's periodic sweep alongside the overdue-dues pass. Without
+ * it an abandoned checkout parks the slot until the date passes — the overlap
+ * check already ignores lapsed holds, so this is about keeping the data honest
+ * and telling the resident, not about correctness of new bookings.
+ */
+export async function expireLapsedHolds(): Promise<{ expired: number }> {
+  const lapsed = await prisma.amenityBooking.findMany({
+    where: { status: "PENDING_PAYMENT", holdExpiresAt: { lt: new Date() } },
+    include: { resident: { select: { userId: true } }, amenity: { select: { name: true } } },
+  });
+  if (lapsed.length === 0) return { expired: 0 };
+
+  await prisma.amenityBooking.updateMany({
+    where: { id: { in: lapsed.map((b) => b.id) } },
+    data: { status: "EXPIRED", holdExpiresAt: null },
+  });
+
+  for (const booking of lapsed) {
+    await notifyUsers([booking.resident.userId], {
+      type: "BOOKING_PAYMENT_EXPIRED",
+      title: "Booking released",
+      body: `Your hold on ${booking.amenity.name} · ${booking.date.toISOString().slice(0, 10)} ${booking.startTime}–${booking.endTime} expired before payment. The slot is free again.`,
+      data: { amenityId: booking.amenityId, bookingId: booking.id },
+    });
+  }
+
+  return { expired: lapsed.length };
 }
 
 export async function cancelBooking(
@@ -280,24 +350,42 @@ export async function cancelBooking(
   const residentProfileId = await actorResidentProfileId(actor);
   const booking = await prisma.amenityBooking.findFirst({
     where: { id: input.bookingId, residentId: residentProfileId },
-    include: bookingInclude,
+    include: { ...bookingInclude, amenity: { select: { name: true, cancellationHours: true } } },
   });
   if (!booking) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
   }
-  if (booking.status !== "BOOKED") {
+  // A hold can be abandoned as well as a confirmed booking — the resident
+  // changed their mind at the payment screen and should not have to wait out
+  // the hold to free the slot for someone else.
+  if (booking.status !== "BOOKED" && booking.status !== "PENDING_PAYMENT") {
     throw new TRPCError({
       code: "CONFLICT",
-      message: `Only BOOKED slots can be cancelled — this one is ${booking.status}`,
+      message: `Only booked or held slots can be cancelled — this one is ${booking.status}`,
     });
   }
-  if (slotStart(booking.date.toISOString().slice(0, 10), booking.startTime) < new Date()) {
+
+  const start = slotStart(booking.date.toISOString().slice(0, 10), booking.startTime);
+  if (start < new Date()) {
     throw new TRPCError({ code: "CONFLICT", message: "This slot has already started" });
+  }
+
+  // Paid bookings have a free-cancellation window; inside it there is no
+  // refund, so the resident is told rather than silently losing the money.
+  // (The refund itself rides on Route's on-hold transfers — see docs/payments.md E21.)
+  if (booking.status === "BOOKED" && booking.amountDue !== null) {
+    const hoursToSlot = (start.getTime() - Date.now()) / 3_600_000;
+    if (hoursToSlot < booking.amenity.cancellationHours) {
+      throw new TRPCError({
+        code: "CONFLICT",
+        message: `Paid bookings can only be cancelled at least ${booking.amenity.cancellationHours} hours before the slot`,
+      });
+    }
   }
 
   const cancelled = await prisma.amenityBooking.update({
     where: { id: booking.id },
-    data: { status: "CANCELLED" },
+    data: { status: "CANCELLED", holdExpiresAt: null },
     include: bookingInclude,
   });
 

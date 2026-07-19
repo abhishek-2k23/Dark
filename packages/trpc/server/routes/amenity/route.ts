@@ -1,7 +1,7 @@
 import { amenityService } from "@repo/services";
 
 import { z, zodUndefinedModel } from "../../schema";
-import { adminProcedure, protectedProcedure, residentProcedure, router } from "../../trpc";
+import { adminProcedure, subscribedAdminProcedure, protectedProcedure, residentProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
 const amenityPath = generatePath("v1/amenities");
@@ -24,8 +24,11 @@ const AmenityModel = z
   .describe("A society amenity");
 
 const BookingStatusEnum = z
-  .enum(["BOOKED", "CANCELLED", "COMPLETED"])
-  .describe("Booking status");
+  .enum(["PENDING_PAYMENT", "BOOKED", "CANCELLED", "EXPIRED", "COMPLETED"])
+  .describe(
+    "Booking status. PENDING_PAYMENT holds the slot for a chargeable amenity while payment is " +
+      "outstanding; EXPIRED means that hold lapsed and the slot was released",
+  );
 
 const BookingModel = z
   .object({
@@ -36,6 +39,14 @@ const BookingModel = z
     startTime: timeField("Slot start"),
     endTime: timeField("Slot end"),
     status: BookingStatusEnum,
+    amountDue: z
+      .number()
+      .nullable()
+      .describe("Price snapshotted at booking time; null on free amenities"),
+    holdExpiresAt: z
+      .string()
+      .nullable()
+      .describe("When a PENDING_PAYMENT hold lapses; null once settled or on free slots"),
     bookedBy: z
       .object({
         id: z.string().describe("User id"),
@@ -94,7 +105,7 @@ const CalendarInput = z.object({
 });
 
 export const amenityRouter = router({
-  create: adminProcedure
+  create: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "POST",
@@ -111,7 +122,7 @@ export const amenityRouter = router({
     .output(AmenityModel)
     .mutation(({ ctx, input }) => amenityService.createAmenity(ctx.user, input)),
 
-  update: adminProcedure
+  update: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "PATCH",
@@ -129,7 +140,7 @@ export const amenityRouter = router({
     .output(AmenityModel)
     .mutation(({ ctx, input }) => amenityService.updateAmenity(ctx.user, input)),
 
-  delete: adminProcedure
+  delete: subscribedAdminProcedure
     .meta({
       openapi: {
         method: "DELETE",
