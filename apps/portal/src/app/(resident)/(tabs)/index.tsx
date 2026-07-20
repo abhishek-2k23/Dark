@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 
 import { NeedsAttention } from "@/components/NeedsAttention";
+import { SosButton } from "@/components/SosButton";
 import { SectionHeader } from "@/components/SectionHeader";
 import {
   Avatar,
@@ -162,6 +163,10 @@ export default function ResidentDashboard() {
           ticket the admin moved, a new notice, a due raised. Renders nothing
           when they are caught up. */}
       <NeedsAttention role="RESIDENT" inboxHref="/(resident)/notifications" />
+
+      {/* Panic alarm. Sits above the fold on every dashboard: the one
+          control nobody should have to go looking for. */}
+      <SosButton />
 
       {/* Quick actions */}
       <View className="gap-3">

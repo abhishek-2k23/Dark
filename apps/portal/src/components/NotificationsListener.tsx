@@ -42,6 +42,9 @@ export function NotificationsListener() {
     } else if (type === "PRE_APPROVAL_CREATED") {
       // A guard's gate queue — the pass has to appear there without a pull.
       void utils.guestPreApproval.invalidate();
+    } else if (type.startsWith("EMERGENCY")) {
+      // Drives the live-alarm banner; must land immediately, not on the next poll.
+      void utils.emergency.invalidate();
     } else if (type.startsWith("PAYMENT") || type === "DUE_GENERATED") {
       void utils.due.invalidate();
       void utils.payment.invalidate();
@@ -79,11 +82,17 @@ export function NotificationsListener() {
       (notification) => {
         const { title, body, data: raw } = notification.request.content;
         const data = (raw ?? {}) as Record<string, unknown>;
-        invalidateFor(typeof data.type === "string" ? data.type : "");
+        const type = typeof data.type === "string" ? data.type : "";
+        invalidateFor(type);
 
         // The OS banner is off in the foreground, so announce it ourselves.
         // Title alone when there is one: it is already written as the headline,
         // and a toast has no room for both.
+        //
+        // Emergencies are the exception twice over: they keep their OS banner
+        // (see push.ts), so a toast would double up, and the red banner the
+        // invalidation above reveals is the louder signal anyway.
+        if (type.startsWith("EMERGENCY")) return;
         const message = title || body;
         if (message) useUIStore.getState().showToast(message, "info");
       },

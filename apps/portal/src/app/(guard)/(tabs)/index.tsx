@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { NeedsAttention } from "@/components/NeedsAttention";
+import { SosButton } from "@/components/SosButton";
 import { SectionHeader } from "@/components/SectionHeader";
 import {
   Avatar,
@@ -273,6 +274,10 @@ export default function GuardDashboard() {
       {/* Anything addressed to this guard that hasn't been seen yet. Renders
           nothing when there is nothing outstanding. */}
       <NeedsAttention role="GUARD" inboxHref="/(guard)/notifications" />
+
+      {/* Panic alarm. Sits above the fold on every dashboard: the one
+          control nobody should have to go looking for. */}
+      <SosButton />
 
       {/* Quick actions */}
       <View className="flex-row flex-wrap gap-3">

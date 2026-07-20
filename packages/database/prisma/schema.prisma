@@ -198,6 +198,18 @@ enum JoinRequestStatus {
   EXPIRED
 }
 
+enum EmergencyType {
+  MEDICAL
+  FIRE
+  SECURITY
+  OTHER
+}
+
+enum EmergencyStatus {
+  ACTIVE
+  RESOLVED
+}
+
 enum NotificationType {
   JOIN_REQUEST_RECEIVED
   JOIN_REQUEST_APPROVED
@@ -211,6 +223,11 @@ enum NotificationType {
   // A resident issued a guest pass — the society's guards are told so the
   // expected guest shows up in their gate queue before they ring the bell.
   PRE_APPROVAL_CREATED
+  // Panic alarm raised by anyone in the society, and the all-clear that closes
+  // it. The only notifications that override the app's silent-in-foreground
+  // rule — see apps/portal/src/lib/push.ts.
+  EMERGENCY_RAISED
+  EMERGENCY_RESOLVED
   PAYMENT_SUBMITTED
   BOOKING_CANCELLED
   TICKET_RAISED
@@ -272,6 +289,7 @@ model Society {
   serviceProviders ServiceProvider[]
   joinRequests     SocietyJoinRequest[]
   subscription     Subscription?
+  emergencyAlerts  EmergencyAlert[]
 }
 
 model Tower {
@@ -301,6 +319,7 @@ model Flat {
   preApprovals GuestPreApproval[]
   tickets      HelpdeskTicket[]
   dues         MaintenanceDue[]
+  emergencies  EmergencyAlert[]
 
   @@unique([towerId, flatNumber])
 }
@@ -347,6 +366,8 @@ model User {
   joinRequests          SocietyJoinRequest[]    @relation("JoinRequestUser")
   decidedJoinRequests   SocietyJoinRequest[]    @relation("JoinRequestDecidedBy")
   notifications         Notification[]
+  raisedEmergencies     EmergencyAlert[]        @relation("EmergencyRaisedBy")
+  resolvedEmergencies   EmergencyAlert[]        @relation("EmergencyResolvedBy")
 }
 
 // ---------------------------------------------------------------------------
@@ -690,6 +711,39 @@ model AmenityBooking {
   @@index([residentId])
   // Drives the sweep that releases lapsed holds.
   @@index([status, holdExpiresAt])
+}
+
+/// A panic alarm broadcast to the whole society. Any member — resident, guard,
+/// or admin — can raise one; anyone can then mark it resolved, because the
+/// person best placed to sound the all-clear is whoever reached the scene, not
+/// whoever holds a role.
+model EmergencyAlert {
+  id        String        @id @default(cuid())
+  societyId String
+  society   Society       @relation(fields: [societyId], references: [id])
+  type      EmergencyType
+  /// Optional free text — often empty, because the whole point is to raise it
+  /// without stopping to type.
+  note      String?
+
+  raisedById String
+  raisedBy   User   @relation("EmergencyRaisedBy", fields: [raisedById], references: [id])
+  /// Where the alarm came from, captured at raise time. Denormalised on purpose:
+  /// a responder reading the alert later needs the flat it was raised from, not
+  /// wherever the raiser happens to live today. Null when a guard or admin with
+  /// no flat raises it.
+  flatId     String?
+  flat       Flat?   @relation(fields: [flatId], references: [id])
+
+  status       EmergencyStatus @default(ACTIVE)
+  resolvedById String?
+  resolvedBy   User?           @relation("EmergencyResolvedBy", fields: [resolvedById], references: [id])
+  resolvedAt   DateTime?
+  createdAt    DateTime        @default(now())
+
+  /// Serves both the "is anything live right now" banner check and the history list.
+  @@index([societyId, status, createdAt])
+  @@index([raisedById])
 }
 
 // ---------------------------------------------------------------------------

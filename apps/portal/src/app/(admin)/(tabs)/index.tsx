@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 
 import { SectionHeader } from "@/components/SectionHeader";
+import { SosButton } from "@/components/SosButton";
 import {
   Avatar,
   Badge,
@@ -182,6 +183,10 @@ export default function AdminDashboard() {
           onPress={() => router.push("/(admin)/reports")}
         />
       </View>
+
+      {/* Panic alarm. Sits above the fold on every dashboard: the one
+          control nobody should have to go looking for. */}
+      <SosButton />
 
       {/* Quick actions */}
       <View className="gap-3">

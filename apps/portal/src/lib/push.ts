@@ -17,6 +17,14 @@ import { api } from "@/lib/trpc";
  */
 
 const ANDROID_CHANNEL_ID = "default";
+/** Separate channel so the panic alarm can be loud without the rest being loud. */
+const ANDROID_EMERGENCY_CHANNEL_ID = "emergency";
+
+/** Push types that must interrupt regardless of what the user is doing. */
+function isEmergency(data: unknown): boolean {
+  const type = (data as { type?: unknown } | null)?.type;
+  return typeof type === "string" && type.startsWith("EMERGENCY");
+}
 
 /** The permission fields we read, kept local because the modules-core stub erases them. */
 interface Perm {
@@ -36,13 +44,20 @@ interface Perm {
 //
 // `shouldShowList` stays on so the notification is still recoverable from the
 // OS tray after the toast goes; only the interruptive parts are suppressed.
+//
+// The panic alarm is the sole exception and stays loud in the foreground: an
+// alarm the user has to notice is the entire point, and someone staring at the
+// app is exactly who can respond fastest.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: false,
-    shouldShowList: true,
-    shouldPlaySound: false,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const urgent = isEmergency(notification.request.content.data);
+    return {
+      shouldShowBanner: urgent,
+      shouldShowList: true,
+      shouldPlaySound: urgent,
+      shouldSetBadge: true,
+    };
+  },
 });
 
 /** EAS project id — required by getExpoPushTokenAsync outside of Expo Go. */
@@ -71,6 +86,17 @@ async function ensureAndroidChannel(): Promise<void> {
     name: "Default",
     importance: Notifications.AndroidImportance.DEFAULT,
     lightColor: "#2563EB",
+  });
+  // MAX importance + vibration so a panic alarm produces a heads-up notification
+  // even over other apps. Kept as its own channel because Android channel
+  // settings are user-editable per channel: someone silencing routine Portl
+  // notifications must not silence the alarm along with them.
+  await Notifications.setNotificationChannelAsync(ANDROID_EMERGENCY_CHANNEL_ID, {
+    name: "Emergency alarms",
+    importance: Notifications.AndroidImportance.MAX,
+    lightColor: "#DC2626",
+    vibrationPattern: [0, 400, 200, 400],
+    bypassDnd: true,
   });
 }
 

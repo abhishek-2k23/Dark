@@ -881,5 +881,28 @@
       "Rounding up committee members",
       "Booking the hall for Diwali"
     ]
+  },
+  "emergency": {
+    "sosCta": "Emergency SOS",
+    "sosHint": "Alerts everyone in your society",
+    "countdownTitle": "Sending emergency alert",
+    "countdownBody": "Everyone in your society will be alerted. Tap cancel if this was an accident.",
+    "cancel": "CANCEL",
+    "sending": "Sending…",
+    "sentTitle": "Alert sent",
+    "sentBody": "Your society, guards, and admins have been notified.",
+    "standDown": "Mark resolved",
+    "standDownToast": "Marked resolved — the society has been told.",
+    "shakeHint": "Shake your phone hard to raise an emergency alert.",
+    "somewhereInSociety": "the society",
+    "bannerMany": "{{count}} emergency alerts active",
+    "bannerWho": "{{name}} · {{where}}",
+    "bannerDialogBody": "Raised by {{name}} at {{where}}. Mark it resolved once it has been dealt with.",
+    "type": {
+      "MEDICAL": "Medical",
+      "FIRE": "Fire",
+      "SECURITY": "Security",
+      "OTHER": "Emergency"
+    }
   }
 }

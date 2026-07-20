@@ -40,6 +40,12 @@ export async function notifyUsers(userIds: string[], payload: NotifyPayload): Pr
       where: { userId: { in: userIds } },
       select: { token: true },
     });
+    // The panic alarm has to break through a silenced phone, so it rides a
+    // separate high-importance Android channel and asks for high priority
+    // delivery. Everything else takes the default treatment — see the
+    // silent-in-foreground handler in apps/portal/src/lib/push.ts.
+    const urgent = payload.type.startsWith("EMERGENCY");
+
     const messages = tokens
       .filter((t) => Expo.isExpoPushToken(t.token))
       .map((t) => ({
@@ -50,6 +56,13 @@ export async function notifyUsers(userIds: string[], payload: NotifyPayload): Pr
         // route a tapped push the same way the in-app inbox routes its rows
         // (the inbox reads `type` from its own column; a push has only `data`).
         data: { ...payload.data, type: payload.type },
+        ...(urgent
+          ? {
+              sound: "default" as const,
+              priority: "high" as const,
+              channelId: "emergency",
+            }
+          : {}),
       }));
 
     for (const chunk of expo().chunkPushNotifications(messages)) {
@@ -77,6 +90,27 @@ export async function flatResidentUserIds(flatId: string): Promise<string[]> {
 export async function societyResidentUserIds(societyId: string): Promise<string[]> {
   const users = await prisma.user.findMany({
     where: { societyId, role: "RESIDENT", isActive: true },
+    select: { id: true },
+  });
+  return users.map((u) => u.id);
+}
+
+/**
+ * Every active member of a society, whatever their role. Used by the panic
+ * alarm, which is the one broadcast that deliberately ignores role boundaries.
+ * `excludeUserId` drops the person who triggered it — telling someone about the
+ * alarm they just raised is noise at the worst possible moment.
+ */
+export async function societyAllUserIds(
+  societyId: string,
+  excludeUserId?: string,
+): Promise<string[]> {
+  const users = await prisma.user.findMany({
+    where: {
+      societyId,
+      isActive: true,
+      ...(excludeUserId ? { id: { not: excludeUserId } } : {}),
+    },
     select: { id: true },
   });
   return users.map((u) => u.id);

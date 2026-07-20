@@ -14,5 +14,6 @@ export * as dueService from "./dues/due.service";
 export * as paymentService from "./dues/payment.service";
 export * as serviceBillService from "./dues/service-bill.service";
 export * as notificationService from "./notification/notification.service";
+export * as emergencyService from "./emergency/emergency.service";
 export * as directoryService from "./directory/directory.service";
 export * as subscriptionService from "./subscription/subscription.service";

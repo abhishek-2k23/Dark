@@ -23,6 +23,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsListener } from "@/components/NotificationsListener";
+import { EmergencyHost } from "@/components/EmergencyHost";
 import { DialogHost } from "@/components/DialogHost";
 import { ToastHost } from "@/components/ToastHost";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
@@ -122,6 +123,9 @@ export default function RootLayout() {
                 <ThemedStack />
               </ErrorBoundary>
               <NotificationsListener />
+              {/* Before DialogHost: the banner's stand-down prompt is a dialog,
+                  which must paint above the banner that opened it. */}
+              <EmergencyHost />
               <DialogHost />
               {/* After DialogHost so toasts stay visible above an open dialog. */}
               <ToastHost />

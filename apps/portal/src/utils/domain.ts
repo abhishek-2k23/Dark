@@ -138,6 +138,11 @@ export function notificationHref(
 ): string | null {
   const d = (data ?? {}) as Record<string, string>;
 
+  // Emergencies route nowhere on purpose. The live-alarm banner is mounted at
+  // the root and is already the destination — opening the app is enough to see
+  // it, and navigating somewhere else would just push it behind a screen.
+  if (type.startsWith("EMERGENCY")) return null;
+
   if (role === "RESIDENT") {
     if (d.visitorId) return `/(resident)/visitors/${d.visitorId}`;
     if (d.ticketId) return `/(resident)/tickets/${d.ticketId}`;

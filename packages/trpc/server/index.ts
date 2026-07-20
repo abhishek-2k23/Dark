@@ -16,6 +16,7 @@ import { amenityRouter, amenityBookingRouter } from "./routes/amenity/route";
 import { dueRouter, paymentRouter, serviceBillRouter } from "./routes/dues/route";
 import { serviceProviderRouter } from "./routes/directory/route";
 import { pushTokenRouter, notificationRouter } from "./routes/notification/route";
+import { emergencyRouter } from "./routes/emergency/route";
 import { uploadRouter } from "./routes/upload/route";
 import { planRouter, subscriptionRouter } from "./routes/subscription/route";
 
@@ -46,6 +47,7 @@ export const serverRouter = router({
   serviceProvider: serviceProviderRouter,
   pushToken: pushTokenRouter,
   notification: notificationRouter,
+  emergency: emergencyRouter,
   upload: uploadRouter,
   plan: planRouter,
   subscription: subscriptionRouter,
