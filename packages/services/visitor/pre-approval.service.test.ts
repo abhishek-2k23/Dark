@@ -144,8 +144,25 @@ describe("create", () => {
       ...inWindow(),
     });
     expect(pre.status).toBe("ACTIVE");
-    expect(pre.qrCode).toMatch(/^[0-9a-f]{32}$/);
+    // 6 characters, exactly 4 digits and 2 letters — short enough to read aloud
+    // at a gate. See visitor/pass-code.ts.
+    expect(pre.qrCode).toMatch(/^[A-Z0-9]{6}$/);
+    expect(pre.qrCode.replace(/[^0-9]/g, "")).toHaveLength(4);
+    expect(pre.qrCode.replace(/[^A-Z]/g, "")).toHaveLength(2);
     expect(pre.flatId).toBe(flatId);
+  });
+
+  it("issues a distinct code per pass", async () => {
+    const codes = new Set<string>();
+    for (let i = 0; i < 25; i++) {
+      const pre = await preApprovalService.createPreApproval(resident, {
+        guestName: `Unique Guest ${i}`,
+        guestPhone: "+919900000011",
+        ...inWindow(),
+      });
+      codes.add(pre.qrCode);
+    }
+    expect(codes.size).toBe(25);
   });
 });
 
@@ -171,6 +188,21 @@ describe("verify (happy path)", () => {
     expect(visitor.actionedByResident?.id).toBe(resident.id);
   });
 
+  it("accepts a code typed with lowercase and separators", async () => {
+    const pre = await preApprovalService.createPreApproval(resident, {
+      guestName: "Guest Sloppy",
+      guestPhone: "+919900000019",
+      ...inWindow(),
+    });
+    // What a guard actually types after reading it off a printed pass.
+    const typed = `${pre.qrCode.slice(0, 3)}-${pre.qrCode.slice(3)}`.toLowerCase();
+
+    const { preApproval } = await preApprovalService.verifyPreApproval(guard, {
+      qrCode: typed,
+    });
+    expect(preApproval.status).toBe("USED");
+  });
+
   it("a second verify of the same token is rejected", async () => {
     const pre = await preApprovalService.createPreApproval(resident, {
       guestName: "Guest Three",
@@ -188,7 +220,7 @@ describe("verify (happy path)", () => {
 describe("verify (failure paths)", () => {
   it("unknown tokens and other-society tokens are NOT_FOUND", async () => {
     await expectTRPCError(
-      preApprovalService.verifyPreApproval(guard, { qrCode: "deadbeef".repeat(4) }),
+      preApprovalService.verifyPreApproval(guard, { qrCode: "ZZ0000" }),
       "NOT_FOUND",
     );
 
@@ -346,5 +378,108 @@ describe("emailing the pass to the guest", () => {
     });
     expect(pre.status).toBe("ACTIVE");
     expect(pre.qrCode).toBeTruthy();
+  });
+});
+
+describe("guard fan-out", () => {
+  it("notifies the society's guards — and only theirs — when a pass is issued", async () => {
+    await prisma.notification.deleteMany({
+      where: { userId: { in: [guard.id, otherGuard.id] } },
+    });
+
+    const pre = await preApprovalService.createPreApproval(resident, {
+      guestName: "Announced Guest",
+      guestPhone: "+919900000021",
+      ...inWindow(),
+    });
+
+    const mine = await prisma.notification.findMany({
+      where: { userId: guard.id, type: "PRE_APPROVAL_CREATED" },
+    });
+    expect(mine).toHaveLength(1);
+    // The code rides along so tapping the push opens verify ready to go.
+    expect((mine[0]!.data as Record<string, string>).passCode).toBe(pre.qrCode);
+    expect((mine[0]!.data as Record<string, string>).preApprovalId).toBe(pre.id);
+    expect(mine[0]!.body).toContain("Announced Guest");
+
+    // A guard at a different society has no business seeing this pass.
+    const theirs = await prisma.notification.count({
+      where: { userId: otherGuard.id, type: "PRE_APPROVAL_CREATED" },
+    });
+    expect(theirs).toBe(0);
+  });
+});
+
+describe("listAtGate", () => {
+  it("lists the society's live passes with flat and host, soonest first", async () => {
+    const early = await preApprovalService.createPreApproval(resident, {
+      guestName: "Gate Early",
+      guestPhone: "+919900000022",
+      validFrom: new Date(Date.now() + 10 * 60_000).toISOString(),
+      validTo: new Date(Date.now() + 60 * 60_000).toISOString(),
+    });
+    const late = await preApprovalService.createPreApproval(otherResident, {
+      guestName: "Gate Late",
+      guestPhone: "+919900000023",
+      validFrom: new Date(Date.now() + 40 * 60_000).toISOString(),
+      validTo: new Date(Date.now() + 90 * 60_000).toISOString(),
+    });
+
+    const { items } = await preApprovalService.listSocietyPreApprovals(guard, { limit: 50 });
+    const ids = items.map((i) => i.id);
+    expect(ids).toContain(early.id);
+    expect(ids).toContain(late.id);
+    expect(ids.indexOf(early.id)).toBeLessThan(ids.indexOf(late.id));
+
+    const row = items.find((i) => i.id === early.id)!;
+    expect(row.flatNumber).toBe("PA-101");
+    expect(row.hostName).toBe("Pre Resident");
+
+    // Another society's guard sees none of it.
+    const other = await preApprovalService.listSocietyPreApprovals(otherGuard, { limit: 50 });
+    expect(other.items.map((i) => i.id)).not.toContain(early.id);
+  });
+
+  it("searches by guest name and by pass code", async () => {
+    const pre = await preApprovalService.createPreApproval(resident, {
+      guestName: "Searchable Visitor",
+      guestPhone: "+919900000024",
+      ...inWindow(),
+    });
+
+    const byName = await preApprovalService.listSocietyPreApprovals(guard, {
+      limit: 50,
+      search: "searchable",  // case-insensitive, partial
+    });
+    expect(byName.items.map((i) => i.id)).toContain(pre.id);
+
+    const byCode = await preApprovalService.listSocietyPreApprovals(guard, {
+      limit: 50,
+      search: pre.qrCode.toLowerCase(),
+    });
+    expect(byCode.items.map((i) => i.id)).toEqual([pre.id]);
+
+    const noMatch = await preApprovalService.listSocietyPreApprovals(guard, {
+      limit: 50,
+      search: "definitely-nobody",
+    });
+    expect(noMatch.items).toHaveLength(0);
+  });
+
+  it("omits passes whose window has already closed", async () => {
+    const pre = await preApprovalService.createPreApproval(resident, {
+      guestName: "Gate Lapsed",
+      guestPhone: "+919900000025",
+      validFrom: new Date(Date.now() - 2 * 60 * 60_000).toISOString(),
+      validTo: new Date(Date.now() + 60_000).toISOString(),
+    });
+    // Walk the window shut behind it rather than waiting a minute.
+    await prisma.guestPreApproval.update({
+      where: { id: pre.id },
+      data: { validTo: new Date(Date.now() - 60_000) },
+    });
+
+    const { items } = await preApprovalService.listSocietyPreApprovals(guard, { limit: 50 });
+    expect(items.map((i) => i.id)).not.toContain(pre.id);
   });
 });

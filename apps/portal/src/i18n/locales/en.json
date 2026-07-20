@@ -26,7 +26,8 @@
     "live": "Live",
     "primary": "Primary",
     "voteNow": "Vote Now",
-    "enterDashboard": "Enter Dashboard"
+    "enterDashboard": "Enter Dashboard",
+    "close": "Close"
   },
   "media": {
     "sourceTitle": "Add a photo",
@@ -395,9 +396,9 @@
     "selectFlatFirst": "Select the target flat first.",
     "missingVisitor": "Enter the visitor's name and a valid phone.",
     "registerCta": "Register visitor",
-    "verifySubtitle": "Enter the pass code your guest received to check them in.",
+    "verifySubtitle": "Scan the guest's pass QR, or enter the code they received, to check them in.",
     "passCode": "Pass code",
-    "passCodePlaceholder": "Paste or type the guest's code",
+    "passCodePlaceholder": "e.g. 4A72K9",
     "verifyCta": "Verify pass",
     "missingCode": "Enter the pass code.",
     "verifiedToast": "{{name}} checked in.",
@@ -411,7 +412,20 @@
     "expiredNote": "This request expired before it was approved.",
     "entryMarked": "Entry marked.",
     "exitMarked": "Exit marked.",
-    "visitorPhotoHint": "Tap to photograph the visitor"
+    "visitorPhotoHint": "Tap to photograph the visitor",
+    "scanCta": "Scan pass QR",
+    "orTypeIt": "or enter the code",
+    "passCodeHelp": "6 characters — 4 digits and 2 letters.",
+    "scanHint": "Hold the guest's pass QR inside the frame.",
+    "scanPermissionTitle": "Camera access needed",
+    "scanPermissionBody": "Allow camera access to scan a guest's pass. You can still type the code in by hand.",
+    "scanPermissionCta": "Allow camera",
+    "torch": "Torch",
+    "expectedGuests": "Expected guests",
+    "searchPasses": "Search by guest name or pass code",
+    "passHostedBy": "Host {{name}}",
+    "passValidUntil": "Valid until {{time}}",
+    "noPassMatch": "No pass matches “{{query}}”."
   },
   "admin": {
     "tabManage": "Manage",

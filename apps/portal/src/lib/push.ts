@@ -24,13 +24,23 @@ interface Perm {
   canAskAgain: boolean;
 }
 
-// How a notification behaves while the app is foregrounded. Without this, pushes
-// received in-app are silently swallowed by the OS.
+// How a notification behaves while the app is foregrounded — this handler runs
+// *only* then; a push arriving in the background is drawn by the OS untouched.
+//
+// Foreground pushes are deliberately silent: no banner, no sound. A busy evening
+// can produce a burst of these (a dozen guest passes hitting every guard at
+// once), and stacking OS banners over an app the user is already looking at is
+// noise, not information. The receipt still lands — NotificationsListener
+// refreshes the inbox and the open screen's data, and raises an in-app toast —
+// so the user sees it in the app's own idiom instead.
+//
+// `shouldShowList` stays on so the notification is still recoverable from the
+// OS tray after the toast goes; only the interruptive parts are suppressed.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowBanner: true,
+    shouldShowBanner: false,
     shouldShowList: true,
-    shouldPlaySound: true,
+    shouldPlaySound: false,
     shouldSetBadge: true,
   }),
 });

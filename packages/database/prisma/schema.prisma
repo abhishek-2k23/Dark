@@ -208,6 +208,9 @@ enum NotificationType {
   VISITOR_APPROVED
   VISITOR_DENIED
   VISITOR_ARRIVED
+  // A resident issued a guest pass — the society's guards are told so the
+  // expected guest shows up in their gate queue before they ring the bell.
+  PRE_APPROVAL_CREATED
   PAYMENT_SUBMITTED
   BOOKING_CANCELLED
   TICKET_RAISED

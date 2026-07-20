@@ -4,13 +4,16 @@ import { useEffect, useRef } from "react";
 
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
+import { useUIStore } from "@/stores/uiStore";
 import { notificationHref } from "@/utils/domain";
 
 /**
  * Bridges OS-level notification events into the app. Renders nothing.
  *
  *  - A push received while the app is foregrounded refreshes the inbox + badge
- *    AND the feature data the push is about, so open screens update live.
+ *    AND the feature data the push is about, so open screens update live. The OS
+ *    banner is suppressed in that case (see `push.ts`), so this is also what
+ *    surfaces the push at all: a toast in the app's own idiom.
  *  - A join-request approval also refreshes the session: the fresh `societyId`
  *    is what moves a user off the no-society gate without a restart.
  *  - Tapping a push deep-links to the relevant screen for the caller's role,
@@ -35,6 +38,9 @@ export function NotificationsListener() {
     if (type.startsWith("TICKET")) void utils.ticket.invalidate();
     else if (type.startsWith("VISITOR")) {
       void utils.visitor.invalidate();
+      void utils.guestPreApproval.invalidate();
+    } else if (type === "PRE_APPROVAL_CREATED") {
+      // A guard's gate queue — the pass has to appear there without a pull.
       void utils.guestPreApproval.invalidate();
     } else if (type.startsWith("PAYMENT") || type === "DUE_GENERATED") {
       void utils.due.invalidate();
@@ -71,11 +77,15 @@ export function NotificationsListener() {
   useEffect(() => {
     const receivedSub = Notifications.addNotificationReceivedListener(
       (notification) => {
-        const data = (notification.request.content.data ?? {}) as Record<
-          string,
-          unknown
-        >;
+        const { title, body, data: raw } = notification.request.content;
+        const data = (raw ?? {}) as Record<string, unknown>;
         invalidateFor(typeof data.type === "string" ? data.type : "");
+
+        // The OS banner is off in the foreground, so announce it ourselves.
+        // Title alone when there is one: it is already written as the headline,
+        // and a toast has no room for both.
+        const message = title || body;
+        if (message) useUIStore.getState().showToast(message, "info");
       },
     );
     const responseSub =

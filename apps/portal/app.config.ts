@@ -92,6 +92,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
+      "expo-camera",
+      {
+        cameraPermission:
+          "Prangan uses your camera so guards can scan a guest's gate pass at the gate.",
+        recordAudioAndroid: false,
+      },
+    ],
+    [
       "expo-notifications",
       {
         icon: "./assets/images/android-icon-monochrome.png",

@@ -82,6 +82,15 @@ export async function societyResidentUserIds(societyId: string): Promise<string[
   return users.map((u) => u.id);
 }
 
+/** Active guards of a society — the gate's on-duty audience. */
+export async function societyGuardUserIds(societyId: string): Promise<string[]> {
+  const users = await prisma.user.findMany({
+    where: { societyId, role: "GUARD", isActive: true },
+    select: { id: true },
+  });
+  return users.map((u) => u.id);
+}
+
 /** Active admins of a society. */
 export async function societyAdminUserIds(societyId: string): Promise<string[]> {
   const users = await prisma.user.findMany({

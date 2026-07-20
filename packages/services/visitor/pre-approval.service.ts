@@ -1,10 +1,14 @@
-import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import { prisma, type Prisma, type User, type PreApprovalStatus } from "@repo/database";
 import { sendGuestPassEmail } from "@repo/mailer";
 import { logger } from "@repo/logger";
 
-import { notifyUser } from "../notification/notification.service";
+import {
+  notifyUser,
+  notifyUsers,
+  societyGuardUserIds,
+} from "../notification/notification.service";
+import { generateUniquePassCode, normalisePassCode } from "./pass-code";
 import { toVisitorInfo, visitorInclude, type VisitorInfo } from "./visitor.service";
 
 /**
@@ -89,6 +93,11 @@ export async function createPreApproval(
     });
   }
 
+  const qrCode = await generateUniquePassCode(
+    async (code) =>
+      (await prisma.guestPreApproval.count({ where: { qrCode: code } })) > 0,
+  );
+
   const preApproval = await prisma.guestPreApproval.create({
     data: {
       residentId: profile.id,
@@ -99,7 +108,7 @@ export async function createPreApproval(
       validFrom,
       validTo,
       vehicleNumber: input.vehicleNumber,
-      qrCode: crypto.randomBytes(16).toString("hex"),
+      qrCode,
     },
   });
 
@@ -107,7 +116,52 @@ export async function createPreApproval(
     await emailPassToGuest(preApproval, actor, profile.flatId);
   }
 
+  await notifyGuardsOfNewPass(preApproval, actor, profile.flatId);
+
   return toPreApprovalInfo(preApproval);
+}
+
+/**
+ * Tell the society's guards a pass now exists, so the expected guest is already
+ * in the gate's queue when they turn up. Best-effort like the guest email: the
+ * pass is valid whether or not the fan-out lands.
+ *
+ * The push carries `preApprovalId` and the code so the guard app can jump
+ * straight to the pass — and, because these arrive in bulk on a busy evening,
+ * the app shows them in-app rather than as a banner when it is foregrounded.
+ */
+async function notifyGuardsOfNewPass(
+  preApproval: PreApprovalRow,
+  actor: User,
+  flatId: string,
+): Promise<void> {
+  try {
+    const flat = await prisma.flat.findUnique({
+      where: { id: flatId },
+      include: { tower: { select: { name: true, societyId: true } } },
+    });
+    if (!flat) return;
+
+    const guardIds = await societyGuardUserIds(flat.tower.societyId);
+    if (guardIds.length === 0) return;
+
+    const flatLabel = `${flat.tower.name}-${flat.flatNumber}`;
+    await notifyUsers(guardIds, {
+      type: "PRE_APPROVAL_CREATED",
+      title: "New guest pass issued",
+      body: `${actor.name} (${flatLabel}) pre-approved ${preApproval.guestName} — pass ${preApproval.qrCode}`,
+      data: {
+        preApprovalId: preApproval.id,
+        passCode: preApproval.qrCode,
+        flatId,
+      },
+    });
+  } catch (err) {
+    logger.error("Failed to notify guards of new guest pass", {
+      preApprovalId: preApproval.id,
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 /**
@@ -163,8 +217,12 @@ export async function verifyPreApproval(
     });
   }
 
+  // Accept whatever reached us — a scan, or a code typed with the spacing or
+  // lowercase a human naturally adds — and match on the canonical form.
+  const qrCode = normalisePassCode(input.qrCode);
+
   const preApproval = await prisma.guestPreApproval.findFirst({
-    where: { qrCode: input.qrCode, flat: { tower: { societyId: actor.societyId } } },
+    where: { qrCode, flat: { tower: { societyId: actor.societyId } } },
     include: { resident: { select: { userId: true } } },
   });
   if (!preApproval) {
@@ -269,6 +327,75 @@ export async function cancelPreApproval(
     data: { status: "CANCELLED" },
   });
   return toPreApprovalInfo(cancelled);
+}
+
+/**
+ * A pass as the gate sees it: the guest plus the flat and host the guard has to
+ * announce them to, which the resident-facing shape doesn't carry.
+ */
+export interface GatePreApprovalInfo extends PreApprovalInfo {
+  flatNumber: string;
+  towerName: string;
+  hostName: string;
+}
+
+/**
+ * The gate's queue of expected guests: ACTIVE passes in the guard's society
+ * whose window has not closed, soonest-valid first — the order a guard actually
+ * works through them. Optionally narrowed by a search term matched against the
+ * guest's name or the pass code, so a guard holding either can find the pass.
+ */
+export async function listSocietyPreApprovals(
+  actor: User,
+  input: { search?: string; status?: PreApprovalStatus; limit: number; cursor?: string },
+): Promise<{ items: GatePreApprovalInfo[]; nextCursor: string | null }> {
+  if (!actor.societyId) {
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: "Your account is not linked to a society",
+    });
+  }
+
+  const search = input.search?.trim();
+  // A search term is either a pass code or a name; try it as both rather than
+  // making the guard say which they have. The code match is a prefix on the
+  // normalised form, so "ab-12" finds "AB1234" halfway through typing it.
+  const searchWhere: Prisma.GuestPreApprovalWhereInput | undefined = search
+    ? {
+        OR: [
+          { guestName: { contains: search, mode: "insensitive" } },
+          { qrCode: { startsWith: normalisePassCode(search) } },
+        ],
+      }
+    : undefined;
+
+  const status = input.status ?? "ACTIVE";
+  const rows = await prisma.guestPreApproval.findMany({
+    where: {
+      flat: { tower: { societyId: actor.societyId } },
+      status,
+      // A pass whose window has already closed is noise at the gate; the sweep
+      // will flip it to EXPIRED shortly anyway.
+      ...(status === "ACTIVE" ? { validTo: { gte: new Date() } } : {}),
+      ...(searchWhere ?? {}),
+    },
+    include: {
+      flat: { include: { tower: { select: { name: true } } } },
+      resident: { include: { user: { select: { name: true } } } },
+    },
+    orderBy: status === "ACTIVE" ? { validFrom: "asc" } : { createdAt: "desc" },
+    take: input.limit + 1,
+    ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+  });
+
+  const hasMore = rows.length > input.limit;
+  const items = (hasMore ? rows.slice(0, input.limit) : rows).map((row) => ({
+    ...toPreApprovalInfo(row),
+    flatNumber: row.flat.flatNumber,
+    towerName: row.flat.tower.name,
+    hostName: row.resident.user.name,
+  }));
+  return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
 }
 
 /**

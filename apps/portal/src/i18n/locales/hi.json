@@ -26,7 +26,8 @@
     "live": "लाइव",
     "primary": "प्राथमिक",
     "voteNow": "अभी वोट करें",
-    "enterDashboard": "डैशबोर्ड खोलें"
+    "enterDashboard": "डैशबोर्ड खोलें",
+    "close": "बंद करें"
   },
   "media": {
     "sourceTitle": "फोटो जोड़ें",
@@ -395,9 +396,9 @@
     "selectFlatFirst": "पहले लक्ष्य फ्लैट चुनें।",
     "missingVisitor": "आगंतुक का नाम और सही फ़ोन दर्ज करें।",
     "registerCta": "आगंतुक दर्ज करें",
-    "verifySubtitle": "अपने अतिथि को चेक-इन करने के लिए उनका पास कोड दर्ज करें।",
+    "verifySubtitle": "मेहमान के पास का QR स्कैन करें, या उन्हें मिला कोड दर्ज करके प्रवेश दें।",
     "passCode": "पास कोड",
-    "passCodePlaceholder": "अतिथि का कोड चिपकाएँ या टाइप करें",
+    "passCodePlaceholder": "जैसे 4A72K9",
     "verifyCta": "पास सत्यापित करें",
     "missingCode": "पास कोड दर्ज करें।",
     "verifiedToast": "{{name}} चेक-इन हो गया।",
@@ -411,7 +412,20 @@
     "expiredNote": "स्वीकृति से पहले यह अनुरोध समाप्त हो गया।",
     "entryMarked": "प्रवेश दर्ज किया गया।",
     "exitMarked": "निकास दर्ज किया गया।",
-    "visitorPhotoHint": "आगंतुक की फोटो खींचने के लिए टैप करें"
+    "visitorPhotoHint": "आगंतुक की फोटो खींचने के लिए टैप करें",
+    "scanCta": "पास QR स्कैन करें",
+    "orTypeIt": "या कोड दर्ज करें",
+    "passCodeHelp": "6 अक्षर — 4 अंक और 2 वर्ण।",
+    "scanHint": "मेहमान के पास का QR फ्रेम के अंदर रखें।",
+    "scanPermissionTitle": "कैमरा अनुमति चाहिए",
+    "scanPermissionBody": "पास स्कैन करने के लिए कैमरे की अनुमति दें। आप कोड हाथ से भी दर्ज कर सकते हैं।",
+    "scanPermissionCta": "कैमरा अनुमति दें",
+    "torch": "टॉर्च",
+    "expectedGuests": "अपेक्षित मेहमान",
+    "searchPasses": "मेहमान का नाम या पास कोड खोजें",
+    "passHostedBy": "मेजबान {{name}}",
+    "passValidUntil": "{{time}} तक वैध",
+    "noPassMatch": "“{{query}}” से कोई पास मेल नहीं खाता।"
   },
   "admin": {
     "tabManage": "प्रबंधन",

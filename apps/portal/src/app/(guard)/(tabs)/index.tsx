@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
@@ -11,6 +12,7 @@ import {
   GlassCard,
   Icon,
   IconCircle,
+  Input,
   Screen,
   Text,
   type IconName,
@@ -19,7 +21,7 @@ import { hueFor, useTheme, type NeonHue } from "@/theme";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { visitorPurposeIcon } from "@/utils/domain";
-import { formatTime } from "@/utils/format";
+import { formatDateTime, formatTime } from "@/utils/format";
 
 function greetingKey(): string {
   const h = new Date().getHours();
@@ -113,6 +115,97 @@ function QueueRow({
   );
 }
 
+/**
+ * Guests residents have pre-approved but who have not reached the gate yet —
+ * the queue a guard works from when someone walks up with a pass. Searchable by
+ * the guest's name or the pass code, because a guard has exactly one of those
+ * two things in hand depending on whether the guest speaks first or shows the
+ * pass first.
+ *
+ * Tapping a row carries the code into the verify screen, so the common case
+ * (find the guest, admit them) never needs the code typed at all.
+ */
+function ExpectedGuests() {
+  const { t } = useTranslation();
+  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+
+  // Debounced: the field is being typed into character by character and every
+  // keystroke would otherwise be a round-trip.
+  useEffect(() => {
+    const id = setTimeout(() => setQuery(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const passes = trpc.guestPreApproval.listAtGate.useQuery(
+    { limit: 20, ...(query ? { search: query } : {}) },
+    { refetchInterval: 60_000 },
+  );
+
+  const items = passes.data?.items ?? [];
+  // Keep the section (and its search field) mounted once a search is running,
+  // so a term that matches nothing doesn't yank the input out from under the
+  // guard mid-type.
+  if (items.length === 0 && !query) return null;
+
+  return (
+    <View className="gap-3">
+      <SectionHeader title={t("guard.expectedGuests")} />
+
+      <Input
+        leftIcon="search-outline"
+        placeholder={t("guard.searchPasses")}
+        value={search}
+        onChangeText={setSearch}
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+      />
+
+      {items.map((p) => (
+        <GlassCard
+          key={p.id}
+          onPress={() =>
+            router.push(`/(guard)/verify?code=${encodeURIComponent(p.qrCode)}`)
+          }
+          variant="hero"
+          radius="3xl"
+          className="flex-row items-center gap-3"
+        >
+          <IconCircle name="ticket-outline" tone="accent" size={44} />
+          <View className="flex-1 gap-0.5">
+            <Text variant="title" numberOfLines={1}>
+              {p.guestName}
+            </Text>
+            <Text variant="bodySmall" color="secondary" numberOfLines={1}>
+              {t("guard.flatLine", { tower: p.towerName, flat: p.flatNumber })} ·{" "}
+              {t("guard.passHostedBy", { name: p.hostName })}
+            </Text>
+            <Text variant="caption" color="tertiary" numberOfLines={1}>
+              {t("guard.passValidUntil", { time: formatDateTime(p.validTo) })}
+            </Text>
+          </View>
+          <Text
+            variant="subtitle"
+            style={{ fontFamily: "monospace", letterSpacing: 1.5 }}
+          >
+            {p.qrCode}
+          </Text>
+        </GlassCard>
+      ))}
+
+      {items.length === 0 && !passes.isLoading && (
+        <Card variant="outlined" className="items-center gap-1 py-6">
+          <Text variant="bodySmall" color="secondary" align="center">
+            {t("guard.noPassMatch", { query })}
+          </Text>
+        </Card>
+      )}
+    </View>
+  );
+}
+
 export default function GuardDashboard() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -196,6 +289,10 @@ export default function GuardDashboard() {
           onPress={() => router.push("/(guard)/verify")}
         />
       </View>
+
+      {/* Passes issued from the flats, before the guest gets here. Renders
+          nothing while there are none and nothing has been searched for. */}
+      <ExpectedGuests />
 
       {/* Awaiting entry (approved, not yet entered) */}
       {awaitingEntry.length > 0 && (

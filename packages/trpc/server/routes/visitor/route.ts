@@ -72,12 +72,24 @@ const PreApprovalModel = z
     validFrom: z.string().describe("ISO start of the validity window"),
     validTo: z.string().describe("ISO end of the validity window"),
     vehicleNumber: z.string().nullable().describe("Expected vehicle number, if any"),
-    qrCode: z.string().describe("Opaque token the guest presents (rendered as a QR on mobile)"),
+    qrCode: z
+      .string()
+      .describe(
+        "The 6-character pass code the guest presents — 4 digits and 2 letters, also rendered " +
+          "as a QR on mobile so the guard can scan it instead of typing it",
+      ),
     status: PreApprovalStatusEnum,
     flatId: z.string().describe("Flat the guest is pre-approved for"),
     createdAt: z.string().describe("ISO time the pre-approval was created"),
   })
   .describe("A resident-issued guest pre-approval");
+
+/** The same pass with the flat/host context a guard needs to announce the guest. */
+const GatePreApprovalModel = PreApprovalModel.extend({
+  flatNumber: z.string().describe("Number of the flat the guest is expected at"),
+  towerName: z.string().describe("Tower of the flat the guest is expected at"),
+  hostName: z.string().describe("Resident who issued the pass"),
+}).describe("An expected guest as seen from the gate");
 
 // ---------------------------------------------------------------------------
 // Inputs
@@ -123,7 +135,13 @@ const CreatePreApprovalInput = z.object({
 });
 
 const VerifyPreApprovalInput = z.object({
-  qrCode: z.string().min(1).describe("QR token presented by the guest at the gate"),
+  qrCode: z
+    .string()
+    .min(1)
+    .describe(
+      "Pass code presented at the gate, scanned or typed. Case and separators are normalised, " +
+        "so 'ab-12 34' matches 'AB1234'",
+    ),
 });
 
 const PreApprovalIdInput = z.object({
@@ -343,10 +361,11 @@ export const guestPreApprovalRouter = router({
         tags: ["Visitors"],
         summary: "Pre-approve an expected guest",
         description:
-          "Resident opens a validity window for an expected guest and receives a QR token to " +
-          "share with them; when the guard verifies it at the gate an already-APPROVED visitor " +
-          "is created. Errors: 400 if the window is invalid or entirely in the past, 403 if not " +
-          "a resident, 412 if the account has no resident profile.",
+          "Resident opens a validity window for an expected guest and receives a 6-character " +
+          "pass code (and QR) to share with them; when the guard verifies it at the gate an " +
+          "already-APPROVED visitor is created. The society's guards are notified so the guest " +
+          "appears in their gate queue on issue. Errors: 400 if the window is invalid or " +
+          "entirely in the past, 403 if not a resident, 412 if the account has no resident profile.",
         protect: true,
       },
     })
@@ -394,6 +413,50 @@ export const guestPreApprovalRouter = router({
     )
     .query(({ ctx, input }) =>
       preApprovalService.listMyPreApprovals(ctx.user, input),
+    ),
+
+  listAtGate: guardProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: preApprovalPath("gate"),
+        tags: ["Visitors"],
+        summary: "List expected guests at the gate",
+        description:
+          "The gate's queue of expected guests: ACTIVE pre-approvals across the guard's society " +
+          "whose validity window has not closed, soonest-valid first. Pass `search` to match a " +
+          "guest's name or a pass code (exact or prefix) when a guest presents one. Errors: 403 " +
+          "if not a guard, 412 if the account is not linked to a society.",
+        protect: true,
+      },
+    })
+    .input(
+      z.object({
+        search: z
+          .string()
+          .describe("Match against the guest's name or the pass code")
+          .optional(),
+        status: PreApprovalStatusEnum.describe(
+          "Lifecycle status to list; defaults to ACTIVE",
+        ).optional(),
+        limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
+        cursor: z
+          .string()
+          .describe("Id of the last pre-approval from the previous page")
+          .optional(),
+      }),
+    )
+    .output(
+      z.object({
+        items: z.array(GatePreApprovalModel).describe("Expected guests on this page"),
+        nextCursor: z
+          .string()
+          .nullable()
+          .describe("Cursor for the next page; null when this is the last page"),
+      }),
+    )
+    .query(({ ctx, input }) =>
+      preApprovalService.listSocietyPreApprovals(ctx.user, input),
     ),
 
   verify: guardProcedure

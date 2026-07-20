@@ -169,10 +169,41 @@ export function notificationHref(
     return null;
   }
 
-  // GUARD — the only pushes guards receive today are visitor decisions.
+  // GUARD — visitor decisions, plus guest passes as residents issue them.
   if (d.visitorId) return `/(guard)/visitors/${d.visitorId}`;
+  if (type === "PRE_APPROVAL_CREATED") {
+    // Land on the verify screen pre-filled with the code: the guard tapping this
+    // is almost always looking at the guest who just arrived with it.
+    return d.passCode
+      ? `/(guard)/verify?code=${encodeURIComponent(d.passCode)}`
+      : "/(guard)/verify";
+  }
   return null;
 }
 
 /** Minutes a PENDING visitor request stays actionable (mirrors server TTL). */
 export const VISITOR_PENDING_TTL_MIN = 15;
+
+// ---------------------------------------------------------------------------
+// Gate pass codes
+// ---------------------------------------------------------------------------
+// Mirrors packages/services/visitor/pass-code.ts, which is the source of truth —
+// duplicated rather than imported because that module is server-only (node
+// crypto). Kept here only to spare the guard a round-trip on an obviously
+// malformed code; the server re-validates and re-normalises regardless.
+
+/** Characters in a pass code: 4 digits + 2 letters. */
+export const PASS_CODE_LENGTH = 6;
+
+/** Uppercase and drop the spacing or hyphens a human adds while typing. */
+export function normalisePassCode(raw: string): string {
+  return raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+/** True once the typed code could be a real pass code — 4 digits, 2 letters. */
+export function isPassCodeShaped(raw: string): boolean {
+  const code = normalisePassCode(raw);
+  if (code.length !== PASS_CODE_LENGTH) return false;
+  const digits = code.replace(/[^0-9]/g, "").length;
+  return digits === 4 && code.length - digits === 2;
+}
