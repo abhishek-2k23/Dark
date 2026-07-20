@@ -69,6 +69,14 @@ const UnregisterPushTokenInput = z.object({
 const ListNotificationsInput = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
   cursor: z.string().describe("Id of the last notification from the previous page").optional(),
+  unreadOnly: z.coerce
+    .boolean()
+    .describe(
+      "Return only unread notifications. For the dashboards' needs-attention feed, which " +
+        "must not miss an unread item that has fallen past the first page. `unreadCount` is " +
+        "unaffected — it always counts the caller's full unread total",
+    )
+    .optional(),
 });
 
 const NotificationIdInput = z.object({

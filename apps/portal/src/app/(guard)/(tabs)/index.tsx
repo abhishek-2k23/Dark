@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
+import { NeedsAttention } from "@/components/NeedsAttention";
 import { SectionHeader } from "@/components/SectionHeader";
 import {
   Avatar,
@@ -29,14 +30,14 @@ function greetingKey(): string {
 
 function Stat({ value, label, tone }: { value: number; label: string; tone: string }) {
   return (
-    <Card variant="filled" className="flex-1 items-center gap-1 py-4">
+    <GlassCard variant="glassStrong" radius="3xl" className="flex-1 items-center gap-1 py-4">
       <Text variant="h1" className={tone}>
         {value}
       </Text>
       <Text variant="caption" color="secondary" align="center" numberOfLines={2}>
         {label}
       </Text>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -84,7 +85,12 @@ function QueueRow({
 }) {
   const { t } = useTranslation();
   return (
-    <Card onPress={onPress} className="flex-row items-center gap-3">
+    <GlassCard
+      onPress={onPress}
+      variant="hero"
+      radius="3xl"
+      className="flex-row items-center gap-3"
+    >
       <IconCircle
         name={visitorPurposeIcon[visitor.purpose] ?? "help-circle-outline"}
         tone="primary"
@@ -103,7 +109,7 @@ function QueueRow({
         </Text>
       </View>
       <Icon name="chevron-forward" size={18} color="tertiary" />
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -171,6 +177,10 @@ export default function GuardDashboard() {
         <Stat value={pending.length} label={t("guard.statPending")} tone="text-warning" />
       </View>
 
+      {/* Anything addressed to this guard that hasn't been seen yet. Renders
+          nothing when there is nothing outstanding. */}
+      <NeedsAttention role="GUARD" inboxHref="/(guard)/notifications" />
+
       {/* Quick actions */}
       <View className="flex-row flex-wrap gap-3">
         <QuickAction
@@ -224,7 +234,13 @@ export default function GuardDashboard() {
         <View className="gap-3">
           <SectionHeader title={t("guard.waitingApproval")} />
           {pending.map((v) => (
-            <Card key={v.id} onPress={open(v.id)} className="flex-row items-center gap-3">
+            <GlassCard
+              key={v.id}
+              onPress={open(v.id)}
+              variant="hero"
+              radius="3xl"
+              className="flex-row items-center gap-3"
+            >
               <IconCircle
                 name={visitorPurposeIcon[v.purpose] ?? "help-circle-outline"}
                 tone="warning"
@@ -239,7 +255,7 @@ export default function GuardDashboard() {
                 </Text>
               </View>
               <Badge label={t("status.pending")} tone="warning" uppercase size="sm" />
-            </Card>
+            </GlassCard>
           ))}
         </View>
       )}

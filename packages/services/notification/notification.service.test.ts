@@ -286,6 +286,26 @@ describe("inbox", () => {
     expect(read.isRead).toBe(true);
   });
 
+  it("unreadOnly hides read items without distorting the badge count", async () => {
+    // The test above has marked exactly one notification read, so there is a
+    // mix to filter — without that this would pass vacuously.
+    const all = await notificationService.listNotifications(resident, { limit: 50 });
+    const readOnes = all.items.filter((n) => n.isRead);
+    expect(readOnes.length).toBeGreaterThan(0);
+
+    const unread = await notificationService.listNotifications(resident, {
+      limit: 50,
+      unreadOnly: true,
+    });
+    expect(unread.items.every((n) => !n.isRead)).toBe(true);
+    expect(unread.items.length).toBe(all.items.length - readOnes.length);
+
+    // The bell badge must mean "everything unread", not "unread on this page",
+    // so the count is identical whichever way the list was asked for.
+    expect(unread.unreadCount).toBe(all.unreadCount);
+    expect(unread.items.map((n) => n.id)).not.toContain(readOnes[0]!.id);
+  });
+
   it("markAllRead clears the rest", async () => {
     const marked = await notificationService.markAllRead(resident);
     expect(marked).toBeGreaterThanOrEqual(4);

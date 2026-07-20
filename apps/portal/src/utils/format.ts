@@ -31,6 +31,27 @@ export function formatDateTime(iso: string | Date): string {
   return `${shortDateFmt.format(d)}, ${timeFmt.format(d)}`;
 }
 
+const relativeFmt = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+
+/**
+ * "5 minutes ago", "yesterday" — for feeds where recency matters more than the
+ * exact timestamp. Falls back to an absolute date past a week, since "7 weeks
+ * ago" is harder to place than the date itself.
+ *
+ * Locale comes from the system, like the other formatters here, so it follows
+ * the device rather than the app's i18n language.
+ */
+export function relativeTime(iso: string | Date, now: Date = new Date()): string {
+  const deltaSec = Math.round((new Date(iso).getTime() - now.getTime()) / 1000);
+  const abs = Math.abs(deltaSec);
+
+  if (abs < 60) return relativeFmt.format(Math.round(deltaSec), "second");
+  if (abs < 3_600) return relativeFmt.format(Math.round(deltaSec / 60), "minute");
+  if (abs < 86_400) return relativeFmt.format(Math.round(deltaSec / 3_600), "hour");
+  if (abs < 7 * 86_400) return relativeFmt.format(Math.round(deltaSec / 86_400), "day");
+  return formatDateTime(iso);
+}
+
 /** "14:00" → localized clock time on an arbitrary day. */
 export function formatClock(hhmm: string): string {
   const [h = 0, m = 0] = hhmm.split(":").map(Number);
