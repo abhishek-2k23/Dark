@@ -1,6 +1,12 @@
 import { BottomTabBarHeightContext } from "expo-router/build/react-navigation/bottom-tabs";
 import { useContext, type ReactNode } from "react";
-import { ScrollView, View, type ScrollViewProps } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  View,
+  type ScrollViewProps,
+} from "react-native";
 import {
   SafeAreaView,
   type Edge,
@@ -22,6 +28,12 @@ export interface ScreenProps {
   edges?: Edge[];
   /** Ambient glow backdrop preset; "none" renders a flat background. */
   aurora?: AuroraVariant | "none";
+  /**
+   * Lift content clear of the on-screen keyboard. On by default so no form ends
+   * up hidden behind it; opt out for screens that manage the keyboard
+   * themselves. No-op on screens without a focused input.
+   */
+  avoidKeyboard?: boolean;
   className?: string;
   contentClassName?: string;
   scrollProps?: ScrollViewProps;
@@ -39,6 +51,7 @@ export function Screen({
   padded = true,
   edges = ["top", "bottom"],
   aurora = "default",
+  avoidKeyboard = true,
   className,
   contentClassName,
   scrollProps,
@@ -56,30 +69,45 @@ export function Screen({
     : edges;
   const bottomClearance = insideTabs ? (tabBarHeight ?? 0) + 8 : undefined;
 
+  const body = (
+    <SafeAreaView edges={effectiveEdges} className="flex-1">
+      {scroll ? (
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName={cn("grow", padClass, contentClassName)}
+          contentContainerStyle={{ paddingBottom: bottomClearance }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          {...scrollProps}
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View
+          className={cn("flex-1", padClass, contentClassName)}
+          style={{ paddingBottom: bottomClearance }}
+        >
+          {children}
+        </View>
+      )}
+    </SafeAreaView>
+  );
+
   return (
     <View className={cn("flex-1 bg-background", className)}>
       {aurora !== "none" && <AuroraBackground variant={aurora} />}
-      <SafeAreaView edges={effectiveEdges} className="flex-1">
-        {scroll ? (
-          <ScrollView
-            className="flex-1"
-            contentContainerClassName={cn("grow", padClass, contentClassName)}
-            contentContainerStyle={{ paddingBottom: bottomClearance }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            {...scrollProps}
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          <View
-            className={cn("flex-1", padClass, contentClassName)}
-            style={{ paddingBottom: bottomClearance }}
-          >
-            {children}
-          </View>
-        )}
-      </SafeAreaView>
+      {avoidKeyboard ? (
+        // padding on iOS; Android leans on the window's native adjustResize.
+        // Matches the login screen's handling so keyboard behaviour is uniform.
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          {body}
+        </KeyboardAvoidingView>
+      ) : (
+        body
+      )}
     </View>
   );
 }
