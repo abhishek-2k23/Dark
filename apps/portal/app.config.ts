@@ -100,6 +100,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     [
+      "expo-local-authentication",
+      {
+        faceIDPermission:
+          "Prangan uses Face ID to lock the app so only you can open it.",
+      },
+    ],
+    [
       "expo-notifications",
       {
         icon: "./assets/images/android-icon-monochrome.png",

@@ -37,4 +37,6 @@ export async function deleteItem(key: string): Promise<void> {
 /** Storage keys. */
 export const STORAGE_KEYS = {
   refreshToken: "portl.refreshToken",
+  /** "1" when the biometric app-lock preference is on. */
+  biometricEnabled: "portl.biometricEnabled",
 } as const;

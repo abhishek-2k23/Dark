@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
+import { BiometricLockToggle } from "@/components/BiometricLockToggle";
 import { DevTools } from "@/components/DevTools";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
@@ -122,6 +123,8 @@ export default function GuardProfileTab() {
             </Text>
             <LanguageSwitcher />
           </View>
+
+          <BiometricLockToggle />
 
           <DevTools />
 

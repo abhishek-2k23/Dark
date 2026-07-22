@@ -21,6 +21,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AnimatedSplash } from "@/components/AnimatedSplash";
+import { BiometricGate } from "@/components/BiometricGate";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NotificationsListener } from "@/components/NotificationsListener";
 import { EmergencyHost } from "@/components/EmergencyHost";
@@ -30,6 +31,7 @@ import { LanguageProvider } from "@/i18n/LanguageProvider";
 import { useOTAUpdates } from "@/lib/useOTAUpdates";
 import { TRPCProvider } from "@/providers/TRPCProvider";
 import { useAuthStore } from "@/stores/authStore";
+import { useBiometricStore } from "@/stores/biometricStore";
 import { ThemeProvider, useTheme } from "@/theme";
 // Side-effect: initialise i18next before any component calls useTranslation.
 import "@/i18n";
@@ -99,6 +101,9 @@ export default function RootLayout() {
   // Restore any persisted session as soon as the app starts.
   useEffect(() => {
     void useAuthStore.getState().hydrate();
+    // Probe the sensor and load the app-lock preference; this decides whether
+    // the very first paint is veiled by the BiometricGate.
+    void useBiometricStore.getState().hydrate();
   }, []);
 
   useEffect(() => {
@@ -129,6 +134,8 @@ export default function RootLayout() {
               <DialogHost />
               {/* After DialogHost so toasts stay visible above an open dialog. */}
               <ToastHost />
+              {/* Biometric app-lock: veils the app until the owner re-auths. */}
+              <BiometricGate />
               {/* Last child: it veils everything until hydration settles. */}
               <SplashGate />
             </LanguageProvider>

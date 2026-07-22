@@ -61,7 +61,19 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "english": "English",
-    "hindi": "हिन्दी"
+    "hindi": "हिन्दी",
+    "security": "Security",
+    "biometricLock": "Biometric lock",
+    "biometricDesc": "Require {{method}} to open the app",
+    "biometricOn": "Biometric lock turned on",
+    "biometricOff": "Biometric lock turned off",
+    "biometricFailed": "Couldn't verify — try again",
+    "biometricEnablePrompt": "Confirm {{method}} to turn on the lock",
+    "biometricDisablePrompt": "Confirm {{method}} to turn off the lock",
+    "biometricUnlockPrompt": "Unlock with {{method}}",
+    "biometricUnlock": "Unlock with {{method}}",
+    "biometricLockedTitle": "App locked",
+    "biometricLockedBody": "Verify with {{method}} to continue"
   },
   "status": {
     "approved": "Approved",

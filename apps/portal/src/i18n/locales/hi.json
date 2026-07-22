@@ -61,7 +61,19 @@
     "themeLight": "हल्का",
     "themeDark": "गहरा",
     "english": "English",
-    "hindi": "हिन्दी"
+    "hindi": "हिन्दी",
+    "security": "सुरक्षा",
+    "biometricLock": "बायोमेट्रिक लॉक",
+    "biometricDesc": "ऐप खोलने के लिए {{method}} अनिवार्य करें",
+    "biometricOn": "बायोमेट्रिक लॉक चालू किया गया",
+    "biometricOff": "बायोमेट्रिक लॉक बंद किया गया",
+    "biometricFailed": "पुष्टि नहीं हो सकी — फिर कोशिश करें",
+    "biometricEnablePrompt": "लॉक चालू करने के लिए {{method}} से पुष्टि करें",
+    "biometricDisablePrompt": "लॉक बंद करने के लिए {{method}} से पुष्टि करें",
+    "biometricUnlockPrompt": "{{method}} से अनलॉक करें",
+    "biometricUnlock": "{{method}} से अनलॉक करें",
+    "biometricLockedTitle": "ऐप लॉक है",
+    "biometricLockedBody": "जारी रखने के लिए {{method}} से पुष्टि करें"
   },
   "status": {
     "approved": "स्वीकृत",
