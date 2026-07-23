@@ -66,6 +66,35 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     "expo-router",
     [
+      "expo-build-properties",
+      {
+        android: {
+          // R8/ProGuard: shrink + obfuscate the release build. Only affects
+          // `assembleRelease` — debug/dev-client builds are never minified, so
+          // this is invisible in the dev build and must be smoke-tested on a
+          // real release/preview build before shipping.
+          enableProguardInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+          // Reflection-heavy libraries can be stripped by R8 without keep
+          // rules; add them here as crashes surface in release testing.
+          extraProguardRules: [
+            "-keep class com.prangan.app.** { *; }",
+          ].join("\n"),
+        },
+        ios: {
+          // Required by @react-native-firebase on iOS (its pods are static
+          // frameworks). No effect on the Android build.
+          useFrameworks: "static",
+        },
+      },
+    ],
+    // Firebase App Check uses the Play Integrity provider on Android for app
+    // attestation. Requires google-services.json (already wired) and, to
+    // actually enforce anything, App Check registration in the Firebase console
+    // plus server-side token verification — see docs.
+    "@react-native-firebase/app",
+    "@react-native-firebase/app-check",
+    [
       "expo-splash-screen",
       {
         backgroundColor: "#050508",
