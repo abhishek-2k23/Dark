@@ -22,6 +22,16 @@ enum AuthProvider {
   GOOGLE
 }
 
+// Society committee title carried by an ADMIN account.
+enum AdminDesignation {
+  PRESIDENT
+  SECRETARY
+  TREASURER
+  COMMITTEE_MEMBER
+  MANAGER
+  OTHER
+}
+
 enum FlatType {
   ONE_RK    @map("1RK")
   ONE_BHK   @map("1BHK")
@@ -154,7 +164,6 @@ enum PayoutOnboardingStatus {
 
 /**
  * A society's subscription to Portl itself.
- *
  * Unlike every other payment in this schema, this one is the society paying
  * *us* for our own software — we are an ordinary merchant here, not an
  * intermediary, so it needs no Route, no linked accounts, and none of the
@@ -320,32 +329,33 @@ model Flat {
   tickets      HelpdeskTicket[]
   dues         MaintenanceDue[]
   emergencies  EmergencyAlert[]
+  admins       AdminProfile[]
 
   @@unique([towerId, flatNumber])
 }
 
 model User {
-  id           String       @id @default(cuid())
-  name         String
-  email        String?      @unique
-  phone        String?      @unique
-  passwordHash String? // null when authProvider = GOOGLE and no password set
-  authProvider AuthProvider @default(LOCAL)
-  googleId     String?      @unique
-  avatarUrl    String?
+  id            String       @id @default(cuid())
+  name          String
+  email         String?      @unique
+  phone         String?      @unique
+  passwordHash  String? // null when authProvider = GOOGLE and no password set
+  authProvider  AuthProvider @default(LOCAL)
+  googleId      String?      @unique
+  avatarUrl     String?
   // Email ownership proven via an emailed OTP. Login with an *unverified* email
   // is gated behind OTP verification (phone login is not). GOOGLE accounts are
   // verified by Google, so they are seeded/created as verified.
-  emailVerified Boolean     @default(false)
-  role         Role
-  societyId    String?
-  society      Society?     @relation(fields: [societyId], references: [id])
-  isActive     Boolean      @default(true)
+  emailVerified Boolean      @default(false)
+  role          Role
+  societyId     String?
+  society       Society?     @relation(fields: [societyId], references: [id])
+  isActive      Boolean      @default(true)
 
   emergencyContactName  String?
   emergencyContactPhone String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   residentProfile ResidentProfile?
   guardProfile    GuardProfile?
@@ -427,12 +437,16 @@ model GuardProfile {
 }
 
 model AdminProfile {
-  id          String  @id @default(cuid())
-  userId      String  @unique
-  user        User    @relation(fields: [userId], references: [id])
+  id          String            @id @default(cuid())
+  userId      String            @unique
+  user        User              @relation(fields: [userId], references: [id])
   societyId   String
-  society     Society @relation(fields: [societyId], references: [id])
-  designation String?
+  society     Society           @relation(fields: [societyId], references: [id])
+  designation AdminDesignation?
+  // An admin who also lives in the society can link their flat to use
+  // resident-facing, flat-scoped features (dues, visitors, complaints).
+  flatId      String?
+  flat        Flat?             @relation(fields: [flatId], references: [id])
 }
 
 // ---------------------------------------------------------------------------
@@ -457,15 +471,15 @@ enum EmailOtpPurpose {
 }
 
 model EmailOtp {
-  id        String          @id @default(cuid())
-  userId    String
-  user      User            @relation(fields: [userId], references: [id])
-  purpose   EmailOtpPurpose @default(EMAIL_VERIFICATION)
-  codeHash  String // SHA-256 of the 6-digit code — never store the raw code
-  expiresAt DateTime
-  attempts  Int             @default(0) // wrong-code tries; consumed after a cap
+  id         String          @id @default(cuid())
+  userId     String
+  user       User            @relation(fields: [userId], references: [id])
+  purpose    EmailOtpPurpose @default(EMAIL_VERIFICATION)
+  codeHash   String // SHA-256 of the 6-digit code — never store the raw code
+  expiresAt  DateTime
+  attempts   Int             @default(0) // wrong-code tries; consumed after a cap
   consumedAt DateTime?
-  createdAt DateTime        @default(now())
+  createdAt  DateTime        @default(now())
 
   @@index([userId, purpose])
 }
@@ -567,24 +581,24 @@ model GuestPreApproval {
 // ---------------------------------------------------------------------------
 
 model HelpdeskTicket {
-  id           String          @id @default(cuid())
+  id            String          @id @default(cuid())
   // Human-readable handle for the ticket: printed on the detail screen, encoded
   // in its QR, and emailed to the resident so they can quote it to the office.
-  referenceCode String         @unique
-  residentId   String
-  resident     ResidentProfile @relation(fields: [residentId], references: [id])
-  flatId       String
-  flat         Flat            @relation(fields: [flatId], references: [id])
-  category     TicketCategory
-  title        String
-  description  String
-  photoUrls    String[]
-  priority     TicketPriority  @default(MEDIUM)
-  status       TicketStatus    @default(OPEN)
-  assignedToId String?
-  assignedTo   User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
+  referenceCode String          @unique
+  residentId    String
+  resident      ResidentProfile @relation(fields: [residentId], references: [id])
+  flatId        String
+  flat          Flat            @relation(fields: [flatId], references: [id])
+  category      TicketCategory
+  title         String
+  description   String
+  photoUrls     String[]
+  priority      TicketPriority  @default(MEDIUM)
+  status        TicketStatus    @default(OPEN)
+  assignedToId  String?
+  assignedTo    User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   comments TicketComment[]
 
@@ -673,19 +687,19 @@ model PollVote {
 }
 
 model Amenity {
-  id           String   @id @default(cuid())
-  societyId    String
-  society      Society  @relation(fields: [societyId], references: [id])
-  name         String
-  description  String?
-  photoUrls    String[]
-  rules        String?
+  id                String   @id @default(cuid())
+  societyId         String
+  society           Society  @relation(fields: [societyId], references: [id])
+  name              String
+  description       String?
+  photoUrls         String[]
+  rules             String?
   // null = free. Free amenities bypass payment entirely and book directly.
-  pricePerSlot Decimal? @db.Decimal(10, 2)
-  isActive     Boolean  @default(true)
+  pricePerSlot      Decimal? @db.Decimal(10, 2)
+  isActive          Boolean  @default(true)
   // Free-cancellation window. Cancelling this many hours or more before the
   // slot refunds; inside it, no refund.
-  cancellationHours Int @default(24)
+  cancellationHours Int      @default(24)
 
   bookings AmenityBooking[]
 
@@ -693,22 +707,22 @@ model Amenity {
 }
 
 model AmenityBooking {
-  id         String          @id @default(cuid())
-  amenityId  String
-  amenity    Amenity         @relation(fields: [amenityId], references: [id])
-  residentId String
-  resident   ResidentProfile @relation(fields: [residentId], references: [id])
-  date       DateTime        @db.Date
-  startTime  String // "HH:mm", 24h
-  endTime    String // "HH:mm", 24h
-  status     BookingStatus   @default(BOOKED)
+  id            String          @id @default(cuid())
+  amenityId     String
+  amenity       Amenity         @relation(fields: [amenityId], references: [id])
+  residentId    String
+  resident      ResidentProfile @relation(fields: [residentId], references: [id])
+  date          DateTime        @db.Date
+  startTime     String // "HH:mm", 24h
+  endTime       String // "HH:mm", 24h
+  status        BookingStatus   @default(BOOKED)
   // Price snapshot taken when the booking was made, so a later change to
   // Amenity.pricePerSlot can't alter what an existing booking owes. null on
   // bookings of free amenities.
-  amountDue  Decimal?        @db.Decimal(10, 2)
+  amountDue     Decimal?        @db.Decimal(10, 2)
   // When a PENDING_PAYMENT hold lapses. Null once the booking is settled.
   holdExpiresAt DateTime?
-  createdAt  DateTime        @default(now())
+  createdAt     DateTime        @default(now())
 
   payments Payment[]
 
@@ -732,7 +746,7 @@ model EmergencyAlert {
   note      String?
 
   raisedById String
-  raisedBy   User   @relation("EmergencyRaisedBy", fields: [raisedById], references: [id])
+  raisedBy   User    @relation("EmergencyRaisedBy", fields: [raisedById], references: [id])
   /// Where the alarm came from, captured at raise time. Denormalised on purpose:
   /// a responder reading the alert later needs the flat it was raised from, not
   /// wherever the raiser happens to live today. Null when a guard or admin with
@@ -813,7 +827,7 @@ model Payment {
   verifiedAt        DateTime?
   rejectionReason   String?
 
-  createdAt     DateTime        @default(now())
+  createdAt DateTime @default(now())
 
   @@index([dueId])
   @@index([bookingId])
@@ -825,7 +839,6 @@ model Payment {
 
 /**
  * A bill a resident owes an individual service person (maid, electrician, …).
- *
  * Raised by the resident, not the service person: ServiceProvider is a
  * directory row with no User behind it, so a service person cannot log in to
  * raise a bill, confirm a payment, or complete Razorpay KYC. That is also why
@@ -841,9 +854,9 @@ model ServiceBill {
   description       String?
   // Free-text billing period, e.g. "July 2026" — service work is billed by
   // arrangement, not on a fixed cycle, so this is a label rather than a date.
-  periodLabel String?
-  status      DueStatus @default(PENDING)
-  createdAt   DateTime  @default(now())
+  periodLabel       String?
+  status            DueStatus       @default(PENDING)
+  createdAt         DateTime        @default(now())
 
   payments Payment[]
 
@@ -875,20 +888,28 @@ model WebhookEvent {
  * hardcoded plan that later changes price rewrites history.
  */
 model Plan {
-  id          String  @id @default(cuid())
-  code        String  @unique // stable machine key, e.g. "starter"
-  name        String
-  description String?
-  /** Price for one billing interval, in rupees. 0 is a valid free tier. */
-  price        Decimal @db.Decimal(10, 2)
-  /** Billing period length. Monthly is 1; an annual plan is 12. */
-  intervalMonths Int    @default(1)
-  /** Bullet points shown on the plan card. */
-  features    String[]
-  /** Soft cap on flats; null = unlimited. Enforcement is a later concern. */
-  maxFlats    Int?
-  isActive    Boolean @default(true)
-  sortOrder   Int     @default(0)
+  id             String   @id @default(cuid())
+  code           String   @unique // stable machine key, e.g. "starter"
+  name           String
+  description    String?
+  /**
+   * Price for one billing interval, in rupees. 0 is a valid free tier.
+   */
+  price          Decimal  @db.Decimal(10, 2)
+  /**
+   * Billing period length. Monthly is 1; an annual plan is 12.
+   */
+  intervalMonths Int      @default(1)
+  /**
+   * Bullet points shown on the plan card.
+   */
+  features       String[]
+  /**
+   * Soft cap on flats; null = unlimited. Enforcement is a later concern.
+   */
+  maxFlats       Int?
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
 
   subscriptions Subscription[]
   payments      SubscriptionPayment[]
@@ -909,15 +930,17 @@ model Subscription {
 
   status SubscriptionStatus @default(TRIALING)
 
-  /** Paid-through window. Access decisions read currentPeriodEnd, not payments. */
-  currentPeriodStart DateTime @default(now())
+  /**
+   * Paid-through window. Access decisions read currentPeriodEnd, not payments.
+   */
+  currentPeriodStart DateTime  @default(now())
   currentPeriodEnd   DateTime
   /**
    * When GRACE turns into EXPIRED. Set on entering grace so the window is
    * fixed at that moment rather than recomputed from a config that may change.
    */
-  graceEndsAt DateTime?
-  cancelledAt DateTime?
+  graceEndsAt        DateTime?
+  cancelledAt        DateTime?
   /**
    * When the first payment was captured. Null means the row exists only to
    * anchor an in-flight checkout's SubscriptionPayment FK — the society has
@@ -925,7 +948,7 @@ model Subscription {
    * applyCapture, and never cleared: it marks "has ever been paid for", not
    * "is currently active" (that is `status`).
    */
-  activatedAt DateTime?
+  activatedAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -944,15 +967,21 @@ model SubscriptionPayment {
   plan           Plan         @relation(fields: [planId], references: [id])
   amount         Decimal      @db.Decimal(10, 2)
 
-  /** Razorpay's order id, created at checkout; the webhook arrives with it. */
+  /**
+   * Razorpay's order id, created at checkout; the webhook arrives with it.
+   */
   razorpayOrderId   String  @unique
-  /** Razorpay's payment id, known only once captured. */
+  /**
+   * Razorpay's payment id, known only once captured.
+   */
   razorpayPaymentId String?
 
   status PaymentStatus @default(INITIATED)
   paidAt DateTime?
 
-  /** The window this payment bought, stamped when it succeeds. */
+  /**
+   * The window this payment bought, stamped when it succeeds.
+   */
   periodStart DateTime?
   periodEnd   DateTime?
 

@@ -1,5 +1,10 @@
 import { TRPCError } from "@trpc/server";
-import { prisma, type User, type VehicleType } from "@repo/database";
+import {
+  prisma,
+  type AdminDesignation,
+  type User,
+  type VehicleType,
+} from "@repo/database";
 import { assertCloudinaryUrl } from "@repo/cloudinary";
 
 /**
@@ -46,7 +51,7 @@ export interface MyProfile {
     shiftStart: string | null;
     shiftEnd: string | null;
   } | null;
-  adminProfile: { designation: string | null } | null;
+  adminProfile: { designation: AdminDesignation | null } | null;
 }
 
 export async function getMyProfile(actor: User): Promise<MyProfile> {

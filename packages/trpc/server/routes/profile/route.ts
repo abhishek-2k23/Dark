@@ -1,6 +1,6 @@
 import { profileService } from "@repo/services";
 
-import { phoneSchema, z, zodUndefinedModel } from "../../schema";
+import { AdminDesignationEnum, phoneSchema, z, zodUndefinedModel } from "../../schema";
 import { protectedProcedure, residentProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -71,7 +71,7 @@ const MyProfileModel = z
       .describe("Guard details — null unless role is GUARD"),
     adminProfile: z
       .object({
-        designation: z.string().nullable().describe("Designation, e.g. 'Secretary', if set"),
+        designation: AdminDesignationEnum.nullable().describe("Committee title, if set"),
       })
       .nullable()
       .describe("Admin details — null unless role is ADMIN"),

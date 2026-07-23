@@ -106,12 +106,12 @@ describe("staffAccount.create", () => {
       email: `admin2-${runId}@test.local`,
       temporaryPassword: "temp-pass-123",
       role: "ADMIN",
-      designation: "Treasurer",
+      designation: "TREASURER",
     });
     const profile = await prisma.adminProfile.findUnique({
       where: { userId: created.id },
     });
-    expect(profile?.designation).toBe("Treasurer");
+    expect(profile?.designation).toBe("TREASURER");
   });
 
   it("rejects a duplicate email", async () => {

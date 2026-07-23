@@ -11,4 +11,19 @@ export const phoneSchema = z
   .string()
   .regex(/^\d{10}$/, "Enter a 10-digit phone number");
 
+/**
+ * Society committee title carried by an ADMIN account. Mirrors the
+ * `AdminDesignation` Prisma enum — keep the two in sync.
+ */
+export const AdminDesignationEnum = z
+  .enum([
+    "PRESIDENT",
+    "SECRETARY",
+    "TREASURER",
+    "COMMITTEE_MEMBER",
+    "MANAGER",
+    "OTHER",
+  ])
+  .describe("Society committee title (ADMIN role only)");
+
 export { z };

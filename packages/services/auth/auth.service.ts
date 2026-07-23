@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { OAuth2Client } from "google-auth-library";
-import { prisma, EmailOtpPurpose, type User } from "@repo/database";
+import { prisma, AdminDesignation, EmailOtpPurpose, type User } from "@repo/database";
 import {
   hashPassword,
   verifyPassword,
@@ -351,7 +351,7 @@ export async function registerSociety(input: {
     email?: string;
     phone?: string;
     password: string;
-    designation?: string;
+    designation?: AdminDesignation;
   };
 }): Promise<AuthSession> {
   const { society, admin } = input;
@@ -394,7 +394,8 @@ export async function registerSociety(input: {
         adminProfile: {
           create: {
             societyId: createdSociety.id,
-            designation: admin.designation ?? "Society Admin",
+            // The founder is the society's top office bearer by default.
+            designation: admin.designation ?? AdminDesignation.PRESIDENT,
           },
         },
       },

@@ -249,7 +249,7 @@ describe("registerSociety", () => {
         name: "Founder",
         email: founderEmail,
         password,
-        designation: "Chairperson",
+        designation: "PRESIDENT",
       },
     });
     expect(session.accessToken).toBeTruthy();
@@ -262,7 +262,7 @@ describe("registerSociety", () => {
     });
     expect(admin?.role).toBe("ADMIN");
     expect(admin?.societyId).toBeTruthy();
-    expect(admin?.adminProfile?.designation).toBe("Chairperson");
+    expect(admin?.adminProfile?.designation).toBe("PRESIDENT");
     registeredSocietyId = admin!.societyId!;
 
     const society = await prisma.society.findUnique({

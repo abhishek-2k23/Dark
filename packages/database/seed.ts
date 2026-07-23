@@ -2,6 +2,7 @@ import "dotenv/config";
 import argon2 from "argon2";
 import {
   PrismaClient,
+  type AdminDesignation,
   type FlatType,
   type VehicleType,
   type ServiceCategory,
@@ -48,7 +49,7 @@ type SocietySpec = {
   pincode: string;
   towers: string[];
   flats: { tower: string; flatNumber: string; floor: number; type: FlatType }[];
-  admin: { name: string; email: string; phone: string; designation: string };
+  admin: { name: string; email: string; phone: string; designation: AdminDesignation };
   guard: {
     name: string;
     email: string;
@@ -102,7 +103,7 @@ const societies: SocietySpec[] = [
       name: "Anita Sharma",
       email: "admin@greenmeadows.test",
       phone: "+919800000001",
-      designation: "Society Secretary",
+      designation: "SECRETARY",
     },
     guard: {
       name: "Ram Singh",
@@ -200,7 +201,7 @@ const societies: SocietySpec[] = [
       name: "Rajesh Patil",
       email: "admin@palmgrove.test",
       phone: "+919820000001",
-      designation: "Managing Committee Chairman",
+      designation: "PRESIDENT",
     },
     guard: {
       name: "Vijay More",
@@ -302,7 +303,7 @@ const societies: SocietySpec[] = [
       name: "Neha Kapoor",
       email: "admin@lakeview.test",
       phone: "+919840000001",
-      designation: "RWA President",
+      designation: "PRESIDENT",
     },
     guard: {
       name: "Balbir Yadav",

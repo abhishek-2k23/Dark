@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { prisma, type User } from "@repo/database";
+import { prisma, type AdminDesignation, type User } from "@repo/database";
 import { hashPassword } from "@repo/auth";
 
 /**
@@ -59,7 +59,7 @@ export async function createStaffAccount(
     shiftStart?: string;
     shiftEnd?: string;
     // Admin-only field
-    designation?: string;
+    designation?: AdminDesignation;
   },
 ): Promise<StaffInfo> {
   if (!actor.societyId) {

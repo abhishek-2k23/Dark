@@ -1,6 +1,6 @@
 import { authService } from "@repo/services";
 
-import { phoneSchema, z, zodUndefinedModel } from "../../schema";
+import { AdminDesignationEnum, phoneSchema, z, zodUndefinedModel } from "../../schema";
 import { publicProcedure, protectedProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -110,10 +110,9 @@ const RegisterSocietyInput = z.object({
         .describe("Admin's 10-digit phone number (this or email required)")
         .optional(),
       password: z.string().min(8).describe("Admin password, minimum 8 characters"),
-      designation: z
-        .string()
-        .describe("Admin's role/title, e.g. 'Society Secretary' (defaults to 'Society Admin')")
-        .optional(),
+      designation: AdminDesignationEnum.describe(
+        "Founding admin's committee title (defaults to PRESIDENT)",
+      ).optional(),
     })
     .describe("The founding admin account for the new society"),
 });

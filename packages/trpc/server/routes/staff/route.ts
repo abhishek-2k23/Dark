@@ -1,6 +1,6 @@
 import { staffService } from "@repo/services";
 
-import { phoneSchema, z, zodUndefinedModel } from "../../schema";
+import { AdminDesignationEnum, phoneSchema, z, zodUndefinedModel } from "../../schema";
 import { adminProcedure, subscribedAdminProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
 
@@ -40,7 +40,9 @@ const CreateStaffInput = z.object({
   gateAssigned: z.string().describe("Assigned gate (GUARD role only)").optional(),
   shiftStart: z.string().describe("Shift start 'HH:mm' 24h (GUARD role only)").optional(),
   shiftEnd: z.string().describe("Shift end 'HH:mm' 24h (GUARD role only)").optional(),
-  designation: z.string().describe("Designation, e.g. 'Secretary' (ADMIN role only)").optional(),
+  designation: AdminDesignationEnum.describe(
+    "Committee title (ADMIN role only)",
+  ).optional(),
 });
 
 export const staffRouter = router({
