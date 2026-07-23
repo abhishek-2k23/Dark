@@ -12,6 +12,7 @@ import {
   useTheme,
 } from "@/theme";
 import { cn } from "@/utils/cn";
+import { FieldLabel } from "./FieldLabel";
 import { Icon, type IconName } from "./Icon";
 import { Text } from "./Text";
 
@@ -23,6 +24,8 @@ export interface InputProps extends TextInputProps {
    */
   ref?: Ref<TextInput>;
   label?: string;
+  /** Marks the field required: red asterisk on the label + a screen-reader hint. */
+  required?: boolean;
   /** Right-aligned trailing label, e.g. "Optional". */
   labelHint?: string;
   leftIcon?: IconName;
@@ -36,6 +39,7 @@ export interface InputProps extends TextInputProps {
 /** Labelled text field with focus + error states. */
 export function Input({
   label,
+  required,
   labelHint,
   leftIcon,
   rightSlot,
@@ -59,18 +63,7 @@ export function Input({
 
   return (
     <View className={cn("gap-1.5", containerClassName)}>
-      {label && (
-        <View className="flex-row items-center justify-between">
-          <Text variant="subtitle" color="primary">
-            {label}
-          </Text>
-          {labelHint && (
-            <Text variant="overline" color="tertiary">
-              {labelHint}
-            </Text>
-          )}
-        </View>
-      )}
+      {label && <FieldLabel label={label} required={required} hint={labelHint} />}
 
       <View
         className={cn(

@@ -35,6 +35,7 @@ export { NeonTile, type NeonTileProps } from "./NeonTile";
 export { Skeleton, type SkeletonProps } from "./Skeleton";
 export { Badge, type BadgeProps, type BadgeTone } from "./Badge";
 export { Input, type InputProps } from "./Input";
+export { FieldLabel, type FieldLabelProps } from "./FieldLabel";
 export { DateTimeField, type DateTimeFieldProps } from "./DateTimeField";
 export { PasswordInput, type PasswordInputProps } from "./PasswordInput";
 export { PhoneInput, type PhoneInputProps } from "./PhoneInput";
@@ -47,4 +48,5 @@ export {
   type SegmentedControlProps,
   type SegmentOption,
 } from "./SegmentedControl";
+export { SwipeTabs, type SwipeTabsProps } from "./SwipeTabs";
 export { Switch, type SwitchProps } from "./Switch";
