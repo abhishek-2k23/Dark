@@ -7,6 +7,7 @@ import {
   joinRequestService,
   amenityService,
   subscriptionService,
+  noticeService,
 } from "@repo/services";
 import { app as expressApplication } from "./server";
 
@@ -18,8 +19,9 @@ const EXPIRY_SWEEP_INTERVAL_MS = 60 * 1000;
  * Periodic sweep: PENDING visitor requests older than
  * VISITOR_PENDING_TTL_MIN become EXPIRED (guards shouldn't wait forever),
  * ACTIVE pre-approvals whose window lapsed become EXPIRED, PENDING
- * maintenance dues past their dueDate become OVERDUE, and chargeable amenity
- * bookings whose payment hold lapsed are released so the slot frees up.
+ * maintenance dues past their dueDate become OVERDUE, chargeable amenity
+ * bookings whose payment hold lapsed are released so the slot frees up, and
+ * scheduled notices whose publish time has arrived push their residents.
  */
 function startExpirySweep() {
   const sweep = async () => {
@@ -32,6 +34,7 @@ function startExpirySweep() {
       const lapsedJoinRequests = await joinRequestService.expireStaleJoinRequests();
       const { expired: lapsedHolds } = await amenityService.expireLapsedHolds();
       const subs = await subscriptionService.sweepSubscriptions();
+      const publishedNotices = await noticeService.publishDueNotices();
       if (
         staleVisitors ||
         lapsedPreApprovals ||
@@ -39,7 +42,8 @@ function startExpirySweep() {
         lapsedJoinRequests ||
         lapsedHolds ||
         subs.grace ||
-        subs.expired
+        subs.expired ||
+        publishedNotices
       ) {
         logger.info("Expiry sweep", {
           staleVisitors,
@@ -49,6 +53,7 @@ function startExpirySweep() {
           lapsedHolds,
           subscriptionsToGrace: subs.grace,
           subscriptionsExpired: subs.expired,
+          publishedNotices,
         });
       }
     } catch (err) {

@@ -5,14 +5,7 @@ import { Pressable, View } from "react-native";
 
 import { ImageField } from "@/components/media";
 import { StackHeader } from "@/components/StackHeader";
-import {
-  Button,
-  Card,
-  Icon,
-  Input,
-  Screen,
-  Text,
-} from "@/components/ui";
+import { Button, Card, DateTimeField, Icon, Input, Screen, Text } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 import { noticeCategoryIcon } from "@/utils/domain";
@@ -21,10 +14,22 @@ import { formatDateTime } from "@/utils/format";
 const CATEGORIES = ["GENERAL", "MAINTENANCE", "EVENT", "EMERGENCY"] as const;
 type Category = (typeof CATEGORIES)[number];
 
-type When = "now" | "in1h" | "tomorrow9" | "in3d";
+type When = "now" | "in1h" | "tomorrow9" | "in3d" | "custom";
 
-function scheduleDate(when: When): string | undefined {
+/** Sensible starting point for the custom picker: the top of the next hour. */
+function nextHour(): Date {
+  const d = new Date();
+  d.setHours(d.getHours() + 1, 0, 0, 0);
+  return d;
+}
+
+/**
+ * The scheduled Date for a given choice, or undefined to publish immediately.
+ * "custom" defers to the admin-picked date.
+ */
+function scheduleDate(when: When, custom: Date): Date | undefined {
   if (when === "now") return undefined;
+  if (when === "custom") return custom;
   const d = new Date();
   if (when === "in1h") d.setHours(d.getHours() + 1);
   if (when === "tomorrow9") {
@@ -32,7 +37,7 @@ function scheduleDate(when: When): string | undefined {
     d.setHours(9, 0, 0, 0);
   }
   if (when === "in3d") d.setDate(d.getDate() + 3);
-  return d.toISOString();
+  return d;
 }
 
 export default function CreateNotice() {
@@ -43,16 +48,14 @@ export default function CreateNotice() {
   const utils = trpc.useUtils();
   const isEdit = !!id;
 
-  const existing = trpc.notice.list.useQuery(
-    { limit: 100 },
-    { enabled: isEdit },
-  );
+  const existing = trpc.notice.list.useQuery({ limit: 100 }, { enabled: isEdit });
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [category, setCategory] = useState<Category>("GENERAL");
   const [pinned, setPinned] = useState(false);
   const [when, setWhen] = useState<When>("now");
+  const [customAt, setCustomAt] = useState<Date>(nextHour);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -95,7 +98,14 @@ export default function CreateNotice() {
       showToast(t("admin.noticeMissing"), "error");
       return;
     }
-    const scheduledAt = scheduleDate(when);
+    const scheduled = scheduleDate(when, customAt);
+    // The picker can't go earlier than now, but time passes between picking and
+    // submitting — reject a moment that has since slipped into the past.
+    if (scheduled && scheduled <= new Date()) {
+      showToast(t("admin.scheduleInPast"), "error");
+      return;
+    }
+    const scheduledAt = scheduled?.toISOString();
     if (isEdit) {
       update.mutate({
         noticeId: id!,
@@ -104,7 +114,7 @@ export default function CreateNotice() {
         imageUrl,
         category,
         isPinned: pinned,
-        // "now" publishes immediately (null); a preset reschedules.
+        // "now" publishes immediately (null); a schedule reschedules.
         scheduledAt: scheduledAt ?? null,
       });
     } else {
@@ -163,9 +173,7 @@ export default function CreateNotice() {
                   key={c}
                   onPress={() => setCategory(c)}
                   className={`flex-row items-center gap-1.5 rounded-full border px-3.5 py-2 active:opacity-80 ${
-                    active
-                      ? "border-primary bg-primary-soft"
-                      : "border-border bg-surface"
+                    active ? "border-primary bg-primary-soft" : "border-border bg-surface"
                   }`}
                 >
                   <Icon
@@ -208,6 +216,7 @@ export default function CreateNotice() {
                 ["in1h", t("passes.in1h")],
                 ["tomorrow9", t("passes.tomorrow9")],
                 ["in3d", t("admin.in3days")],
+                ["custom", t("admin.publishCustom")],
               ] as [When, string][]
             ).map(([value, label]) => {
               const active = value === when;
@@ -226,10 +235,19 @@ export default function CreateNotice() {
               );
             })}
           </View>
+          {when === "custom" && (
+            <DateTimeField
+              value={customAt}
+              onChange={setCustomAt}
+              minimumDate={new Date()}
+              doneLabel={t("common.done")}
+            />
+          )}
+
           {when !== "now" && (
             <Text variant="caption" color="secondary">
               {t("admin.willPublish", {
-                date: formatDateTime(scheduleDate(when)!),
+                date: formatDateTime(scheduleDate(when, customAt)!),
               })}
             </Text>
           )}

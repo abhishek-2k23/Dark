@@ -136,6 +136,53 @@ describe("scheduledAt visibility", () => {
     expect(residentView.items.map((n) => n.title)).toContain("Diwali event");
   });
 
+  it("re-scheduling a published notice re-arms its publish push", async () => {
+    const notice = await noticeService.createNotice(admin, {
+      title: "Reschedule me",
+      body: "later",
+      category: "GENERAL",
+    });
+    // Immediate notices are already notified; pushing it to the future clears
+    // that so the sweep will announce it again when the new time passes.
+    const rescheduled = await noticeService.updateNotice(admin, {
+      noticeId: notice.id,
+      scheduledAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    });
+    expect(rescheduled.isPublished).toBe(false);
+    const row = await prisma.notice.findUnique({ where: { id: notice.id } });
+    expect(row?.notifiedAt).toBeNull();
+    await prisma.notice.delete({ where: { id: notice.id } });
+  });
+
+  it("publishDueNotices pushes residents once, then is idempotent", async () => {
+    // createNotice forbids past times, so seed a past-due one directly.
+    const due = await prisma.notice.create({
+      data: {
+        societyId,
+        title: "Gym reopens",
+        body: "Open from today",
+        category: "GENERAL",
+        scheduledAt: new Date(Date.now() - 60_000),
+        publishedByAdminId: admin.id,
+      },
+    });
+    const countPushes = () =>
+      prisma.notification.count({ where: { userId: resident.id, type: "NOTICE_PUBLISHED" } });
+
+    const before = await countPushes();
+    const published = await noticeService.publishDueNotices();
+    expect(published).toBeGreaterThanOrEqual(1);
+    expect(await countPushes()).toBe(before + 1);
+
+    const row = await prisma.notice.findUnique({ where: { id: due.id } });
+    expect(row?.notifiedAt).not.toBeNull();
+
+    // A second sweep must not push this resident again.
+    await noticeService.publishDueNotices();
+    expect(await countPushes()).toBe(before + 1);
+    await prisma.notice.delete({ where: { id: due.id } });
+  });
+
   it("update and delete are scoped to the admin's society", async () => {
     await expectTRPCError(
       noticeService.updateNotice(foreignAdmin, { noticeId: scheduledId, title: "Hijack" }),

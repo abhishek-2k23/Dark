@@ -618,9 +618,14 @@ model Notice {
   publishedByAdminId String
   publishedByAdmin   User           @relation(fields: [publishedByAdminId], references: [id])
   scheduledAt        DateTime?
+  // When residents were pushed about this notice. Lets the publish sweep send
+  // the notification exactly once as scheduledAt passes; null means still owed.
+  notifiedAt         DateTime?
   createdAt          DateTime       @default(now())
 
   @@index([societyId])
+  // The publish sweep scans for due-but-unnotified scheduled notices.
+  @@index([notifiedAt, scheduledAt])
 }
 
 model Poll {
