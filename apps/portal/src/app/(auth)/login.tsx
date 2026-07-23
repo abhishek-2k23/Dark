@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import {
   Keyboard,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   TextInput,
@@ -202,17 +201,10 @@ export default function LoginScreen() {
         }}
         pointerEvents="none"
       >
-        <AuroraBackground
-          specs={GLOW_SPECS}
-          width={windowWidth}
-          height={glowHeight}
-        />
+        <AuroraBackground specs={GLOW_SPECS} width={windowWidth} height={glowHeight} />
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding" keyboardVerticalOffset={16}>
         <View
           style={{
             flex: 1,

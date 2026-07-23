@@ -1,22 +1,17 @@
 import { BottomTabBarHeightContext } from "expo-router/build/react-navigation/bottom-tabs";
 import { useContext, type ReactNode } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  View,
-  type ScrollViewProps,
-} from "react-native";
-import {
-  SafeAreaView,
-  type Edge,
-} from "react-native-safe-area-context";
+import { KeyboardAvoidingView, ScrollView, View, type ScrollViewProps } from "react-native";
+import { SafeAreaView, type Edge } from "react-native-safe-area-context";
 
 import { cn } from "@/utils/cn";
-import {
-  AuroraBackground,
-  type AuroraVariant,
-} from "./AuroraBackground";
+import { AuroraBackground, type AuroraVariant } from "./AuroraBackground";
+
+/**
+ * Breathing room kept between the focused field and the top of the keyboard, so
+ * the input never sits flush against it. Added as keyboardVerticalOffset, which
+ * under `behavior="padding"` translates directly into extra bottom padding.
+ */
+const KEYBOARD_GAP = 16;
 
 export interface ScreenProps {
   children: ReactNode;
@@ -64,9 +59,7 @@ export function Screen({
   const insideTabs = tabBarHeight !== undefined;
 
   // The floating bar already spans the bottom inset — avoid double padding.
-  const effectiveEdges = insideTabs
-    ? edges.filter((e) => e !== "bottom")
-    : edges;
+  const effectiveEdges = insideTabs ? edges.filter((e) => e !== "bottom") : edges;
   const bottomClearance = insideTabs ? (tabBarHeight ?? 0) + 8 : undefined;
 
   const body = (
@@ -97,11 +90,15 @@ export function Screen({
     <View className={cn("flex-1 bg-background", className)}>
       {aurora !== "none" && <AuroraBackground variant={aurora} />}
       {avoidKeyboard ? (
-        // padding on iOS; Android leans on the window's native adjustResize.
-        // Matches the login screen's handling so keyboard behaviour is uniform.
+        // "padding" on both platforms. Android used to lean on the window's
+        // native adjustResize, but edge-to-edge (mandatory since SDK 54) stops
+        // the window from resizing, so that left lower fields hidden behind the
+        // keyboard. Padding by the keyboard height works under edge-to-edge, and
+        // a scrolling Screen then brings the focused input into view.
         <KeyboardAvoidingView
           style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior="padding"
+          keyboardVerticalOffset={KEYBOARD_GAP}
         >
           {body}
         </KeyboardAvoidingView>

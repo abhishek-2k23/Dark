@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { OtpInput } from "@/components/OtpInput";
 import { Button, Icon, Link, Screen, Text } from "@/components/ui";
@@ -98,69 +98,60 @@ export default function OtpScreen() {
 
   return (
     <Screen aurora="hero">
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View className="flex-1 gap-6 pb-6 pt-2">
-          {/* The chevron is also the "wrong address" exit — a mistyped email
+      {/* Screen already provides keyboard avoidance; no inner KAV needed. */}
+      <View className="flex-1 gap-6 pb-6 pt-2">
+        {/* The chevron is also the "wrong address" exit — a mistyped email
               is unrecoverable from here, the code went somewhere else. */}
-          <Pressable
-            onPress={backToLogin}
-            accessibilityRole="button"
-            accessibilityLabel={t("otp.back")}
-            hitSlop={12}
-            className="-ml-2 h-10 w-10 items-center justify-center active:opacity-70"
-          >
-            <Icon name="chevron-back" size={26} color="content" />
-          </Pressable>
+        <Pressable
+          onPress={backToLogin}
+          accessibilityRole="button"
+          accessibilityLabel={t("otp.back")}
+          hitSlop={12}
+          className="-ml-2 h-10 w-10 items-center justify-center active:opacity-70"
+        >
+          <Icon name="chevron-back" size={26} color="content" />
+        </Pressable>
 
-          <View className="gap-1">
-            <Text variant="bodyLarge" color="secondary">
-              {t("otp.sentTo")}
-            </Text>
-            <Text variant="h1">{email}</Text>
-          </View>
-
-          <OtpInput
-            value={code}
-            onChange={setCode}
-            length={OTP_LENGTH}
-            onFilled={onVerify}
-          />
-
-          <View className="flex-row items-center justify-between">
-            <Text variant="bodySmall" color="tertiary">
-              {t("otp.notReceived")}
-            </Text>
-            {remaining ? (
-              <Text variant="bodySmall" color="tertiary">
-                {t("otp.resendIn", { time: remaining })}
-              </Text>
-            ) : (
-              <Link
-                label={t("otp.resend")}
-                size="sm"
-                onPress={() => {
-                  if (resend.isPending) return;
-                  resend.mutate({ email });
-                }}
-              />
-            )}
-          </View>
-
-          {/* Reference pins the action to the bottom, above the keyboard. */}
-          <View className="flex-1" />
-          <Button
-            label={t("common.continue")}
-            variant="primary"
-            size="lg"
-            loading={verify.isPending}
-            onPress={() => onVerify()}
-            fullWidth
-          />
+        <View className="gap-1">
+          <Text variant="bodyLarge" color="secondary">
+            {t("otp.sentTo")}
+          </Text>
+          <Text variant="h1">{email}</Text>
         </View>
-      </KeyboardAvoidingView>
+
+        <OtpInput value={code} onChange={setCode} length={OTP_LENGTH} onFilled={onVerify} />
+
+        <View className="flex-row items-center justify-between">
+          <Text variant="bodySmall" color="tertiary">
+            {t("otp.notReceived")}
+          </Text>
+          {remaining ? (
+            <Text variant="bodySmall" color="tertiary">
+              {t("otp.resendIn", { time: remaining })}
+            </Text>
+          ) : (
+            <Link
+              label={t("otp.resend")}
+              size="sm"
+              onPress={() => {
+                if (resend.isPending) return;
+                resend.mutate({ email });
+              }}
+            />
+          )}
+        </View>
+
+        {/* Reference pins the action to the bottom, above the keyboard. */}
+        <View className="flex-1" />
+        <Button
+          label={t("common.continue")}
+          variant="primary"
+          size="lg"
+          loading={verify.isPending}
+          onPress={() => onVerify()}
+          fullWidth
+        />
+      </View>
     </Screen>
   );
 }
