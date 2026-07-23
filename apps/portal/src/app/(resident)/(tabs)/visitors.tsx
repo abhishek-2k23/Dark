@@ -5,6 +5,7 @@ import { View } from "react-native";
 
 import { GatePass } from "@/components/GatePass";
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
+import { TabPage } from "@/components/TabPage";
 import { VisitorRow } from "@/components/VisitorRow";
 import {
   Badge,
@@ -12,10 +13,12 @@ import {
   Card,
   Screen,
   SegmentedControl,
+  SwipeTabs,
   Text,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
+import { confirmAction } from "@/utils/confirm";
 import { preApprovalStatusTone } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
@@ -166,7 +169,15 @@ function PassesList() {
                   size="sm"
                   className="flex-1"
                   loading={cancel.isPending}
-                  onPress={() => cancel.mutate({ preApprovalId: p.id })}
+                  onPress={() =>
+                    confirmAction({
+                      title: t("passes.cancelConfirmTitle"),
+                      message: t("passes.cancelConfirmMessage"),
+                      confirmLabel: t("passes.cancel"),
+                      cancelLabel: t("common.keep"),
+                      onConfirm: () => cancel.mutate({ preApprovalId: p.id }),
+                    })
+                  }
                 />
               </View>
             </View>
@@ -208,37 +219,46 @@ export default function VisitorsTab() {
   const [tab, setTab] = useState<Tab>("pending");
 
   return (
-    <Screen scroll contentClassName="gap-4 py-3 pb-8">
-      <View className="flex-row items-center justify-between">
-        <View>
-          <Text variant="h1">{t("visitors.title")}</Text>
-          <Text variant="body" color="secondary">
-            {t("visitors.subtitle")}
-          </Text>
+    <Screen padded={false} contentClassName="pt-3">
+      <View className="gap-4 px-5">
+        <View className="flex-row items-center justify-between">
+          <View>
+            <Text variant="h1">{t("visitors.title")}</Text>
+            <Text variant="body" color="secondary">
+              {t("visitors.subtitle")}
+            </Text>
+          </View>
         </View>
+
+        <Button
+          label={t("dashboard.preApproveGuest")}
+          variant="primary"
+          leftIcon="person-add-outline"
+          onPress={() => router.push("/(resident)/visitors/pre-approve")}
+          fullWidth
+        />
       </View>
 
-      <Button
-        label={t("dashboard.preApproveGuest")}
-        variant="primary"
-        leftIcon="person-add-outline"
-        onPress={() => router.push("/(resident)/visitors/pre-approve")}
-        fullWidth
-      />
-
-      <SegmentedControl
+      <SwipeTabs
         value={tab}
         onChange={setTab}
+        tabsClassName="mx-5 mb-1 mt-4"
         options={[
           { value: "pending", label: t("visitors.pending") },
           { value: "history", label: t("visitors.history") },
           { value: "passes", label: t("visitors.passes") },
         ]}
-      />
-
-      {tab === "pending" && <PendingList />}
-      {tab === "history" && <HistoryList />}
-      {tab === "passes" && <PassesList />}
+      >
+        <TabPage>
+          <PendingList />
+        </TabPage>
+        <TabPage>
+          <HistoryList />
+        </TabPage>
+        <TabPage>
+          <PassesList />
+        </TabPage>
+      </SwipeTabs>
     </Screen>
   );
 }

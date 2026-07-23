@@ -18,6 +18,7 @@ import {
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
+import { confirmAction } from "@/utils/confirm";
 import { serviceCategoryIcon } from "@/utils/domain";
 
 const CATEGORIES = ["MAID", "ELECTRICIAN", "PLUMBER", "DRIVER", "OTHER"] as const;
@@ -183,7 +184,15 @@ function ProviderCard({
           size="sm"
           className="flex-1"
           loading={remove.isPending}
-          onPress={() => remove.mutate({ serviceProviderId: provider.id })}
+          onPress={() =>
+            confirmAction({
+              title: t("admin.removeProviderConfirmTitle"),
+              message: t("admin.removeProviderConfirmMessage"),
+              confirmLabel: t("admin.remove"),
+              cancelLabel: t("common.cancel"),
+              onConfirm: () => remove.mutate({ serviceProviderId: provider.id }),
+            })
+          }
         />
       </View>
     </Card>

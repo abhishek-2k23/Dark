@@ -159,9 +159,7 @@ export default function AdminTicketDetail() {
                   size={38}
                 />
                 <Text variant="subtitle" className="flex-1">
-                  {tk.assignedTo
-                    ? tk.assignedTo.name
-                    : t("admin.unassigned")}
+                  {tk.assignedTo ? tk.assignedTo.name : "—"}
                 </Text>
                 <Button
                   label={tk.assignedTo ? t("admin.reassign") : t("admin.assign")}

@@ -5,17 +5,19 @@ import { View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
+import { TabPage } from "@/components/TabPage";
 import {
   Badge,
   Button,
   Card,
   IconCircle,
   Screen,
-  SegmentedControl,
+  SwipeTabs,
   Text,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
+import { confirmAction } from "@/utils/confirm";
 import { bookingStatusTone } from "@/utils/domain";
 import { formatClock, formatDate, formatMoney } from "@/utils/format";
 
@@ -114,7 +116,15 @@ function MyBookings() {
                 variant="dangerSoft"
                 size="sm"
                 loading={cancel.isPending}
-                onPress={() => cancel.mutate({ bookingId: b.id })}
+                onPress={() =>
+                  confirmAction({
+                    title: t("amenities.cancelConfirmTitle"),
+                    message: t("amenities.cancelConfirmMessage"),
+                    confirmLabel: t("amenities.cancelBooking"),
+                    cancelLabel: t("common.keep"),
+                    onConfirm: () => cancel.mutate({ bookingId: b.id }),
+                  })
+                }
               />
             )}
           </Card>
@@ -138,17 +148,26 @@ export default function AmenitiesScreen() {
   const [tab, setTab] = useState<"browse" | "mine">("browse");
 
   return (
-    <Screen scroll contentClassName="gap-4 pb-8">
-      <StackHeader title={t("amenities.title")} />
-      <SegmentedControl
+    <Screen padded={false}>
+      <View className="px-5">
+        <StackHeader title={t("amenities.title")} />
+      </View>
+      <SwipeTabs
         value={tab}
         onChange={setTab}
+        tabsClassName="mx-5 mb-1 mt-2"
         options={[
           { value: "browse", label: t("amenities.browse") },
           { value: "mine", label: t("amenities.mine") },
         ]}
-      />
-      {tab === "browse" ? <AmenityList /> : <MyBookings />}
+      >
+        <TabPage>
+          <AmenityList />
+        </TabPage>
+        <TabPage>
+          <MyBookings />
+        </TabPage>
+      </SwipeTabs>
     </Screen>
   );
 }

@@ -287,6 +287,7 @@ export default function Showcase() {
       <Section title={t("showcase.inputs")}>
         <Input
           label={t("auth.mobileNumber")}
+          required
           leftIcon="call-outline"
           placeholder={t("auth.phonePlaceholder")}
           keyboardType="phone-pad"
@@ -295,7 +296,6 @@ export default function Showcase() {
         />
         <Input
           label="Vehicle Number"
-          labelHint={t("common.optional")}
           leftIcon="car-outline"
           placeholder="ABC-1234"
           autoCapitalize="characters"

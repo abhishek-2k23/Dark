@@ -140,12 +140,12 @@ export default function CreateNotice() {
           onChange={setImageUrl}
           kind="NOTICE"
           label={t("admin.noticeBanner")}
-          labelHint={t("common.optional")}
           hint={t("admin.noticeBannerHint")}
           aspect={[3, 1]}
         />
         <Input
           label={t("tickets.titleLabel")}
+          required
           leftIcon="create-outline"
           placeholder={t("admin.noticeTitlePlaceholder")}
           value={title}
@@ -153,6 +153,7 @@ export default function CreateNotice() {
         />
         <Input
           label={t("admin.noticeBody")}
+          required
           placeholder={t("admin.noticeBodyPlaceholder")}
           value={body}
           onChangeText={setBody}

@@ -5,6 +5,7 @@ import { View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
+import { TabPage } from "@/components/TabPage";
 import {
   Avatar,
   Badge,
@@ -12,11 +13,13 @@ import {
   Card,
   Input,
   Screen,
-  SegmentedControl,
+  SwipeTabs,
   Text,
+  type SegmentOption,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
+import { confirmAction } from "@/utils/confirm";
 
 type Status = "ALL" | "ACTIVE" | "INACTIVE";
 
@@ -90,7 +93,15 @@ function ResidentCard({
           variant="dangerSoft"
           size="sm"
           loading={busy}
-          onPress={() => deactivate.mutate({ userId: resident.id })}
+          onPress={() =>
+            confirmAction({
+              title: t("admin.deactivateConfirmTitle"),
+              message: t("admin.deactivateConfirmMessage"),
+              confirmLabel: t("admin.deactivate"),
+              cancelLabel: t("common.cancel"),
+              onConfirm: () => deactivate.mutate({ userId: resident.id }),
+            })
+          }
         />
       ) : (
         <Button
@@ -105,74 +116,92 @@ function ResidentCard({
   );
 }
 
+/** Residents for one status filter (sharing the screen's search term). */
+function ResidentList({ status, search }: { status: Status; search: string }) {
+  const { t } = useTranslation();
+
+  const q = trpc.resident.list.useInfiniteQuery(
+    { status, search: search.trim() || undefined, limit: 20 },
+    { getNextPageParam: (last) => last.nextCursor ?? undefined },
+  );
+  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+
+  if (q.isLoading) return <Loading />;
+  if (q.error) return <ErrorState message={q.error.message} onRetry={q.refetch} />;
+  if (items.length === 0)
+    return <EmptyState icon="people-outline" title={t("admin.noResidents")} />;
+
+  return (
+    <>
+      {items.map((r) => (
+        <ResidentCard key={r.id} resident={r} />
+      ))}
+      {q.hasNextPage && (
+        <Button
+          label={t("common.loadMore")}
+          variant="ghost"
+          size="sm"
+          loading={q.isFetchingNextPage}
+          onPress={() => q.fetchNextPage()}
+        />
+      )}
+    </>
+  );
+}
+
 export default function ResidentsList() {
   const { t } = useTranslation();
   const router = useRouter();
   const [status, setStatus] = useState<Status>("ALL");
   const [search, setSearch] = useState("");
 
-  const q = trpc.resident.list.useInfiniteQuery(
-    { status, search: search.trim() || undefined, limit: 20 },
-    { getNextPageParam: (last) => last.nextCursor ?? undefined },
-  );
-
-  const items = q.data?.pages.flatMap((p) => p.items) ?? [];
+  const options: SegmentOption<Status>[] = [
+    { value: "ALL", label: t("visitors.all") },
+    { value: "ACTIVE", label: t("status.active") },
+    { value: "INACTIVE", label: t("admin.inactive") },
+  ];
 
   return (
-    <Screen scroll contentClassName="gap-4 pb-8">
-      <StackHeader
-        title={t("admin.residents")}
-        right={
-          <Button
-            label={t("admin.invite")}
-            variant="secondary"
-            size="sm"
-            leftIcon="person-add-outline"
-            onPress={() => router.push("/(admin)/residents/invite")}
-          />
-        }
-      />
+    <Screen padded={false}>
+      <View className="gap-4 px-5">
+        <StackHeader
+          title={t("admin.residents")}
+          right={
+            <Button
+              label={t("admin.invite")}
+              variant="secondary"
+              size="sm"
+              leftIcon="person-add-outline"
+              onPress={() => router.push("/(admin)/residents/invite")}
+            />
+          }
+        />
 
-      <Input
-        leftIcon="search-outline"
-        placeholder={t("admin.searchResidents")}
-        value={search}
-        onChangeText={setSearch}
-        autoCapitalize="none"
-      />
+        <Input
+          leftIcon="search-outline"
+          placeholder={t("admin.searchResidents")}
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+        />
+      </View>
 
-      <SegmentedControl
+      <SwipeTabs
         value={status}
         onChange={setStatus}
-        options={[
-          { value: "ALL", label: t("visitors.all") },
-          { value: "ACTIVE", label: t("status.active") },
-          { value: "INACTIVE", label: t("admin.inactive") },
-        ]}
-      />
-
-      {q.isLoading ? (
-        <Loading />
-      ) : q.error ? (
-        <ErrorState message={q.error.message} onRetry={q.refetch} />
-      ) : items.length === 0 ? (
-        <EmptyState icon="people-outline" title={t("admin.noResidents")} />
-      ) : (
-        <View className="gap-3">
-          {items.map((r) => (
-            <ResidentCard key={r.id} resident={r} />
-          ))}
-          {q.hasNextPage && (
-            <Button
-              label={t("common.loadMore")}
-              variant="ghost"
-              size="sm"
-              loading={q.isFetchingNextPage}
-              onPress={() => q.fetchNextPage()}
-            />
-          )}
-        </View>
-      )}
+        tabsClassName="mx-5 mb-1 mt-3"
+        options={options}
+      >
+        <TabPage>
+          <ResidentList status="ALL" search={search} />
+        </TabPage>
+        <TabPage>
+          <ResidentList status="ACTIVE" search={search} />
+        </TabPage>
+        <TabPage>
+          <ResidentList status="INACTIVE" search={search} />
+        </TabPage>
+      </SwipeTabs>
     </Screen>
   );
 }

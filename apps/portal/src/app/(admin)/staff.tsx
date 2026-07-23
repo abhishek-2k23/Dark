@@ -1,12 +1,13 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import { StackHeader } from "@/components/StackHeader";
 import {
   Button,
   Card,
+  FieldLabel,
   Input,
   PasswordInput,
   PhoneInput,
@@ -19,6 +20,17 @@ import { useUIStore } from "@/stores/uiStore";
 
 type Role = "GUARD" | "ADMIN";
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Mirrors the AdminDesignation enum on the backend. */
+const DESIGNATIONS = [
+  "PRESIDENT",
+  "SECRETARY",
+  "TREASURER",
+  "COMMITTEE_MEMBER",
+  "MANAGER",
+  "OTHER",
+] as const;
+type Designation = (typeof DESIGNATIONS)[number];
 
 export default function CreateStaff() {
   const { t } = useTranslation();
@@ -33,7 +45,7 @@ export default function CreateStaff() {
   const [gate, setGate] = useState("");
   const [shiftStart, setShiftStart] = useState("");
   const [shiftEnd, setShiftEnd] = useState("");
-  const [designation, setDesignation] = useState("");
+  const [designation, setDesignation] = useState<Designation | null>(null);
 
   const create = trpc.staff.create.useMutation({
     onSuccess: () => {
@@ -68,7 +80,7 @@ export default function CreateStaff() {
             shiftStart: shiftStart.trim() || undefined,
             shiftEnd: shiftEnd.trim() || undefined,
           }
-        : { designation: designation.trim() || undefined }),
+        : { designation: designation ?? undefined }),
     });
   };
 
@@ -91,6 +103,7 @@ export default function CreateStaff() {
 
         <Input
           label={t("signup.name")}
+          required
           leftIcon="person-outline"
           placeholder={t("signup.namePlaceholder")}
           value={name}
@@ -98,7 +111,7 @@ export default function CreateStaff() {
         />
         <Input
           label={t("signup.email")}
-          labelHint={t("signup.oneRequired")}
+          required
           leftIcon="mail-outline"
           placeholder="staff@email.com"
           keyboardType="email-address"
@@ -108,7 +121,8 @@ export default function CreateStaff() {
         />
         <PhoneInput
           label={t("signup.phone")}
-          labelHint={t("signup.oneRequired")}
+          required
+          helperText={t("signup.oneRequired")}
           leftIcon="call-outline"
           placeholder="9876543210"
           value={phone}
@@ -116,6 +130,7 @@ export default function CreateStaff() {
         />
         <PasswordInput
           label={t("admin.tempPassword")}
+          required
           leftIcon="key-outline"
           helperText={t("admin.tempPasswordHint")}
           value={password}
@@ -126,7 +141,6 @@ export default function CreateStaff() {
           <>
             <Input
               label={t("guard.gateAssigned")}
-              labelHint={t("common.optional")}
               leftIcon="location-outline"
               placeholder={t("admin.gatePlaceholder")}
               value={gate}
@@ -136,7 +150,6 @@ export default function CreateStaff() {
               <Input
                 containerClassName="flex-1"
                 label={t("admin.shiftStart")}
-                labelHint={t("common.optional")}
                 placeholder="08:00"
                 value={shiftStart}
                 onChangeText={setShiftStart}
@@ -144,7 +157,6 @@ export default function CreateStaff() {
               <Input
                 containerClassName="flex-1"
                 label={t("admin.shiftEnd")}
-                labelHint={t("common.optional")}
                 placeholder="20:00"
                 value={shiftEnd}
                 onChangeText={setShiftEnd}
@@ -152,14 +164,32 @@ export default function CreateStaff() {
             </View>
           </>
         ) : (
-          <Input
-            label={t("admin.designation")}
-            labelHint={t("common.optional")}
-            leftIcon="ribbon-outline"
-            placeholder={t("admin.designationPlaceholder")}
-            value={designation}
-            onChangeText={setDesignation}
-          />
+          <View className="gap-2">
+            <FieldLabel label={t("admin.designation")} />
+            <View className="flex-row flex-wrap gap-2">
+              {DESIGNATIONS.map((d) => {
+                const active = d === designation;
+                return (
+                  <Pressable
+                    key={d}
+                    onPress={() => setDesignation(active ? null : d)}
+                    className={`rounded-full border px-3.5 py-2 active:opacity-80 ${
+                      active
+                        ? "border-primary bg-primary-soft"
+                        : "border-border bg-surface"
+                    }`}
+                  >
+                    <Text
+                      variant="subtitle"
+                      color={active ? "primary" : "secondary"}
+                    >
+                      {t(`admin.designations.${d}`)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
         )}
 
         <Button

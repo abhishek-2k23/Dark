@@ -100,12 +100,14 @@ export default function FamilyScreen() {
               />
               <Input
                 label={t("signup.name")}
+                required
                 leftIcon="person-outline"
                 value={name}
                 onChangeText={setName}
               />
               <Input
                 label={t("family.relation")}
+                required
                 leftIcon="git-branch-outline"
                 placeholder={t("family.relationPlaceholder")}
                 value={relation}
@@ -113,7 +115,6 @@ export default function FamilyScreen() {
               />
               <Input
                 label={t("family.ageLabel")}
-                labelHint={t("common.optional")}
                 leftIcon="calendar-outline"
                 keyboardType="number-pad"
                 value={age}

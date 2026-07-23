@@ -134,6 +134,7 @@ export default function CreateAmenity() {
         />
         <Input
           label={t("admin.amenityName")}
+          required
           leftIcon="tennisball-outline"
           placeholder={t("admin.amenityNamePlaceholder")}
           value={name}
@@ -141,7 +142,6 @@ export default function CreateAmenity() {
         />
         <Input
           label={t("admin.description")}
-          labelHint={t("common.optional")}
           value={description}
           onChangeText={setDescription}
           multiline
@@ -149,7 +149,6 @@ export default function CreateAmenity() {
         />
         <Input
           label={t("amenities.rules")}
-          labelHint={t("common.optional")}
           value={rules}
           onChangeText={setRules}
           multiline
@@ -157,7 +156,6 @@ export default function CreateAmenity() {
         />
         <Input
           label={t("admin.pricePerSlot")}
-          labelHint={t("common.optional")}
           leftIcon="cash-outline"
           keyboardType="number-pad"
           placeholder={t("admin.freeIfBlank")}

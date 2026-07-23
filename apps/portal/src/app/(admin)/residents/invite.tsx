@@ -5,7 +5,15 @@ import { Pressable, View } from "react-native";
 
 import { Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
-import { Button, Card, Input, PhoneInput, Screen, Text } from "@/components/ui";
+import {
+  Button,
+  Card,
+  FieldLabel,
+  Input,
+  PhoneInput,
+  Screen,
+  Text,
+} from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 
@@ -65,9 +73,7 @@ export default function InviteResident() {
 
       <Card className="gap-4">
         <View className="gap-2">
-          <Text variant="subtitle" color="primary">
-            {t("admin.tower")}
-          </Text>
+          <FieldLabel label={t("admin.tower")} required />
           {towers.isLoading ? (
             <Loading className="py-4" />
           ) : (
@@ -89,9 +95,7 @@ export default function InviteResident() {
 
         {towerId && (
           <View className="gap-2">
-            <Text variant="subtitle" color="primary">
-              {t("admin.flat")}
-            </Text>
+            <FieldLabel label={t("admin.flat")} required />
             {flats.isLoading ? (
               <Loading className="py-4" />
             ) : (flats.data?.items.length ?? 0) === 0 ? (
@@ -115,7 +119,7 @@ export default function InviteResident() {
 
         <Input
           label={t("signup.email")}
-          labelHint={t("signup.oneRequired")}
+          required
           leftIcon="mail-outline"
           placeholder="resident@email.com"
           keyboardType="email-address"
@@ -125,7 +129,8 @@ export default function InviteResident() {
         />
         <PhoneInput
           label={t("signup.phone")}
-          labelHint={t("signup.oneRequired")}
+          required
+          helperText={t("signup.oneRequired")}
           leftIcon="call-outline"
           placeholder="9876543210"
           value={phone}

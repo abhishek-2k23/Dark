@@ -142,6 +142,7 @@ export default function PreApproveScreen() {
       <Card className="gap-4">
         <Input
           label={t("passes.guestName")}
+          required
           leftIcon="person-outline"
           placeholder={t("passes.guestNamePlaceholder")}
           value={guestName}
@@ -149,6 +150,7 @@ export default function PreApproveScreen() {
         />
         <PhoneInput
           label={t("visitors.phone")}
+          required
           leftIcon="call-outline"
           placeholder="9876543210"
           value={guestPhone}
@@ -158,7 +160,6 @@ export default function PreApproveScreen() {
             forwarding, and nothing to fumble for at the gate. */}
         <Input
           label={t("passes.guestEmail")}
-          labelHint={t("common.optional")}
           leftIcon="mail-outline"
           placeholder="guest@example.com"
           keyboardType="email-address"
@@ -200,7 +201,6 @@ export default function PreApproveScreen() {
 
         <Input
           label={t("visitors.vehicle")}
-          labelHint={t("common.optional")}
           leftIcon="car-outline"
           placeholder="KA-01-AB-1234"
           autoCapitalize="characters"

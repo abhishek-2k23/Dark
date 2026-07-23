@@ -4,6 +4,7 @@ import { Pressable, View } from "react-native";
 
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { ImageField } from "@/components/media";
+import { TabPage } from "@/components/TabPage";
 import {
   Badge,
   Button,
@@ -13,7 +14,7 @@ import {
   Icon,
   IconCircle,
   Screen,
-  SegmentedControl,
+  SwipeTabs,
   Text,
   type IconName,
 } from "@/components/ui";
@@ -397,22 +398,29 @@ export default function PaymentsTab() {
   const [tab, setTab] = useState<"dues" | "history">("dues");
 
   return (
-    <Screen scroll contentClassName="gap-4 py-3 pb-8">
-      <View>
+    <Screen padded={false} contentClassName="pt-3">
+      <View className="px-5">
         <Text variant="h1">{t("payments.title")}</Text>
         <Text variant="body" color="secondary">
           {t("payments.subtitle")}
         </Text>
       </View>
-      <SegmentedControl
+      <SwipeTabs
         value={tab}
         onChange={setTab}
+        tabsClassName="mx-5 mb-1 mt-4"
         options={[
           { value: "dues", label: t("payments.dues") },
           { value: "history", label: t("payments.history") },
         ]}
-      />
-      {tab === "dues" ? <DuesList /> : <PaymentHistory />}
+      >
+        <TabPage>
+          <DuesList />
+        </TabPage>
+        <TabPage>
+          <PaymentHistory />
+        </TabPage>
+      </SwipeTabs>
     </Screen>
   );
 }

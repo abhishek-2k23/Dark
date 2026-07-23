@@ -64,27 +64,29 @@ export default function EditSociety() {
             onChange={setLogoUrl}
             kind="LOGO"
             label={t("admin.societyLogo")}
-            labelHint={t("common.optional")}
             hint={t("admin.societyLogoHint")}
             aspect={[2, 1]}
             contentFit="contain"
           />
           <Input
             label={t("admin.societyName")}
+            required
             leftIcon="business-outline"
             value={form.name}
             onChangeText={set("name")}
           />
           <Input
             label={t("admin.address")}
+            required
             leftIcon="location-outline"
             value={form.address}
             onChangeText={set("address")}
           />
-          <Input label={t("admin.city")} value={form.city} onChangeText={set("city")} />
-          <Input label={t("admin.state")} value={form.state} onChangeText={set("state")} />
+          <Input label={t("admin.city")} required value={form.city} onChangeText={set("city")} />
+          <Input label={t("admin.state")} required value={form.state} onChangeText={set("state")} />
           <Input
             label={t("admin.pincode")}
+            required
             keyboardType="number-pad"
             value={form.pincode}
             onChangeText={set("pincode")}

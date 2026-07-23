@@ -13,6 +13,7 @@ import {
 } from "@/components/ui";
 import { WEB_BASE_URL } from "@/lib/env";
 import { useUIStore } from "@/stores/uiStore";
+import { confirmAction } from "@/utils/confirm";
 
 function LinkRow({
   icon,
@@ -95,7 +96,15 @@ export function AccountLegalActions({
             variant="outline"
             leftIcon="log-out-outline"
             loading={loggingOut}
-            onPress={onLogout}
+            onPress={() =>
+              confirmAction({
+                title: t("profile.logoutConfirmTitle"),
+                message: t("profile.logoutConfirmMessage"),
+                confirmLabel: t("profile.logout"),
+                cancelLabel: t("common.cancel"),
+                onConfirm: onLogout,
+              })
+            }
             fullWidth
           />
         )}

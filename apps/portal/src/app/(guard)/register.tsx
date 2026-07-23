@@ -216,6 +216,7 @@ export default function RegisterVisitor() {
 
           <Input
             label={t("passes.guestName")}
+            required
             leftIcon="person-outline"
             placeholder={t("passes.guestNamePlaceholder")}
             value={name}
@@ -223,6 +224,7 @@ export default function RegisterVisitor() {
           />
           <PhoneInput
             label={t("visitors.phone")}
+            required
             leftIcon="call-outline"
             placeholder="9876543210"
             value={phone}
@@ -230,7 +232,6 @@ export default function RegisterVisitor() {
           />
           <Input
             label={t("visitors.vehicle")}
-            labelHint={t("common.optional")}
             leftIcon="car-outline"
             placeholder="KA-01-AB-1234"
             autoCapitalize="characters"

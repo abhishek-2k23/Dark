@@ -1,11 +1,12 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 
 import {
   Button,
   Card,
+  FieldLabel,
   IconCircle,
   Input,
   Link,
@@ -14,6 +15,17 @@ import {
   Screen,
   Text,
 } from "@/components/ui";
+
+/** Mirrors the AdminDesignation enum on the backend. */
+const DESIGNATIONS = [
+  "PRESIDENT",
+  "SECRETARY",
+  "TREASURER",
+  "COMMITTEE_MEMBER",
+  "MANAGER",
+  "OTHER",
+] as const;
+type Designation = (typeof DESIGNATIONS)[number];
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -36,7 +48,7 @@ export default function RegisterSocietyScreen() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [designation, setDesignation] = useState("");
+  const [designation, setDesignation] = useState<Designation | null>(null);
 
   const register = trpc.auth.registerSociety.useMutation({
     onSuccess: async (session) => {
@@ -79,7 +91,7 @@ export default function RegisterSocietyScreen() {
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
         password,
-        designation: designation.trim() || undefined,
+        designation: designation ?? undefined,
       },
     });
   };
@@ -105,6 +117,7 @@ export default function RegisterSocietyScreen() {
         </Text>
         <Input
           label={t("auth.societyName")}
+          required
           leftIcon="business-outline"
           placeholder={t("auth.societyNamePlaceholder")}
           value={name}
@@ -112,6 +125,7 @@ export default function RegisterSocietyScreen() {
         />
         <Input
           label={t("auth.address")}
+          required
           leftIcon="location-outline"
           placeholder={t("auth.addressPlaceholder")}
           value={address}
@@ -119,11 +133,12 @@ export default function RegisterSocietyScreen() {
         />
         <View className="flex-row gap-3">
           <View className="flex-1">
-            <Input label={t("auth.city")} value={city} onChangeText={setCity} />
+            <Input label={t("auth.city")} required value={city} onChangeText={setCity} />
           </View>
           <View className="flex-1">
             <Input
               label={t("auth.state")}
+              required
               value={state}
               onChangeText={setState}
             />
@@ -131,6 +146,7 @@ export default function RegisterSocietyScreen() {
         </View>
         <Input
           label={t("auth.pincode")}
+          required
           leftIcon="pin-outline"
           keyboardType="number-pad"
           value={pincode}
@@ -145,6 +161,7 @@ export default function RegisterSocietyScreen() {
         </Text>
         <Input
           label={t("auth.adminName")}
+          required
           leftIcon="person-outline"
           placeholder={t("auth.adminNamePlaceholder")}
           value={adminName}
@@ -152,6 +169,7 @@ export default function RegisterSocietyScreen() {
         />
         <Input
           label={t("auth.identifier")}
+          required
           leftIcon="mail-outline"
           placeholder="you@email.com"
           autoCapitalize="none"
@@ -162,6 +180,8 @@ export default function RegisterSocietyScreen() {
         />
         <PhoneInput
           label={t("auth.mobileNumber")}
+          required
+          helperText={t("signup.oneRequired")}
           leftIcon="call-outline"
           placeholder="9876543210"
           value={phone}
@@ -169,19 +189,38 @@ export default function RegisterSocietyScreen() {
         />
         <PasswordInput
           label={t("auth.password")}
+          required
           leftIcon="lock-closed-outline"
           placeholder={t("auth.passwordPlaceholder")}
           value={password}
           onChangeText={setPassword}
         />
-        <Input
-          label={t("auth.designation")}
-          labelHint={t("common.optional")}
-          leftIcon="ribbon-outline"
-          placeholder={t("auth.designationPlaceholder")}
-          value={designation}
-          onChangeText={setDesignation}
-        />
+        <View className="gap-2">
+          <FieldLabel label={t("auth.designation")} />
+          <View className="flex-row flex-wrap gap-2">
+            {DESIGNATIONS.map((d) => {
+              const active = d === designation;
+              return (
+                <Pressable
+                  key={d}
+                  onPress={() => setDesignation(active ? null : d)}
+                  className={`rounded-full border px-3.5 py-2 active:opacity-80 ${
+                    active
+                      ? "border-primary bg-primary-soft"
+                      : "border-border bg-surface"
+                  }`}
+                >
+                  <Text
+                    variant="subtitle"
+                    color={active ? "primary" : "secondary"}
+                  >
+                    {t(`admin.designations.${d}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
       </Card>
 
       <Button

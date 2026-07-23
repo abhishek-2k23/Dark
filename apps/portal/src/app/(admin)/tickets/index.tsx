@@ -106,7 +106,7 @@ export default function ComplaintsBoard() {
                       color={tk.assignedTo ? undefined : "tertiary"}
                       numberOfLines={1}
                     >
-                      {tk.assignedTo?.name ?? t("tickets.unassigned")}
+                      {tk.assignedTo?.name ?? "—"}
                     </Text>
                   </View>
                 </View>

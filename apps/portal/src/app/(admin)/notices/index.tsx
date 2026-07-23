@@ -15,6 +15,7 @@ import {
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
+import { confirmAction } from "@/utils/confirm";
 import { noticeCategoryIcon } from "@/utils/domain";
 import { formatDateTime } from "@/utils/format";
 
@@ -119,7 +120,15 @@ export default function ManageNotices() {
                   size="sm"
                   className="flex-1"
                   loading={remove.isPending && remove.variables?.noticeId === n.id}
-                  onPress={() => remove.mutate({ noticeId: n.id })}
+                  onPress={() =>
+                    confirmAction({
+                      title: t("admin.deleteNoticeConfirmTitle"),
+                      message: t("admin.deleteNoticeConfirmMessage"),
+                      confirmLabel: t("admin.delete"),
+                      cancelLabel: t("common.cancel"),
+                      onConfirm: () => remove.mutate({ noticeId: n.id }),
+                    })
+                  }
                 />
               </View>
             </Card>

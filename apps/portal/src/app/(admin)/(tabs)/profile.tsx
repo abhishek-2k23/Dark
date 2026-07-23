@@ -100,7 +100,11 @@ export default function AdminProfileTab() {
                 {me.name}
               </Text>
               <Badge
-                label={me.adminProfile?.designation ?? t("admin.roleBadge")}
+                label={
+                  me.adminProfile?.designation
+                    ? t(`admin.designations.${me.adminProfile.designation}`)
+                    : t("admin.roleBadge")
+                }
                 tone="primary"
                 className="self-center"
               />
