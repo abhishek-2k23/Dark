@@ -401,11 +401,11 @@ export async function cancelBooking(
 
 export async function myBookings(
   actor: User,
-  input: { cursor?: string; limit: number },
+  input: { status?: BookingStatus; cursor?: string; limit: number },
 ): Promise<{ items: BookingInfo[]; nextCursor: string | null }> {
   const residentProfileId = await actorResidentProfileId(actor);
   const bookings = await prisma.amenityBooking.findMany({
-    where: { residentId: residentProfileId },
+    where: { residentId: residentProfileId, status: input.status },
     orderBy: [{ date: "desc" }, { startTime: "desc" }],
     take: input.limit + 1,
     ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),

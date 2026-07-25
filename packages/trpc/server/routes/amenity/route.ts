@@ -94,6 +94,7 @@ const BookingIdInput = z.object({
 });
 
 const MyBookingsInput = z.object({
+  status: BookingStatusEnum.describe("Only bookings in this state").optional(),
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Page size (max 100)"),
   cursor: z.string().describe("Id of the last booking from the previous page").optional(),
 });
@@ -226,7 +227,9 @@ export const amenityBookingRouter = router({
         summary: "List the caller's bookings",
         description:
           "Cursor-paginated bookings of the calling resident, most recent date first. " +
-          "Errors: 403 if not a resident, 412 if the account has no resident profile.",
+          "Pass `status` to narrow to one state — PENDING_PAYMENT answers 'what do I still " +
+          "owe for a slot I am holding'. Errors: 403 if not a resident, 412 if the account " +
+          "has no resident profile.",
         protect: true,
       },
     })

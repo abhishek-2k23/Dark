@@ -205,8 +205,21 @@ export default function AdminDashboard() {
           />
           <QuickAction
             icon="person-add-outline"
-            label={t("admin.inviteResident")}
+            label={t("admin.addResidents")}
             onPress={() => router.push("/(admin)/residents/invite")}
+          />
+          {/* The two queues that actually wait on an admin. Both were reachable
+              only through the Manage tab, which is where things go to be found
+              on purpose rather than noticed. */}
+          <QuickAction
+            icon="receipt-outline"
+            label={t("admin.verifyPayments")}
+            onPress={() => router.push("/(admin)/payments/verify")}
+          />
+          <QuickAction
+            icon="enter-outline"
+            label={t("admin.joinRequests")}
+            onPress={() => router.push("/(admin)/join-requests")}
           />
           <QuickAction
             icon="business-outline"

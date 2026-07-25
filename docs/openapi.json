@@ -15202,7 +15202,7 @@
       "get": {
         "operationId": "amenityBooking-myBookings",
         "summary": "List the caller's bookings",
-        "description": "Cursor-paginated bookings of the calling resident, most recent date first. Errors: 403 if not a resident, 412 if the account has no resident profile.",
+        "description": "Cursor-paginated bookings of the calling resident, most recent date first. Pass `status` to narrow to one state — PENDING_PAYMENT answers 'what do I still owe for a slot I am holding'. Errors: 403 if not a resident, 412 if the account has no resident profile.",
         "tags": [
           "Amenities"
         ],
@@ -15212,6 +15212,21 @@
           }
         ],
         "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING_PAYMENT",
+                "BOOKED",
+                "CANCELLED",
+                "EXPIRED",
+                "COMPLETED"
+              ],
+              "description": "Only bookings in this state"
+            }
+          },
           {
             "in": "query",
             "name": "limit",

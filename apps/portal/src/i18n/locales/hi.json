@@ -215,10 +215,14 @@
     "needsAttentionCount": "ये देख लें ({{count}})",
     "andMorePending": "+{{count}} और बाकी",
     "preApproveGuest": "मेहमान को पहले से मंज़ूरी",
+    "myPasses": "मेरे गेट पास",
+    "serviceDirectory": "मदद ढूँढें",
     "raiseTicket": "शिकायत दर्ज करें",
     "bookAmenity": "सुविधा बुक करें",
     "payDues": "बकाया भरें",
     "noticesUpdates": "नोटिस और अपडेट",
+    "amenityDuesTitle": "सुविधा बुकिंग का भुगतान बाकी",
+    "amenityDuesCta": "बुकिंग देखें",
     "activePoll": "चल रहा पोल"
   },
   "visitors": {
@@ -535,7 +539,6 @@
     "addOne": "एक जोड़ें",
     "addBulk": "एक साथ कई",
     "occupiedFlatsHint": "धुंधले फ्लैट में पहले से निवासी है, वे दोबारा नहीं दिए जा सकते।",
-    "inviteResident": "निवासी को न्यौता भेजें",
     "manageProperty": "टावर-फ्लैट",
     "recentComplaints": "हाल की शिकायतें",
     "manageTitle": "मैनेज",

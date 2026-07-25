@@ -1,4 +1,5 @@
 import { useRouter } from "expo-router";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 
@@ -22,14 +23,32 @@ import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { hueFor, useTheme } from "@/theme";
 import { useUIStore } from "@/stores/uiStore";
+import { withAlpha } from "@/utils/color";
 import { noticeCategoryAccent, noticeCategoryIcon } from "@/utils/domain";
-import { formatDateTime } from "@/utils/format";
+import { formatClock, formatDate, formatDateTime, formatMoney } from "@/utils/format";
 
 function greetingKey(): string {
   const h = new Date().getHours();
   if (h < 12) return "dashboard.goodMorning";
   if (h < 17) return "dashboard.goodAfternoon";
   return "dashboard.goodEvening";
+}
+
+/** The cross that lets a surfaced card be waved away for this session. */
+function DismissX({ onPress, label }: { onPress: () => void; label: string }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      className="h-7 w-7 items-center justify-center rounded-full active:opacity-70"
+      style={{ backgroundColor: colors.glassFill }}
+    >
+      <Icon name="close" size={15} color="secondary" />
+    </Pressable>
+  );
 }
 
 
@@ -45,6 +64,12 @@ export default function ResidentDashboard() {
     refetchInterval: 30_000,
   });
   const notices = trpc.notice.list.useQuery({ limit: 5 });
+  // Filtered server-side: the dashboard only ever wants the unpaid ones, and
+  // fetching a page of every booking to find them would be wasteful.
+  const unpaid = trpc.amenityBooking.myBookings.useQuery({
+    status: "PENDING_PAYMENT",
+    limit: 20,
+  });
   const polls = trpc.poll.list.useQuery({ state: "ACTIVE", limit: 1 });
   const unread = trpc.notification.list.useQuery({ limit: 1 });
 
@@ -81,6 +106,21 @@ export default function ResidentDashboard() {
   const firstPending = pending.data?.[0];
   const activePoll = polls.data?.items[0];
   const unreadCount = unread.data?.unreadCount ?? 0;
+
+  // A free amenity can also sit in PENDING_PAYMENT briefly; nothing is owed on
+  // one, so it has no place in a list of what to pay.
+  const unpaidBookings = (unpaid.data?.items ?? []).filter((b) => (b.amountDue ?? 0) > 0);
+  const unpaidTotal = unpaidBookings.reduce((sum, b) => sum + (b.amountDue ?? 0), 0);
+
+  // Dismissals are keyed by what was on the card, not by the card: waving away
+  // one visitor must not swallow the next one, and a dues card dismissed at two
+  // bookings should come back when a third appears. Session-only on purpose —
+  // these are reminders about live obligations, so a fresh launch retries.
+  const [dismissedVisitorId, setDismissedVisitorId] = useState<string | null>(null);
+  const [dismissedDuesKey, setDismissedDuesKey] = useState<string | null>(null);
+  const duesKey = unpaidBookings.map((b) => b.id).sort().join(",");
+  const showVisitorBanner = firstPending && firstPending.id !== dismissedVisitorId;
+  const showDuesCard = unpaidBookings.length > 0 && duesKey !== dismissedDuesKey;
 
   return (
     <Screen scroll contentClassName="gap-6 py-3">
@@ -128,23 +168,31 @@ export default function ResidentDashboard() {
       </View>
 
       {/* Pending visitor banner */}
-      {firstPending && (
+      {showVisitorBanner && (
         <GlassCard variant="neon" className="gap-4">
-          <Pressable
-            className="flex-row items-start gap-3 active:opacity-80"
-            onPress={() => router.push(`/(resident)/visitors/${firstPending.id}`)}
-          >
-            <IconCircle name="location-outline" tone="warning" />
-            <View className="shrink gap-0.5">
-              <Text variant="title">{t("dashboard.visitorApproval")}</Text>
-              <Text variant="body" color="secondary">
-                {t("dashboard.visitorWaiting", {
-                  name: firstPending.name,
-                  purpose: t(`enums.visitorPurpose.${firstPending.purpose}`),
-                })}
-              </Text>
-            </View>
-          </Pressable>
+          <View className="flex-row items-start gap-3">
+            <Pressable
+              className="flex-1 flex-row items-start gap-3 active:opacity-80"
+              onPress={() => router.push(`/(resident)/visitors/${firstPending.id}`)}
+            >
+              <IconCircle name="location-outline" tone="warning" />
+              <View className="shrink gap-0.5">
+                <Text variant="title">{t("dashboard.visitorApproval")}</Text>
+                <Text variant="body" color="secondary">
+                  {t("dashboard.visitorWaiting", {
+                    name: firstPending.name,
+                    purpose: t(`enums.visitorPurpose.${firstPending.purpose}`),
+                  })}
+                </Text>
+              </View>
+            </Pressable>
+            {/* Dismissing hides, it does not decide — the visitor stays PENDING
+                in the visitors tab, and the guard keeps waiting on an answer. */}
+            <DismissX
+              label={t("common.close")}
+              onPress={() => setDismissedVisitorId(firstPending.id)}
+            />
+          </View>
           <View className="flex-row gap-3">
             <Button
               label={t("common.approve")}
@@ -169,38 +217,118 @@ export default function ResidentDashboard() {
           when they are caught up. */}
       <NeedsAttention role="RESIDENT" inboxHref="/(resident)/notifications" />
 
-      {/* Quick actions */}
-      <View className="gap-3">
-        <SectionHeader title={t("dashboard.quickActions")} />
-        <View className="flex-row justify-between">
-          <NeonTile
-            name="person-add-outline"
-            hue={hueFor("guests")}
-            label={t("dashboard.preApproveGuest")}
-            onPress={() => router.push("/(resident)/visitors/pre-approve")}
-          />
-          <NeonTile
-            name="construct-outline"
-            hue={hueFor("tickets")}
-            label={t("dashboard.raiseTicket")}
-            onPress={() => router.push("/(resident)/tickets/create")}
-          />
-          <NeonTile
-            name="calendar-outline"
-            hue={hueFor("amenities")}
-            label={t("dashboard.bookAmenity")}
+      {/* Amenity slots being held pending payment. These are easy to forget —
+          the slot is reserved but lapses if the money never arrives — so they
+          surface here rather than only inside the amenities tab. */}
+      {showDuesCard && (
+        <GlassCard variant="neon" radius="3xl" padding="lg" className="gap-3">
+          <View className="flex-row items-center justify-between gap-3">
+            <View className="flex-1 flex-row items-center gap-2">
+              <Icon name="calendar-outline" size={18} color="warning" />
+              <Text variant="title" color="warning" numberOfLines={1} className="shrink">
+                {t("dashboard.amenityDuesTitle")}
+              </Text>
+            </View>
+            <Text variant="title">{formatMoney(unpaidTotal)}</Text>
+            <DismissX
+              label={t("common.close")}
+              onPress={() => setDismissedDuesKey(duesKey)}
+            />
+          </View>
+
+          <View className="gap-2">
+            {unpaidBookings.slice(0, 3).map((b) => (
+              <View key={b.id} className="flex-row items-center justify-between gap-3">
+                <View className="flex-1">
+                  <Text variant="bodySmall" numberOfLines={1}>
+                    {b.amenityName}
+                  </Text>
+                  <Text variant="caption" color="secondary" numberOfLines={1}>
+                    {formatDate(b.date)} · {formatClock(b.startTime)}–
+                    {formatClock(b.endTime)}
+                  </Text>
+                </View>
+                <Text variant="bodySmall" color="warning">
+                  {formatMoney(b.amountDue ?? 0)}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          <Button
+            label={t("dashboard.amenityDuesCta")}
+            variant="secondary"
+            size="sm"
             onPress={() => router.push("/(resident)/amenities")}
           />
-          <NeonTile
-            name="wallet-outline"
-            hue={hueFor("payments")}
-            label={t("dashboard.payDues")}
-            onPress={() => router.push("/(resident)/(tabs)/payments")}
-          />
+        </GlassCard>
+      )}
+
+      {/* Quick actions — a strict 3-column grid. Each cell is exactly a third
+          of the row and centres its tile, so the columns line up across rows
+          and the spacing comes from the cell, not from ad-hoc gaps (a column
+          gap would break the one-third width math and wrap to two per row). */}
+      <View className="gap-3">
+        <SectionHeader title={t("dashboard.quickActions")} />
+        {/* rowGap as an inline style rather than a gap-y class: the vertical
+            gap is the one piece of this grid that must never silently drop
+            out of the compiled stylesheet, and an explicit style can't. */}
+        <View className="flex-row flex-wrap" style={{ rowGap: 28 }}>
+          {(
+            [
+              {
+                name: "person-add-outline",
+                hue: hueFor("guests"),
+                label: t("dashboard.preApproveGuest"),
+                onPress: () => router.push("/(resident)/visitors/pre-approve"),
+              },
+              {
+                name: "qr-code-outline",
+                hue: hueFor("visitors"),
+                label: t("dashboard.myPasses"),
+                onPress: () => router.push("/(resident)/(tabs)/visitors"),
+              },
+              {
+                name: "construct-outline",
+                hue: hueFor("tickets"),
+                label: t("dashboard.raiseTicket"),
+                onPress: () => router.push("/(resident)/tickets/create"),
+              },
+              {
+                name: "calendar-outline",
+                hue: hueFor("amenities"),
+                label: t("dashboard.bookAmenity"),
+                onPress: () => router.push("/(resident)/amenities"),
+              },
+              {
+                name: "people-outline",
+                hue: hueFor("directory"),
+                label: t("dashboard.serviceDirectory"),
+                onPress: () => router.push("/(resident)/directory"),
+              },
+              {
+                name: "wallet-outline",
+                hue: hueFor("payments"),
+                label: t("dashboard.payDues"),
+                onPress: () => router.push("/(resident)/(tabs)/payments"),
+              },
+            ] as const
+          ).map((tile) => (
+            <View key={tile.label} className="w-1/3 items-center">
+              <NeonTile
+                name={tile.name}
+                hue={tile.hue}
+                label={tile.label}
+                onPress={tile.onPress}
+              />
+            </View>
+          ))}
         </View>
       </View>
 
-      {/* Notices carousel */}
+      {/* Notices carousel. The glass belongs to each card, not to the section:
+          a panel behind the whole shelf boxed in the header too and read as a
+          second surface stacked under the cards. */}
       <View className="gap-3">
         <SectionHeader
           title={t("dashboard.noticesUpdates")}
@@ -209,48 +337,64 @@ export default function ResidentDashboard() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerClassName="gap-3"
-          className="-mx-5 px-5"
+          // Spacing lives in contentContainerStyle rather than a className: the
+          // gap has to apply to the scrolling content, and the negative margin
+          // that lets the shelf bleed past the screen gutter belongs to the
+          // ScrollView itself. Mixing the two on one element loses one of them.
+          className="-mx-5"
+          contentContainerStyle={{ gap: 14, paddingHorizontal: 20 }}
         >
           {notices.data?.items.map((n) => {
             const accent = noticeCategoryAccent[n.category] ?? "neonBlue";
+            const accentColor = resolveIconColor(colors, accent);
             return (
+              // `neon`, not `hero`: hero's near-opaque fill is the one glass
+              // variant that doesn't look like glass — neon keeps the fill
+              // translucent so the aurora shows through, with the bright
+              // hairline carrying the card's edge.
               <GlassCard
                 key={n.id}
-                variant="hero"
+                variant="neon"
+                blur
                 radius="3xl"
                 onPress={() => router.push(`/(resident)/notices/${n.id}`)}
                 padding="lg"
-                className="w-72 gap-1"
+                className="w-72 gap-2"
               >
-                <View className="flex-row items-center gap-1.5">
-                  <Icon
-                    name={noticeCategoryIcon[n.category] ?? "megaphone-outline"}
-                    size={14}
-                    color={accent}
-                  />
-                  <Text
-                    variant="overline"
-                    style={{ color: resolveIconColor(colors, accent) }}
+                <View className="flex-row items-center gap-2">
+                  {/* Category chip — a faint wash of the accent so the icon
+                      reads as a badge on the card instead of a loose glyph. */}
+                  <View
+                    className="h-8 w-8 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: withAlpha(accentColor, 0.14),
+                      borderWidth: 1,
+                      borderColor: withAlpha(accentColor, 0.35),
+                    }}
                   >
+                    <Icon
+                      name={noticeCategoryIcon[n.category] ?? "megaphone-outline"}
+                      size={15}
+                      color={accent}
+                    />
+                  </View>
+                  <Text variant="overline" style={{ color: accentColor }}>
                     {t(`enums.noticeCategory.${n.category}`)}
                   </Text>
                 </View>
-                <Text variant="h3" numberOfLines={2}>
+                {/* Fixed two-line box so every card in the shelf is the same
+                    height, whatever its title length. */}
+                <Text variant="h3" numberOfLines={2} className="min-h-[52px]">
                   {n.title}
                 </Text>
-                <Text
-                  variant="bodySmall"
-                  color="secondary"
-                  numberOfLines={1}
-                >
+                <Text variant="bodySmall" color="secondary" numberOfLines={1}>
                   {formatDateTime(n.scheduledAt ?? n.createdAt)}
                 </Text>
               </GlassCard>
             );
           })}
           {notices.data && notices.data.items.length === 0 && (
-            <GlassCard radius="3xl" className="w-72 items-center py-6">
+            <GlassCard blur radius="3xl" className="w-72 items-center py-6">
               <Text variant="bodySmall" color="secondary">
                 {t("notices.empty")}
               </Text>

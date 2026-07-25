@@ -215,10 +215,14 @@
     "needsAttentionCount": "Needs attention ({{count}})",
     "andMorePending": "+{{count}} more waiting",
     "preApproveGuest": "Pre-approve Guest",
+    "myPasses": "My gate passes",
+    "serviceDirectory": "Find help",
     "raiseTicket": "Raise Ticket",
     "bookAmenity": "Book Amenity",
     "payDues": "Pay Dues",
     "noticesUpdates": "Notices & Updates",
+    "amenityDuesTitle": "Amenity bookings to pay",
+    "amenityDuesCta": "View bookings",
     "activePoll": "Active Poll"
   },
   "visitors": {
@@ -535,7 +539,6 @@
     "addOne": "Add one",
     "addBulk": "Bulk add",
     "occupiedFlatsHint": "Greyed-out flats already have a resident and can’t be allotted again.",
-    "inviteResident": "Invite Resident",
     "manageProperty": "Property",
     "recentComplaints": "Recent Complaints",
     "manageTitle": "Manage",

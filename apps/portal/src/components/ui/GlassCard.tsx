@@ -1,6 +1,9 @@
+import { BlurView } from "expo-blur";
 import type { ReactNode } from "react";
 import {
+  Platform,
   Pressable,
+  StyleSheet,
   View,
   type PressableProps,
   type StyleProp,
@@ -37,6 +40,14 @@ export interface GlassCardProps {
   gradientBorder?: [string, string, ...string[]];
   /** @deprecated Ignored — colored halos are gone; the backdrop is the color. */
   withGlow?: boolean;
+  /**
+   * True frosted blur behind the fill — **iOS only**, where the native
+   * UIVisualEffectView is nearly free. Android deliberately keeps the fake
+   * glass: its only blur path re-renders the backdrop hierarchy every frame,
+   * which over the animated aurora is a standing GPU cost on whatever screen
+   * carries the card. Use sparingly (a handful of cards, not list rows).
+   */
+  blur?: boolean;
   padding?: keyof typeof PADDING;
   /** Corner radius token. Defaults to the 24px card radius. */
   radius?: keyof typeof radiusTokens;
@@ -59,6 +70,7 @@ export interface GlassCardProps {
  */
 export function GlassCard({
   variant = "glass",
+  blur = false,
   padding = "md",
   radius = "2xl",
   onPress,
@@ -67,7 +79,7 @@ export function GlassCard({
   style,
   children,
 }: GlassCardProps) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const r = radiusTokens[radius];
 
   const heavyFill = variant === "glassStrong" || variant === "hero";
@@ -88,6 +100,17 @@ export function GlassCard({
   );
   const merged = [surface, style];
 
+  // Sits under the content; `overflow-hidden` clips it to the card's radius,
+  // and the translucent fill above it tints the frost. absoluteFill ignores
+  // the card's padding, which is exactly right — the frost must reach the edge.
+  const frost = blur && Platform.OS === "ios" && (
+    <BlurView
+      intensity={24}
+      tint={scheme === "dark" ? "dark" : "light"}
+      style={StyleSheet.absoluteFill}
+    />
+  );
+
   if (onPress) {
     return (
       <Pressable
@@ -99,6 +122,7 @@ export function GlassCard({
         ]}
         {...pressableProps}
       >
+        {frost}
         {children}
       </Pressable>
     );
@@ -106,6 +130,7 @@ export function GlassCard({
 
   return (
     <View className={classes} style={merged}>
+      {frost}
       {children}
     </View>
   );
