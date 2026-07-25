@@ -66,13 +66,19 @@ const authFetch: typeof fetch = async (input, init) => {
  *
  * `auth.*` procedures use a non-batching link because the API's auth rate
  * limiter matches exact paths (a batched `/trpc/auth.login,auth.me` URL would
- * bypass it). Everything else is batched. superjson matches the server's
- * transformer on the /trpc surface.
+ * bypass it). `resident.import*` joins them for the same reason: those carry a
+ * base64 spreadsheet and the API raises its body-size limit by exact path, so
+ * a batched URL would be rejected at 100kb. Everything else is batched.
+ * superjson matches the server's transformer on the /trpc surface.
  */
+function isUnbatched(path: string): boolean {
+  return path.startsWith("auth.") || path.startsWith("resident.import");
+}
+
 function trpcLinks(): TRPCLink<ServerRouter>[] {
   return [
     splitLink({
-      condition: (op) => op.path.startsWith("auth."),
+      condition: (op) => isUnbatched(op.path),
       true: httpLink({
         url: TRPC_URL,
         transformer: superjson,

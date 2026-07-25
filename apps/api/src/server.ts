@@ -93,6 +93,29 @@ app.post(
   },
 );
 
+/**
+ * The bulk resident import carries a base64 spreadsheet in its JSON body, which
+ * runs straight past express.json()'s 100kb default. Only these paths get the
+ * larger ceiling: raising it globally would hand every unauthenticated endpoint
+ * a cheap way to make the server buffer megabytes per request.
+ *
+ * Registered BEFORE the global parser — body-parser marks the request as read,
+ * so the express.json() below no-ops for these routes rather than re-parsing.
+ *
+ * The /trpc entries are exact procedure paths, which is why the portal routes
+ * these two through a non-batching link (see apps/portal/src/lib/trpc.ts): a
+ * batched URL like /trpc/resident.importCommit,tower.list would not match here.
+ * The service layer still caps the decoded file well below this limit.
+ */
+app.use(
+  [
+    "/api/v1/residents/import",
+    "/trpc/resident.importPreview",
+    "/trpc/resident.importCommit",
+  ],
+  express.json({ limit: "8mb" }),
+);
+
 app.use(express.json());
 
 /**

@@ -1,8 +1,9 @@
-import { residentService } from "@repo/services";
+import { residentImportService, residentService } from "@repo/services";
 
 import { phoneSchema, z } from "../../schema";
 import { adminProcedure, subscribedAdminProcedure, router } from "../../trpc";
 import { generatePath } from "../../utils/path-generator";
+import { FlatTypeEnum } from "../society/route";
 
 const path = generatePath("v1/residents");
 
@@ -70,6 +71,91 @@ const ActiveStateModel = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Bulk import
+// ---------------------------------------------------------------------------
+
+const ImportSheetInput = z.object({
+  fileName: z
+    .string()
+    .min(1)
+    .describe("Original filename — its extension selects the parser (.xlsx or .csv)"),
+  fileBase64: z
+    .string()
+    .min(1)
+    .describe(
+      `Base64 of the raw file bytes, at most ${Math.floor(
+        residentImportService.IMPORT_MAX_FILE_BYTES / (1024 * 1024),
+      )} MB decoded`,
+    ),
+  createMissingFlats: z
+    .boolean()
+    .default(true)
+    .describe(
+      "Create towers and flats named in the sheet that do not exist yet; when false, such rows are reported as errors",
+    ),
+  defaultFlatType: FlatTypeEnum.default("TWO_BHK").describe(
+    "Flat type for auto-created flats when the sheet has no Flat Type column",
+  ),
+});
+
+const ImportRowIssueModel = z
+  .object({
+    code: z
+      .string()
+      .describe(
+        "Stable machine-readable issue code, e.g. EMAIL_INVALID, DUPLICATE_EMAIL_IN_FILE, ACCOUNT_EXISTS, FLAT_NOT_FOUND, NO_EMAIL",
+      ),
+    message: z.string().describe("English description of the issue"),
+  })
+  .describe("One problem found on a row");
+
+const ImportRowModel = z
+  .object({
+    rowNumber: z.number().describe("1-based row number in the sheet, as the spreadsheet shows it"),
+    name: z.string().nullable().describe("Name read from the row, if any"),
+    email: z.string().nullable().describe("Normalised email read from the row, if any"),
+    phone: z.string().nullable().describe("Normalised 10-digit phone read from the row, if any"),
+    towerName: z.string().nullable().describe("Tower name read from the row, if any"),
+    flatNumber: z.string().nullable().describe("Flat number read from the row, if any"),
+    status: z
+      .enum(["READY", "SKIPPED", "ERROR"])
+      .describe(
+        "READY will be created on commit; SKIPPED is already in the system; ERROR cannot be created",
+      ),
+    issues: z
+      .array(ImportRowIssueModel)
+      .describe("Errors for an ERROR row, warnings otherwise (a READY row may still carry these)"),
+  })
+  .describe("The outcome of one spreadsheet row");
+
+const ImportPreviewModel = z
+  .object({
+    totalRows: z.number().describe("Data rows found in the sheet, excluding the header"),
+    readyCount: z.number().describe("Rows that would be imported"),
+    skippedCount: z.number().describe("Rows already in the system"),
+    errorCount: z.number().describe("Rows that cannot be imported"),
+    towersToCreate: z.array(z.string()).describe("Names of towers that do not exist yet"),
+    flatsToCreate: z.number().describe("How many flats would be created"),
+    noLoginCount: z
+      .number()
+      .describe(
+        "READY rows with no email — they are added to the register but cannot sign in, because signup is email-only",
+      ),
+    rows: z.array(ImportRowModel).describe("Per-row outcome, in sheet order"),
+  })
+  .describe("Dry-run report for a resident import");
+
+const ImportResultModel = z
+  .object({
+    importedCount: z.number().describe("Residents created"),
+    skippedCount: z.number().describe("Rows passed over because they already existed"),
+    errorCount: z.number().describe("Rows passed over because they were invalid"),
+    towersCreated: z.number().describe("Towers created as part of the import"),
+    flatsCreated: z.number().describe("Flats created as part of the import"),
+  })
+  .describe("What a committed resident import actually wrote");
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
@@ -119,6 +205,51 @@ export const residentRouter = router({
       }),
     )
     .query(({ ctx, input }) => residentService.listResidents(ctx.user, input)),
+
+  importPreview: subscribedAdminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: path("import/preview"),
+        tags: ["Society"],
+        summary: "Dry-run a bulk resident import",
+        description:
+          "Parses an uploaded .xlsx or .csv register (headers: Name, Email, Phone, Tower, Flat " +
+          "Number, plus optional Floor and Flat Type — common synonyms are accepted) and reports " +
+          "every row without writing anything. Each row comes back READY, SKIPPED (already in " +
+          "the system, so re-running a file is safe) or ERROR, with machine-readable issue codes. " +
+          "Call this before importCommit and show the report to the admin. " +
+          `Errors: 400 if the file cannot be read, is empty, exceeds ${residentImportService.IMPORT_MAX_ROWS} ` +
+          "rows, or is missing a required column, 403 if not an admin, 412 if the admin has no society.",
+        protect: true,
+      },
+    })
+    .input(ImportSheetInput)
+    .output(ImportPreviewModel)
+    .mutation(({ ctx, input }) => residentImportService.previewResidentImport(ctx.user, input)),
+
+  importCommit: subscribedAdminProcedure
+    .meta({
+      openapi: {
+        method: "POST",
+        path: path("import"),
+        tags: ["Society"],
+        summary: "Bulk import residents from a spreadsheet",
+        description:
+          "Re-parses the same file importPreview was given and creates a resident account plus " +
+          "flat link for every READY row, in one transaction; SKIPPED and ERROR rows are passed " +
+          "over. Imported accounts carry no password and no Google id, so they cannot be logged " +
+          "into — the resident claims the account by signing up with the same email, which keeps " +
+          "the flat the admin assigned. Rows with only a phone are added to the register but " +
+          "cannot be claimed, because signup is email-only. " +
+          "Errors: 400 if the file cannot be read or no row is importable, 403 if not an admin, " +
+          "412 if the admin has no society.",
+        protect: true,
+      },
+    })
+    .input(ImportSheetInput)
+    .output(ImportResultModel)
+    .mutation(({ ctx, input }) => residentImportService.commitResidentImport(ctx.user, input)),
 
   deactivate: subscribedAdminProcedure
     .meta({

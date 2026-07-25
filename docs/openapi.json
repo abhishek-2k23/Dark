@@ -4178,6 +4178,418 @@
         }
       }
     },
+    "/v1/residents/import/preview": {
+      "post": {
+        "operationId": "resident-importPreview",
+        "summary": "Dry-run a bulk resident import",
+        "description": "Parses an uploaded .xlsx or .csv register (headers: Name, Email, Phone, Tower, Flat Number, plus optional Floor and Flat Type — common synonyms are accepted) and reports every row without writing anything. Each row comes back READY, SKIPPED (already in the system, so re-running a file is safe) or ERROR, with machine-readable issue codes. Call this before importCommit and show the report to the admin. Errors: 400 if the file cannot be read, is empty, exceeds 1000 rows, or is missing a required column, 403 if not an admin, 412 if the admin has no society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Original filename — its extension selects the parser (.xlsx or .csv)"
+                  },
+                  "fileBase64": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Base64 of the raw file bytes, at most 4 MB decoded"
+                  },
+                  "createMissingFlats": {
+                    "default": true,
+                    "description": "Create towers and flats named in the sheet that do not exist yet; when false, such rows are reported as errors",
+                    "type": "boolean"
+                  },
+                  "defaultFlatType": {
+                    "default": "TWO_BHK",
+                    "description": "Flat type for auto-created flats when the sheet has no Flat Type column",
+                    "type": "string",
+                    "enum": [
+                      "ONE_RK",
+                      "ONE_BHK",
+                      "TWO_BHK",
+                      "THREE_BHK",
+                      "FOUR_BHK",
+                      "OTHER"
+                    ]
+                  }
+                },
+                "required": [
+                  "fileName",
+                  "fileBase64"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalRows": {
+                      "type": "number",
+                      "description": "Data rows found in the sheet, excluding the header"
+                    },
+                    "readyCount": {
+                      "type": "number",
+                      "description": "Rows that would be imported"
+                    },
+                    "skippedCount": {
+                      "type": "number",
+                      "description": "Rows already in the system"
+                    },
+                    "errorCount": {
+                      "type": "number",
+                      "description": "Rows that cannot be imported"
+                    },
+                    "towersToCreate": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Names of towers that do not exist yet"
+                    },
+                    "flatsToCreate": {
+                      "type": "number",
+                      "description": "How many flats would be created"
+                    },
+                    "noLoginCount": {
+                      "type": "number",
+                      "description": "READY rows with no email — they are added to the register but cannot sign in, because signup is email-only"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rowNumber": {
+                            "type": "number",
+                            "description": "1-based row number in the sheet, as the spreadsheet shows it"
+                          },
+                          "name": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Name read from the row, if any"
+                          },
+                          "email": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Normalised email read from the row, if any"
+                          },
+                          "phone": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Normalised 10-digit phone read from the row, if any"
+                          },
+                          "towerName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Tower name read from the row, if any"
+                          },
+                          "flatNumber": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Flat number read from the row, if any"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "READY",
+                              "SKIPPED",
+                              "ERROR"
+                            ],
+                            "description": "READY will be created on commit; SKIPPED is already in the system; ERROR cannot be created"
+                          },
+                          "issues": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "code": {
+                                  "type": "string",
+                                  "description": "Stable machine-readable issue code, e.g. EMAIL_INVALID, DUPLICATE_EMAIL_IN_FILE, ACCOUNT_EXISTS, FLAT_NOT_FOUND, NO_EMAIL"
+                                },
+                                "message": {
+                                  "type": "string",
+                                  "description": "English description of the issue"
+                                }
+                              },
+                              "required": [
+                                "code",
+                                "message"
+                              ],
+                              "additionalProperties": false,
+                              "description": "One problem found on a row"
+                            },
+                            "description": "Errors for an ERROR row, warnings otherwise (a READY row may still carry these)"
+                          }
+                        },
+                        "required": [
+                          "rowNumber",
+                          "name",
+                          "email",
+                          "phone",
+                          "towerName",
+                          "flatNumber",
+                          "status",
+                          "issues"
+                        ],
+                        "additionalProperties": false,
+                        "description": "The outcome of one spreadsheet row"
+                      },
+                      "description": "Per-row outcome, in sheet order"
+                    }
+                  },
+                  "required": [
+                    "totalRows",
+                    "readyCount",
+                    "skippedCount",
+                    "errorCount",
+                    "towersToCreate",
+                    "flatsToCreate",
+                    "noLoginCount",
+                    "rows"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Dry-run report for a resident import"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/residents/import": {
+      "post": {
+        "operationId": "resident-importCommit",
+        "summary": "Bulk import residents from a spreadsheet",
+        "description": "Re-parses the same file importPreview was given and creates a resident account plus flat link for every READY row, in one transaction; SKIPPED and ERROR rows are passed over. Imported accounts carry no password and no Google id, so they cannot be logged into — the resident claims the account by signing up with the same email, which keeps the flat the admin assigned. Rows with only a phone are added to the register but cannot be claimed, because signup is email-only. Errors: 400 if the file cannot be read or no row is importable, 403 if not an admin, 412 if the admin has no society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fileName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Original filename — its extension selects the parser (.xlsx or .csv)"
+                  },
+                  "fileBase64": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Base64 of the raw file bytes, at most 4 MB decoded"
+                  },
+                  "createMissingFlats": {
+                    "default": true,
+                    "description": "Create towers and flats named in the sheet that do not exist yet; when false, such rows are reported as errors",
+                    "type": "boolean"
+                  },
+                  "defaultFlatType": {
+                    "default": "TWO_BHK",
+                    "description": "Flat type for auto-created flats when the sheet has no Flat Type column",
+                    "type": "string",
+                    "enum": [
+                      "ONE_RK",
+                      "ONE_BHK",
+                      "TWO_BHK",
+                      "THREE_BHK",
+                      "FOUR_BHK",
+                      "OTHER"
+                    ]
+                  }
+                },
+                "required": [
+                  "fileName",
+                  "fileBase64"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "importedCount": {
+                      "type": "number",
+                      "description": "Residents created"
+                    },
+                    "skippedCount": {
+                      "type": "number",
+                      "description": "Rows passed over because they already existed"
+                    },
+                    "errorCount": {
+                      "type": "number",
+                      "description": "Rows passed over because they were invalid"
+                    },
+                    "towersCreated": {
+                      "type": "number",
+                      "description": "Towers created as part of the import"
+                    },
+                    "flatsCreated": {
+                      "type": "number",
+                      "description": "Flats created as part of the import"
+                    }
+                  },
+                  "required": [
+                    "importedCount",
+                    "skippedCount",
+                    "errorCount",
+                    "towersCreated",
+                    "flatsCreated"
+                  ],
+                  "additionalProperties": false,
+                  "description": "What a committed resident import actually wrote"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/residents/{userId}/deactivate": {
       "post": {
         "operationId": "resident-deactivate",
