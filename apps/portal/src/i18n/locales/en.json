@@ -1047,7 +1047,8 @@
   },
   "emergency": {
     "sosCta": "Emergency SOS",
-    "sosHint": "Alerts everyone in your society",
+    "sosTapAgain": "Double-tap the SOS button to raise an emergency alert",
+    "sosA11yHint": "Alerts everyone in your society",
     "countdownTitle": "Sending emergency alert",
     "countdownBody": "Everyone in your society will be alerted. Tap cancel if this was an accident.",
     "cancel": "CANCEL",
