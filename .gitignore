@@ -37,7 +37,16 @@ yarn-error.log*
 .DS_Store
 *.pem
 
-plan.md
+# Documentation. The repo ships exactly four documents, all at the root; every
+# other markdown file is a working note (plan.md, docs/*, per-package READMEs)
+# and stays local. The negations use a leading slash so they match only the root
+# copies — an unanchored "!README.md" would also un-ignore apps/*/README.md.
+*.md
+!/README.md
+!/architecture.md
+!/security.md
+!/credentials.md
+
 # Repo-root design-mockup folder only. Anchored with a leading slash so it does
 # NOT also match apps/portal/src/components/ui/ — Git ignores are case-insensitive
 # on Windows/macOS, so an unanchored "UI/" silently hid the whole ui component lib.
