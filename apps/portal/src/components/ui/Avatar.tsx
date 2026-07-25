@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
-import { View } from "react-native";
+import { useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 import { useTheme, type NeonHue } from "@/theme";
 import { cn } from "@/utils/cn";
@@ -23,10 +24,23 @@ function initialsOf(name?: string): string {
   return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-/** Circular user image with an initials fallback and optional neon ring. */
+/**
+ * Circular user image with an initials fallback and optional neon ring.
+ *
+ * The initials are always rendered, with the photo laid over them rather than
+ * swapped in for them. A URL is not a picture: it may still be downloading, or
+ * point at something deleted, expired or unreachable — and a lone `<Image>`
+ * whose source fails draws nothing at all, leaving an empty disc where a face
+ * should be. Keeping the initials underneath means the avatar is never blank,
+ * and `onError` drops a broken photo so the fallback is what remains.
+ */
 export function Avatar({ uri, name, size = 40, ring, className }: AvatarProps) {
   const { colors } = useTheme();
   const radius = size / 2;
+  const [failed, setFailed] = useState(false);
+
+  // A different subject deserves a fresh attempt at loading.
+  useEffect(() => setFailed(false), [uri]);
 
   const ringColor = ring
     ? colors.neon[typeof ring === "string" ? ring : "blue"]
@@ -35,21 +49,9 @@ export function Avatar({ uri, name, size = 40, ring, className }: AvatarProps) {
     ? { borderWidth: 1.5, borderColor: withAlpha(ringColor, 0.7) }
     : undefined;
 
-  if (uri) {
-    return (
-      <Image
-        source={{ uri }}
-        style={{ width: size, height: size, borderRadius: radius, ...ringStyle }}
-        contentFit="cover"
-        transition={150}
-        className={className}
-      />
-    );
-  }
-
   return (
     <View
-      className={cn("items-center justify-center", className)}
+      className={cn("items-center justify-center overflow-hidden", className)}
       style={{
         width: size,
         height: size,
@@ -74,6 +76,16 @@ export function Avatar({ uri, name, size = 40, ring, className }: AvatarProps) {
       >
         {initialsOf(name)}
       </Text>
+
+      {uri && !failed && (
+        <Image
+          source={{ uri }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={150}
+          onError={() => setFailed(true)}
+        />
+      )}
     </View>
   );
 }

@@ -12,6 +12,8 @@ export {
   type IconCircleProps,
   type IconCircleTone,
 } from "./IconCircle";
+export { IconButton, type IconButtonProps } from "./IconButton";
+export { Sheet, type SheetProps } from "./Sheet";
 export {
   Button,
   type ButtonProps,

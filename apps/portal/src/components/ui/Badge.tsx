@@ -37,6 +37,12 @@ export interface BadgeProps {
   dot?: boolean;
   /** Uppercase + wider tracking (status-chip look). */
   uppercase?: boolean;
+  /**
+   * Where the badge sits on its parent's cross axis. A badge hugs its label
+   * rather than filling the row, so it has to opt out of a parent's alignment —
+   * which means `self-start` has to be a default rather than a given.
+   */
+  align?: "start" | "center";
   className?: string;
 }
 
@@ -46,6 +52,7 @@ export function Badge({
   size = "md",
   dot = false,
   uppercase = false,
+  align = "start",
   className,
 }: BadgeProps) {
   const { colors } = useTheme();
@@ -56,7 +63,8 @@ export function Badge({
   return (
     <View
       className={cn(
-        "flex-row items-center gap-1.5 self-start rounded-full",
+        "flex-row items-center gap-1.5 rounded-full",
+        align === "center" ? "self-center" : "self-start",
         pad,
         t.bg,
         className,
