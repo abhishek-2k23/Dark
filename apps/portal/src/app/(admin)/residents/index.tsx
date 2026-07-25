@@ -167,13 +167,22 @@ export default function ResidentsList() {
         <StackHeader
           title={t("admin.residents")}
           right={
-            <Button
-              label={t("admin.invite")}
-              variant="secondary"
-              size="sm"
-              leftIcon="person-add-outline"
-              onPress={() => router.push("/(admin)/residents/invite")}
-            />
+            <View className="flex-row gap-2">
+              <Button
+                label={t("admin.import.short")}
+                variant="outline"
+                size="sm"
+                leftIcon="cloud-upload-outline"
+                onPress={() => router.push("/(admin)/residents/import")}
+              />
+              <Button
+                label={t("admin.invite")}
+                variant="secondary"
+                size="sm"
+                leftIcon="person-add-outline"
+                onPress={() => router.push("/(admin)/residents/invite")}
+              />
+            </View>
           }
         />
 
