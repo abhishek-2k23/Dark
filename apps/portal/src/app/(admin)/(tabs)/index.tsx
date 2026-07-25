@@ -133,23 +133,28 @@ export default function AdminDashboard() {
             </Text>
           </View>
         </View>
-        <Pressable
-          onPress={() => router.push("/(admin)/notifications" as never)}
-          hitSlop={8}
-          accessibilityRole="button"
-          accessibilityLabel={t("notifications.title")}
-          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
-          style={{
-            backgroundColor: themeColors.glassFill,
-            borderWidth: 1,
-            borderColor: themeColors.glassBorder,
-          }}
-        >
-          <Icon name="notifications-outline" size={22} color="content" />
-          {unreadCount > 0 && (
-            <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
-          )}
-        </Pressable>
+        {/* Panic alarm sits beside the bell: the one control nobody should
+            have to go looking for, on the header of every dashboard. */}
+        <View className="flex-row items-center gap-2">
+          <SosButton />
+          <Pressable
+            onPress={() => router.push("/(admin)/notifications" as never)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={t("notifications.title")}
+            className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+            style={{
+              backgroundColor: themeColors.glassFill,
+              borderWidth: 1,
+              borderColor: themeColors.glassBorder,
+            }}
+          >
+            <Icon name="notifications-outline" size={22} color="content" />
+            {unreadCount > 0 && (
+              <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* KPIs */}
@@ -183,10 +188,6 @@ export default function AdminDashboard() {
           onPress={() => router.push("/(admin)/reports")}
         />
       </View>
-
-      {/* Panic alarm. Sits above the fold on every dashboard: the one
-          control nobody should have to go looking for. */}
-      <SosButton />
 
       {/* Quick actions */}
       <View className="gap-3">

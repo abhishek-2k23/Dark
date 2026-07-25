@@ -246,22 +246,27 @@ export default function GuardDashboard() {
             {t(greetingKey(), { name: user?.name?.split(" ")[0] ?? "" })}
           </Text>
         </View>
-        <Pressable
-          onPress={() => router.push("/(guard)/notifications" as never)}
-          hitSlop={8}
-          accessibilityLabel={t("notifications.title")}
-          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
-          style={{
-            backgroundColor: colors.glassFill,
-            borderWidth: 1,
-            borderColor: colors.glassBorder,
-          }}
-        >
-          <Icon name="notifications-outline" size={22} color="content" />
-          {unreadCount > 0 && (
-            <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
-          )}
-        </Pressable>
+        {/* Panic alarm sits beside the bell: the one control nobody should
+            have to go looking for, on the header of every dashboard. */}
+        <View className="flex-row items-center gap-2">
+          <SosButton />
+          <Pressable
+            onPress={() => router.push("/(guard)/notifications" as never)}
+            hitSlop={8}
+            accessibilityLabel={t("notifications.title")}
+            className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+            style={{
+              backgroundColor: colors.glassFill,
+              borderWidth: 1,
+              borderColor: colors.glassBorder,
+            }}
+          >
+            <Icon name="notifications-outline" size={22} color="content" />
+            {unreadCount > 0 && (
+              <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* Today's stats */}
@@ -274,10 +279,6 @@ export default function GuardDashboard() {
       {/* Anything addressed to this guard that hasn't been seen yet. Renders
           nothing when there is nothing outstanding. */}
       <NeedsAttention role="GUARD" inboxHref="/(guard)/notifications" />
-
-      {/* Panic alarm. Sits above the fold on every dashboard: the one
-          control nobody should have to go looking for. */}
-      <SosButton />
 
       {/* Quick actions */}
       <View className="flex-row flex-wrap gap-3">

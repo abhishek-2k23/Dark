@@ -15,7 +15,7 @@ import { useUIStore } from "@/stores/uiStore";
  * Seconds between the sheet opening and the alarm going out. Long enough to
  * catch a pocket-shake, short enough that a real emergency isn't waiting on it.
  */
-const COUNTDOWN_SECONDS = 5;
+const COUNTDOWN_SECONDS = 10;
 
 const TYPES: { type: EmergencyType; icon: IconName }[] = [
   { type: "MEDICAL", icon: "medkit-outline" },

@@ -105,21 +105,26 @@ export default function ResidentDashboard() {
             </Text>
           </View>
         </Pressable>
-        <Pressable
-          onPress={() => router.push("/(resident)/notifications")}
-          hitSlop={8}
-          className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
-          style={{
-            backgroundColor: colors.glassFill,
-            borderWidth: 1,
-            borderColor: colors.glassBorder,
-          }}
-        >
-          <Icon name="notifications-outline" size={22} color="content" />
-          {unreadCount > 0 && (
-            <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
-          )}
-        </Pressable>
+        {/* Panic alarm sits beside the bell: the one control nobody should
+            have to go looking for, on the header of every dashboard. */}
+        <View className="flex-row items-center gap-2">
+          <SosButton />
+          <Pressable
+            onPress={() => router.push("/(resident)/notifications")}
+            hitSlop={8}
+            className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+            style={{
+              backgroundColor: colors.glassFill,
+              borderWidth: 1,
+              borderColor: colors.glassBorder,
+            }}
+          >
+            <Icon name="notifications-outline" size={22} color="content" />
+            {unreadCount > 0 && (
+              <View className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-danger" />
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* Pending visitor banner */}
@@ -163,10 +168,6 @@ export default function ResidentDashboard() {
           ticket the admin moved, a new notice, a due raised. Renders nothing
           when they are caught up. */}
       <NeedsAttention role="RESIDENT" inboxHref="/(resident)/notifications" />
-
-      {/* Panic alarm. Sits above the fold on every dashboard: the one
-          control nobody should have to go looking for. */}
-      <SosButton />
 
       {/* Quick actions */}
       <View className="gap-3">
