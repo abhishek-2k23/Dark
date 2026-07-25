@@ -95,7 +95,8 @@ export default function RootLayout() {
     Nunito_700Bold,
   });
 
-  // Check for and apply OTA (EAS) updates on launch / foreground.
+  // Downloads OTA (EAS) updates in the background and offers a restart once one
+  // is ready; never reloads on its own.
   useOTAUpdates();
 
   // Restore any persisted session as soon as the app starts.

@@ -21,7 +21,20 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   runtimeVersion: { policy: "appVersion" },
   updates: {
     url: `https://u.expo.dev/${EAS_PROJECT_ID}`,
-    fallbackToCacheTimeout: 10_000,
+    /**
+     * 0 = never hold the launch waiting on the update server.
+     *
+     * This was 10_000, which made every cold start sit on the splash for up to
+     * ten seconds — on a weak connection that is the whole launch, and the
+     * payoff was only ever "start on the new bundle instead of the next one".
+     * At 0 the app always boots the cached bundle immediately and the download
+     * continues in the background; `useOTAUpdates` then offers a restart once
+     * it lands, and expo-updates applies it on the next launch regardless.
+     */
+    fallbackToCacheTimeout: 0,
+    // Native check on every cold start. The foreground-return check lives in
+    // `useOTAUpdates`, which the native module does not cover.
+    checkAutomatically: "ON_LOAD",
   },
   ios: {
     bundleIdentifier: "com.prangan.app",

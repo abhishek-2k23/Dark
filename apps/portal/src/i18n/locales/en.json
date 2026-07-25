@@ -998,5 +998,11 @@
       "SECURITY": "Security",
       "OTHER": "Emergency"
     }
+  },
+  "updates": {
+    "readyTitle": "Update ready",
+    "readyBody": "A new version has been downloaded. Restart now to use it, or it'll be applied the next time you open the app.",
+    "restartNow": "Restart now",
+    "later": "Later"
   }
 }
