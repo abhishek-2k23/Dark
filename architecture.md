@@ -201,9 +201,14 @@ the mobile app.
 
 Stated plainly, because a system's edges matter as much as its features:
 
-- **The payment gateway is a mock.** The flow, the states and the signed webhook
-  are real; no money moves. Swapping in a real provider means replacing the
-  session builder and the signature scheme — the state machine stays.
+- **Resident money is recorded, not processed.** This is a decision, not a gap:
+  under RBI's Payment Aggregator rules a platform that collects and settles funds
+  on behalf of others needs a licence, so residents pay their society directly
+  (UPI-direct or an offline receipt an admin verifies) and Prangan keeps the
+  record. The gateway rail stays wired and tested — state machine, HMAC-signed
+  webhook and all — so re-enabling it is a small change rather than a rewrite.
+  **Society subscriptions to Prangan itself do use live Razorpay**, because there
+  the platform is the payee and no PA question arises.
 - **Amenity bookings can't be paid.** `payment.initiate` accepts a booking
   server-side, but no screen exposes the action yet.
 - **Flatmates are representable, not creatable.** The schema supports several
