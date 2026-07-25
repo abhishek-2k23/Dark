@@ -351,6 +351,14 @@ model User {
   societyId     String?
   society       Society?     @relation(fields: [societyId], references: [id])
   isActive      Boolean      @default(true)
+  // Set when an admin bulk-imported this resident from a spreadsheet (migrating
+  // a paper register or another app). Such a row has no credential of any kind
+  // — no passwordHash, no googleId — so it cannot be logged into; it exists so
+  // the register is visible in the directory and dues/visitors can be tied to
+  // the flat. The first signup/Google sign-in matching the email *claims* the
+  // row (sets the credential) and nulls this field, which is what separates a
+  // never-claimed import from a real account. See `resident/import.service.ts`.
+  importedAt    DateTime?
 
   emergencyContactName  String?
   emergencyContactPhone String?
@@ -378,6 +386,8 @@ model User {
   notifications         Notification[]
   raisedEmergencies     EmergencyAlert[]        @relation("EmergencyRaisedBy")
   resolvedEmergencies   EmergencyAlert[]        @relation("EmergencyResolvedBy")
+
+  @@index([societyId, importedAt])
 }
 
 // ---------------------------------------------------------------------------
