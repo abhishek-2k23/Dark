@@ -99,19 +99,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           // rules; add them here as crashes surface in release testing.
           extraProguardRules: ["-keep class com.prangan.app.** { *; }"].join("\n"),
         },
-        ios: {
-          // Required by @react-native-firebase on iOS (its pods are static
-          // frameworks). No effect on the Android build.
-          useFrameworks: "static",
-        },
       },
     ],
-    // Firebase App Check uses the Play Integrity provider on Android for app
-    // attestation. Requires google-services.json (already wired) and, to
-    // actually enforce anything, App Check registration in the Firebase console
-    // plus server-side token verification — see docs.
-    "@react-native-firebase/app",
-    "@react-native-firebase/app-check",
     [
       "expo-splash-screen",
       {
