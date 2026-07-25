@@ -118,6 +118,23 @@ async function claimPendingInvite(user: User): Promise<User> {
   });
 }
 
+/**
+ * Is this row a bulk-imported resident nobody has claimed yet?
+ *
+ * Such a row is created by `resident/import.service.ts` when an admin migrates
+ * a register: it holds a real name, email/phone and flat, but no credential of
+ * any kind. `importedAt` is the marker; the credential checks are belt and
+ * braces, so a claimed account can never be mistaken for a claimable one even
+ * if the stamp were somehow left behind.
+ *
+ * A claimable row is *not* treated as "an account already exists" — the whole
+ * point of the migration is that the resident signs up normally and lands on
+ * the flat the admin already assigned them.
+ */
+function isUnclaimedImport(user: User): boolean {
+  return user.importedAt !== null && user.passwordHash === null && user.googleId === null;
+}
+
 async function issueSession(user: User): Promise<AuthSession> {
   const refresh = signRefreshToken();
   await prisma.refreshToken.create({
@@ -272,6 +289,35 @@ export async function signup(input: {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
+    // A bulk-imported resident signing up for the first time: set the password
+    // on the row the admin already created rather than rejecting them, so they
+    // keep the flat, dues and visitor history migrated under their name.
+    //
+    // No session is issued here either — the emailed OTP below still has to
+    // prove the mailbox is theirs, which is exactly the guarantee the normal
+    // signup path gives. Until that succeeds the account stays credential-less
+    // from the caller's point of view.
+    if (isUnclaimedImport(existing)) {
+      const claimed = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          name,
+          passwordHash: await hashPassword(password),
+          importedAt: null,
+        },
+      });
+      logger.info("Imported resident claimed their account via signup", {
+        userId: claimed.id,
+        societyId: claimed.societyId,
+      });
+      const claimCode = await issueEmailOtp(claimed);
+      return {
+        status: "OTP_REQUIRED",
+        channel: "email",
+        email,
+        ...(otpDevEcho() ? { devCode: claimCode } : {}),
+      };
+    }
     throw new TRPCError({
       code: "CONFLICT",
       message: "An account already exists with this email",
@@ -426,7 +472,14 @@ export async function login(input: {
   if (!user.passwordHash) {
     throw new TRPCError({
       code: "UNAUTHORIZED",
-      message: "This account uses Google sign-in — use 'Continue with Google'",
+      message: isUnclaimedImport(user)
+        ? // Added by an admin's bulk import and never claimed: there is no
+          // password to be wrong, so send them to signup rather than leaving
+          // them guessing at credentials that were never issued. Signup is
+          // email-only, hence the fallback for rows imported with a phone.
+          "Your society admin has already added you — sign up with your email address to set a " +
+          "password, or ask them to add your email to the society records"
+        : "This account uses Google sign-in — use 'Continue with Google'",
     });
   }
   if (!(await verifyPassword(user.passwordHash, password))) {
@@ -567,8 +620,11 @@ export async function googleLogin(input: {
     if (!payload.email_verified) {
       throw new TRPCError({
         code: "CONFLICT",
-        message:
-          "An account already exists with this email — log in with your password",
+        message: isUnclaimedImport(byEmail)
+          ? // Pointing an imported resident at a password they don't have would
+            // be a dead end — signup is the path that sets one.
+            "Your society admin has already added this email — sign up to set a password"
+          : "An account already exists with this email — log in with your password",
       });
     }
     if (!byEmail.isActive) {
@@ -577,6 +633,7 @@ export async function googleLogin(input: {
         message: "This account has been deactivated — contact your society admin",
       });
     }
+    const wasImport = isUnclaimedImport(byEmail);
     const linked = await prisma.user.update({
       where: { id: byEmail.id },
       data: {
@@ -585,11 +642,17 @@ export async function googleLogin(input: {
         // satisfied too.
         emailVerified: true,
         avatarUrl: byEmail.avatarUrl ?? payload.picture ?? null,
+        // A bulk-imported row is claimed by this sign-in: Google is now its
+        // credential, so it is no longer an unclaimed import.
+        ...(wasImport ? { authProvider: "GOOGLE" as const, importedAt: null } : {}),
       },
     });
-    logger.info("Linked Google sign-in to existing password account", {
-      userId: linked.id,
-    });
+    logger.info(
+      wasImport
+        ? "Imported resident claimed their account via Google sign-in"
+        : "Linked Google sign-in to existing password account",
+      { userId: linked.id },
+    );
     return issueSession(await claimPendingInvite(linked));
   }
 

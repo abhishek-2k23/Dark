@@ -606,3 +606,105 @@ describe("account deletion", () => {
     );
   });
 });
+
+describe("claiming a bulk-imported account", () => {
+  /**
+   * What `resident/import.service.ts` leaves behind: a real resident on a real
+   * flat, with no credential of any kind.
+   */
+  async function createImportedResident(identifier: { email?: string; phone?: string }) {
+    return prisma.user.create({
+      data: {
+        name: "Imported Resident",
+        email: identifier.email ?? null,
+        phone: identifier.phone ?? null,
+        role: "RESIDENT",
+        societyId,
+        importedAt: new Date(),
+        residentProfile: { create: { flatId } },
+      },
+    });
+  }
+
+  it("lets signup claim the row instead of rejecting it as a duplicate", async () => {
+    const importedEmail = `imported-${h.runId}@test.local`;
+    const imported = await createImportedResident({ email: importedEmail });
+
+    const challenge = await authService.signup({
+      name: "Imported Resident",
+      email: importedEmail,
+      password,
+    });
+    // Still OTP-gated: the migration doesn't hand out a session to whoever
+    // happens to know the address.
+    expect(challenge.status).toBe("OTP_REQUIRED");
+    expect(challenge.devCode).toMatch(/^\d{6}$/);
+
+    const claimed = await prisma.user.findUnique({ where: { id: imported.id } });
+    expect(claimed!.passwordHash).not.toBeNull();
+    expect(claimed!.importedAt).toBeNull();
+    // No second account was made — the flat and society carried over.
+    expect(claimed!.societyId).toBe(societyId);
+    expect(await prisma.user.count({ where: { email: importedEmail } })).toBe(1);
+
+    const profiles = await prisma.residentProfile.findMany({ where: { userId: imported.id } });
+    expect(profiles).toHaveLength(1);
+    expect(profiles[0]!.flatId).toBe(flatId);
+
+    // Verifying the emailed code logs them in and leaves the flat intact.
+    const session = await authService.verifyEmailOtp({
+      email: importedEmail,
+      code: challenge.devCode!,
+    });
+    expect(session.user.societyId).toBe(societyId);
+    await loginSession(importedEmail);
+  });
+
+  it("still rejects signup against a genuine existing account", async () => {
+    const takenEmail = `taken-${h.runId}@test.local`;
+    await authService.signup({ name: "First", email: takenEmail, password });
+    await expectTRPCError(
+      authService.signup({ name: "Second", email: takenEmail, password }),
+      "CONFLICT",
+    );
+  });
+
+  it("refuses a password login against an unclaimed import", async () => {
+    const loginEmail = `imported-login-${h.runId}@test.local`;
+    await createImportedResident({ email: loginEmail });
+    await expectTRPCError(
+      authService.login({ identifier: loginEmail, password }),
+      "UNAUTHORIZED",
+    );
+  });
+
+  it("lets Google sign-in claim the row", async () => {
+    const googleImportEmail = `imported-google-${h.runId}@test.local`;
+    const imported = await createImportedResident({ email: googleImportEmail });
+
+    const session = await authService.googleLogin({ idToken: `valid:${googleImportEmail}` });
+    expect(session.user.id).toBe(imported.id);
+    expect(session.user.societyId).toBe(societyId);
+
+    const claimed = await prisma.user.findUnique({ where: { id: imported.id } });
+    expect(claimed!.googleId).toBe(`gsub-${googleImportEmail}`);
+    expect(claimed!.authProvider).toBe("GOOGLE");
+    expect(claimed!.emailVerified).toBe(true);
+    expect(claimed!.importedAt).toBeNull();
+    expect(await prisma.user.count({ where: { email: googleImportEmail } })).toBe(1);
+  });
+
+  it("refuses to claim a row when Google has not attested the address", async () => {
+    const unverifiedEmail = `imported-unverified-${h.runId}@test.local`;
+    const imported = await createImportedResident({ email: unverifiedEmail });
+
+    await expectTRPCError(
+      authService.googleLogin({ idToken: `unverified:${unverifiedEmail}` }),
+      "CONFLICT",
+    );
+
+    const untouched = await prisma.user.findUnique({ where: { id: imported.id } });
+    expect(untouched!.importedAt).not.toBeNull();
+    expect(untouched!.googleId).toBeNull();
+  });
+});
