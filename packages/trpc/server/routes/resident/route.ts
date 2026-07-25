@@ -1,4 +1,4 @@
-import { residentImportService, residentService } from "@repo/services";
+import { residentDetailService, residentImportService, residentService } from "@repo/services";
 
 import { phoneSchema, z } from "../../schema";
 import { adminProcedure, subscribedAdminProcedure, router } from "../../trpc";
@@ -69,6 +69,183 @@ const ActiveStateModel = z.object({
   id: z.string().describe("User id"),
   isActive: z.boolean().describe("Account active state after the change"),
 });
+
+// ---------------------------------------------------------------------------
+// Detail
+// ---------------------------------------------------------------------------
+
+// Declared locally rather than imported across route files, matching how every
+// other router spells its own enums.
+const VehicleTypeEnum = z.enum(["CAR", "BIKE", "OTHER"]).describe("Vehicle type");
+const VisitorPurposeEnum = z
+  .enum(["GUEST", "DELIVERY", "CAB", "SERVICE_STAFF", "OTHER"])
+  .describe("Why the visitor came");
+const VisitorStatusEnum = z
+  .enum(["PENDING", "APPROVED", "DENIED", "EXPIRED"])
+  .describe("Visitor request status");
+const TicketCategoryEnum = z
+  .enum(["PLUMBING", "ELECTRICAL", "HOUSEKEEPING", "SECURITY", "OTHER"])
+  .describe("Complaint category");
+const TicketPriorityEnum = z.enum(["LOW", "MEDIUM", "HIGH"]).describe("Complaint priority");
+const TicketStatusEnum = z
+  .enum(["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"])
+  .describe("Complaint status");
+const BookingStatusEnum = z
+  .enum(["PENDING_PAYMENT", "BOOKED", "CANCELLED", "EXPIRED", "COMPLETED"])
+  .describe(
+    "Booking status. PENDING_PAYMENT holds the slot for a chargeable amenity while payment is " +
+      "outstanding; EXPIRED means that hold lapsed and the slot was released",
+  );
+const DueStatusEnum = z.enum(["PENDING", "PAID", "OVERDUE"]).describe("Due status");
+const PaymentMethodEnum = z
+  .enum(["UPI", "CARD", "NETBANKING", "OFFLINE", "UPI_DIRECT"])
+  .describe("How the payment was made");
+const PaymentStatusEnum = z
+  .enum(["INITIATED", "SUCCESS", "FAILED", "PENDING_VERIFICATION", "REJECTED"])
+  .describe("Payment status");
+
+const ResidentDetailProfileModel = z
+  .object({
+    id: z.string().describe("User id"),
+    name: z.string().describe("Full name"),
+    email: z.string().nullable().describe("Email, if set"),
+    phone: z.string().nullable().describe("Phone, if set"),
+    avatarUrl: z.string().nullable().describe("Profile photo URL, if set"),
+    isActive: z.boolean().describe("Whether the account is active"),
+    importedAt: z
+      .string()
+      .nullable()
+      .describe("Set while a bulk-imported resident has not claimed their account yet"),
+    emergencyContactName: z.string().nullable().describe("Emergency contact name, if set"),
+    emergencyContactPhone: z.string().nullable().describe("Emergency contact phone, if set"),
+    joinedAt: z.string().describe("ISO timestamp the account was created"),
+    flatId: z.string().describe("Id of the resident's flat"),
+    flatNumber: z.string().describe("Flat number"),
+    towerName: z.string().describe("Tower name"),
+    floor: z.number().describe("Floor the flat is on"),
+    flatType: FlatTypeEnum,
+    isPrimaryResident: z.boolean().describe("Whether this is the flat's primary resident"),
+    moveInDate: z.string().nullable().describe("ISO move-in date, if recorded"),
+  })
+  .describe("Identity, contact and flat details for one resident");
+
+const ResidentFamilyMemberModel = z
+  .object({
+    id: z.string().describe("Family member id"),
+    name: z.string().describe("Full name"),
+    relation: z.string().describe("Relation to the resident, e.g. Spouse"),
+    age: z.number().nullable().describe("Age, if recorded"),
+    photoUrl: z.string().nullable().describe("Photo URL, if set"),
+  })
+  .describe("A member of the resident's household");
+
+const ResidentVehicleModel = z
+  .object({
+    id: z.string().describe("Vehicle id"),
+    number: z.string().describe("Registration number"),
+    type: VehicleTypeEnum,
+  })
+  .describe("A vehicle registered to the resident");
+
+const ResidentVisitorEntryModel = z
+  .object({
+    id: z.string().describe("Visitor id"),
+    name: z.string().describe("Visitor's name"),
+    phone: z.string().describe("Visitor's phone"),
+    purpose: VisitorPurposeEnum,
+    status: VisitorStatusEnum,
+    vehicleNumber: z.string().nullable().describe("Vehicle number, if recorded"),
+    entryTime: z.string().nullable().describe("ISO entry time, if they came in"),
+    exitTime: z.string().nullable().describe("ISO exit time, if they left"),
+    createdAt: z.string().describe("ISO timestamp the visitor was registered"),
+  })
+  .describe("One visitor to the resident's flat");
+
+const ResidentTicketEntryModel = z
+  .object({
+    id: z.string().describe("Ticket id"),
+    referenceCode: z.string().describe("Human-readable reference code"),
+    title: z.string().describe("Complaint title"),
+    category: TicketCategoryEnum,
+    priority: TicketPriorityEnum,
+    status: TicketStatusEnum,
+    assignedToName: z.string().nullable().describe("Assignee's name, if assigned"),
+    createdAt: z.string().describe("ISO timestamp the complaint was raised"),
+  })
+  .describe("One complaint raised by the resident");
+
+const ResidentBookingEntryModel = z
+  .object({
+    id: z.string().describe("Booking id"),
+    amenityName: z.string().describe("Amenity that was booked"),
+    date: z.string().describe("ISO date of the booking"),
+    startTime: z.string().describe("Slot start, HH:mm"),
+    endTime: z.string().describe("Slot end, HH:mm"),
+    status: BookingStatusEnum,
+    amountDue: z.number().nullable().describe("Price snapshot; null for a free amenity"),
+    createdAt: z.string().describe("ISO timestamp the booking was made"),
+  })
+  .describe("One amenity booking by the resident");
+
+const ResidentDueEntryModel = z
+  .object({
+    id: z.string().describe("Due id"),
+    month: z.number().describe("Billing month, 1-12"),
+    year: z.number().describe("Billing year"),
+    amount: z.number().describe("Amount billed"),
+    dueDate: z.string().describe("ISO date the due is payable by"),
+    status: DueStatusEnum,
+  })
+  .describe("One maintenance due billed to the resident's flat");
+
+const ResidentPaymentEntryModel = z
+  .object({
+    id: z.string().describe("Payment id"),
+    target: z.string().describe("What was paid for, as a human-readable label"),
+    amount: z.number().describe("Amount paid"),
+    method: PaymentMethodEnum,
+    status: PaymentStatusEnum,
+    transactionId: z.string().nullable().describe("Gateway transaction id, if any"),
+    upiUtr: z.string().nullable().describe("Payer-entered UTR for UPI-direct payments"),
+    paidAt: z.string().nullable().describe("ISO timestamp the payment settled, if it did"),
+    createdAt: z.string().describe("ISO timestamp the payment was started"),
+  })
+  .describe("One payment made by the resident");
+
+const ResidentDetailModel = z
+  .object({
+    profile: ResidentDetailProfileModel,
+    familyMembers: z.array(ResidentFamilyMemberModel).describe("The resident's household"),
+    vehicles: z.array(ResidentVehicleModel).describe("Vehicles registered to the resident"),
+    visitors: z
+      .array(ResidentVisitorEntryModel)
+      .describe(
+        "Visitors to the resident's FLAT, newest first — visitors belong to a flat, so " +
+          "flatmates share this list",
+      ),
+    tickets: z.array(ResidentTicketEntryModel).describe("Complaints raised by the resident"),
+    bookings: z.array(ResidentBookingEntryModel).describe("Amenity bookings by the resident"),
+    dues: z
+      .array(ResidentDueEntryModel)
+      .describe(
+        "Maintenance dues billed to the resident's FLAT, newest first — dues are billed to a " +
+          "flat, so flatmates share this list",
+      ),
+    payments: z.array(ResidentPaymentEntryModel).describe("Payments made by the resident"),
+    summary: z
+      .object({
+        familyCount: z.number().describe("Household members"),
+        vehicleCount: z.number().describe("Registered vehicles"),
+        visitorCount: z.number().describe("All-time visitors to the flat"),
+        openTicketCount: z.number().describe("Complaints still OPEN or IN_PROGRESS"),
+        ticketCount: z.number().describe("All-time complaints raised"),
+        bookingCount: z.number().describe("All-time amenity bookings"),
+        outstandingDue: z.number().describe("Unpaid due total for the flat, in rupees"),
+        totalPaid: z.number().describe("Settled payment total by this resident, in rupees"),
+      })
+      .describe("Counts and totals across the sections"),
+  })
+  .describe("Everything an admin can see about one resident");
 
 // ---------------------------------------------------------------------------
 // Bulk import
@@ -205,6 +382,28 @@ export const residentRouter = router({
       }),
     )
     .query(({ ctx, input }) => residentService.listResidents(ctx.user, input)),
+
+  detail: adminProcedure
+    .meta({
+      openapi: {
+        method: "GET",
+        path: path("{userId}"),
+        tags: ["Society"],
+        summary: "Get everything about one resident",
+        description:
+          "The full admin view of a single resident: identity and flat, household members, " +
+          "vehicles, visitor log, complaints, amenity bookings, maintenance dues and payments, " +
+          "plus counts and totals. Each list is capped at the most recent " +
+          `${residentDetailService.SECTION_LIMIT} rows; the summary counts are all-time. ` +
+          "Note that visitors and dues are FLAT-scoped in the schema, so flatmates share those " +
+          "two lists. Errors: 403 if not an admin, 404 if the user is not a resident of the " +
+          "admin's society, 412 if the admin has no society.",
+        protect: true,
+      },
+    })
+    .input(ResidentIdInput)
+    .output(ResidentDetailModel)
+    .query(({ ctx, input }) => residentDetailService.getResidentDetail(ctx.user, input)),
 
   importPreview: subscribedAdminProcedure
     .meta({

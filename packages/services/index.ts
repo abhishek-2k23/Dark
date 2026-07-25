@@ -3,6 +3,7 @@ export * as societyService from "./society/society.service";
 export * as joinRequestService from "./society/join-request.service";
 export * as residentService from "./resident/resident.service";
 export * as residentImportService from "./resident/import.service";
+export * as residentDetailService from "./resident/resident-detail.service";
 export * as profileService from "./profile/profile.service";
 export * as staffService from "./staff/staff.service";
 export * as visitorService from "./visitor/visitor.service";

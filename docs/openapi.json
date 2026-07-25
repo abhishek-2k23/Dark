@@ -4178,6 +4178,773 @@
         }
       }
     },
+    "/v1/residents/{userId}": {
+      "get": {
+        "operationId": "resident-detail",
+        "summary": "Get everything about one resident",
+        "description": "The full admin view of a single resident: identity and flat, household members, vehicles, visitor log, complaints, amenity bookings, maintenance dues and payments, plus counts and totals. Each list is capped at the most recent 100 rows; the summary counts are all-time. Note that visitors and dues are FLAT-scoped in the schema, so flatmates share those two lists. Errors: 403 if not an admin, 404 if the user is not a resident of the admin's society, 412 if the admin has no society.",
+        "tags": [
+          "Society"
+        ],
+        "security": [
+          {
+            "Authorization": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "schema": {
+              "type": "string",
+              "description": "User id of the resident"
+            },
+            "required": true,
+            "description": "User id of the resident"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "profile": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "User id"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Full name"
+                        },
+                        "email": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Email, if set"
+                        },
+                        "phone": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Phone, if set"
+                        },
+                        "avatarUrl": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Profile photo URL, if set"
+                        },
+                        "isActive": {
+                          "type": "boolean",
+                          "description": "Whether the account is active"
+                        },
+                        "importedAt": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Set while a bulk-imported resident has not claimed their account yet"
+                        },
+                        "emergencyContactName": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Emergency contact name, if set"
+                        },
+                        "emergencyContactPhone": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Emergency contact phone, if set"
+                        },
+                        "joinedAt": {
+                          "type": "string",
+                          "description": "ISO timestamp the account was created"
+                        },
+                        "flatId": {
+                          "type": "string",
+                          "description": "Id of the resident's flat"
+                        },
+                        "flatNumber": {
+                          "type": "string",
+                          "description": "Flat number"
+                        },
+                        "towerName": {
+                          "type": "string",
+                          "description": "Tower name"
+                        },
+                        "floor": {
+                          "type": "number",
+                          "description": "Floor the flat is on"
+                        },
+                        "flatType": {
+                          "type": "string",
+                          "enum": [
+                            "ONE_RK",
+                            "ONE_BHK",
+                            "TWO_BHK",
+                            "THREE_BHK",
+                            "FOUR_BHK",
+                            "OTHER"
+                          ],
+                          "description": "Flat configuration"
+                        },
+                        "isPrimaryResident": {
+                          "type": "boolean",
+                          "description": "Whether this is the flat's primary resident"
+                        },
+                        "moveInDate": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "ISO move-in date, if recorded"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name",
+                        "email",
+                        "phone",
+                        "avatarUrl",
+                        "isActive",
+                        "importedAt",
+                        "emergencyContactName",
+                        "emergencyContactPhone",
+                        "joinedAt",
+                        "flatId",
+                        "flatNumber",
+                        "towerName",
+                        "floor",
+                        "flatType",
+                        "isPrimaryResident",
+                        "moveInDate"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Identity, contact and flat details for one resident"
+                    },
+                    "familyMembers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Family member id"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Full name"
+                          },
+                          "relation": {
+                            "type": "string",
+                            "description": "Relation to the resident, e.g. Spouse"
+                          },
+                          "age": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Age, if recorded"
+                          },
+                          "photoUrl": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Photo URL, if set"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "relation",
+                          "age",
+                          "photoUrl"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A member of the resident's household"
+                      },
+                      "description": "The resident's household"
+                    },
+                    "vehicles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Vehicle id"
+                          },
+                          "number": {
+                            "type": "string",
+                            "description": "Registration number"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "CAR",
+                              "BIKE",
+                              "OTHER"
+                            ],
+                            "description": "Vehicle type"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "number",
+                          "type"
+                        ],
+                        "additionalProperties": false,
+                        "description": "A vehicle registered to the resident"
+                      },
+                      "description": "Vehicles registered to the resident"
+                    },
+                    "visitors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Visitor id"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Visitor's name"
+                          },
+                          "phone": {
+                            "type": "string",
+                            "description": "Visitor's phone"
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "GUEST",
+                              "DELIVERY",
+                              "CAB",
+                              "SERVICE_STAFF",
+                              "OTHER"
+                            ],
+                            "description": "Why the visitor came"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "APPROVED",
+                              "DENIED",
+                              "EXPIRED"
+                            ],
+                            "description": "Visitor request status"
+                          },
+                          "vehicleNumber": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Vehicle number, if recorded"
+                          },
+                          "entryTime": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO entry time, if they came in"
+                          },
+                          "exitTime": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO exit time, if they left"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO timestamp the visitor was registered"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name",
+                          "phone",
+                          "purpose",
+                          "status",
+                          "vehicleNumber",
+                          "entryTime",
+                          "exitTime",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "One visitor to the resident's flat"
+                      },
+                      "description": "Visitors to the resident's FLAT, newest first — visitors belong to a flat, so flatmates share this list"
+                    },
+                    "tickets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Ticket id"
+                          },
+                          "referenceCode": {
+                            "type": "string",
+                            "description": "Human-readable reference code"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Complaint title"
+                          },
+                          "category": {
+                            "type": "string",
+                            "enum": [
+                              "PLUMBING",
+                              "ELECTRICAL",
+                              "HOUSEKEEPING",
+                              "SECURITY",
+                              "OTHER"
+                            ],
+                            "description": "Complaint category"
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "LOW",
+                              "MEDIUM",
+                              "HIGH"
+                            ],
+                            "description": "Complaint priority"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "OPEN",
+                              "IN_PROGRESS",
+                              "RESOLVED",
+                              "CLOSED"
+                            ],
+                            "description": "Complaint status"
+                          },
+                          "assignedToName": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Assignee's name, if assigned"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO timestamp the complaint was raised"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "referenceCode",
+                          "title",
+                          "category",
+                          "priority",
+                          "status",
+                          "assignedToName",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "One complaint raised by the resident"
+                      },
+                      "description": "Complaints raised by the resident"
+                    },
+                    "bookings": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Booking id"
+                          },
+                          "amenityName": {
+                            "type": "string",
+                            "description": "Amenity that was booked"
+                          },
+                          "date": {
+                            "type": "string",
+                            "description": "ISO date of the booking"
+                          },
+                          "startTime": {
+                            "type": "string",
+                            "description": "Slot start, HH:mm"
+                          },
+                          "endTime": {
+                            "type": "string",
+                            "description": "Slot end, HH:mm"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING_PAYMENT",
+                              "BOOKED",
+                              "CANCELLED",
+                              "EXPIRED",
+                              "COMPLETED"
+                            ],
+                            "description": "Booking status. PENDING_PAYMENT holds the slot for a chargeable amenity while payment is outstanding; EXPIRED means that hold lapsed and the slot was released"
+                          },
+                          "amountDue": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Price snapshot; null for a free amenity"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO timestamp the booking was made"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "amenityName",
+                          "date",
+                          "startTime",
+                          "endTime",
+                          "status",
+                          "amountDue",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "One amenity booking by the resident"
+                      },
+                      "description": "Amenity bookings by the resident"
+                    },
+                    "dues": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Due id"
+                          },
+                          "month": {
+                            "type": "number",
+                            "description": "Billing month, 1-12"
+                          },
+                          "year": {
+                            "type": "number",
+                            "description": "Billing year"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Amount billed"
+                          },
+                          "dueDate": {
+                            "type": "string",
+                            "description": "ISO date the due is payable by"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "PENDING",
+                              "PAID",
+                              "OVERDUE"
+                            ],
+                            "description": "Due status"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "month",
+                          "year",
+                          "amount",
+                          "dueDate",
+                          "status"
+                        ],
+                        "additionalProperties": false,
+                        "description": "One maintenance due billed to the resident's flat"
+                      },
+                      "description": "Maintenance dues billed to the resident's FLAT, newest first — dues are billed to a flat, so flatmates share this list"
+                    },
+                    "payments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Payment id"
+                          },
+                          "target": {
+                            "type": "string",
+                            "description": "What was paid for, as a human-readable label"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Amount paid"
+                          },
+                          "method": {
+                            "type": "string",
+                            "enum": [
+                              "UPI",
+                              "CARD",
+                              "NETBANKING",
+                              "OFFLINE",
+                              "UPI_DIRECT"
+                            ],
+                            "description": "How the payment was made"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "INITIATED",
+                              "SUCCESS",
+                              "FAILED",
+                              "PENDING_VERIFICATION",
+                              "REJECTED"
+                            ],
+                            "description": "Payment status"
+                          },
+                          "transactionId": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Gateway transaction id, if any"
+                          },
+                          "upiUtr": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "Payer-entered UTR for UPI-direct payments"
+                          },
+                          "paidAt": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "description": "ISO timestamp the payment settled, if it did"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "ISO timestamp the payment was started"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "target",
+                          "amount",
+                          "method",
+                          "status",
+                          "transactionId",
+                          "upiUtr",
+                          "paidAt",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false,
+                        "description": "One payment made by the resident"
+                      },
+                      "description": "Payments made by the resident"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "familyCount": {
+                          "type": "number",
+                          "description": "Household members"
+                        },
+                        "vehicleCount": {
+                          "type": "number",
+                          "description": "Registered vehicles"
+                        },
+                        "visitorCount": {
+                          "type": "number",
+                          "description": "All-time visitors to the flat"
+                        },
+                        "openTicketCount": {
+                          "type": "number",
+                          "description": "Complaints still OPEN or IN_PROGRESS"
+                        },
+                        "ticketCount": {
+                          "type": "number",
+                          "description": "All-time complaints raised"
+                        },
+                        "bookingCount": {
+                          "type": "number",
+                          "description": "All-time amenity bookings"
+                        },
+                        "outstandingDue": {
+                          "type": "number",
+                          "description": "Unpaid due total for the flat, in rupees"
+                        },
+                        "totalPaid": {
+                          "type": "number",
+                          "description": "Settled payment total by this resident, in rupees"
+                        }
+                      },
+                      "required": [
+                        "familyCount",
+                        "vehicleCount",
+                        "visitorCount",
+                        "openTicketCount",
+                        "ticketCount",
+                        "bookingCount",
+                        "outstandingDue",
+                        "totalPaid"
+                      ],
+                      "additionalProperties": false,
+                      "description": "Counts and totals across the sections"
+                    }
+                  },
+                  "required": [
+                    "profile",
+                    "familyMembers",
+                    "vehicles",
+                    "visitors",
+                    "tickets",
+                    "bookings",
+                    "dues",
+                    "payments",
+                    "summary"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Everything an admin can see about one resident"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.BAD_REQUEST"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authorization not provided",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.UNAUTHORIZED"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.FORBIDDEN"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.NOT_FOUND"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error.INTERNAL_SERVER_ERROR"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/residents/import/preview": {
       "post": {
         "operationId": "resident-importPreview",

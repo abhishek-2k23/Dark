@@ -73,7 +73,7 @@ automatically for the protected requests.
 ## Testing
 
 ```sh
-pnpm test          # Vitest across all packages (169 tests)
+pnpm test          # Vitest across all packages (360 tests)
 pnpm check-types   # tsc --noEmit across the workspace
 ```
 

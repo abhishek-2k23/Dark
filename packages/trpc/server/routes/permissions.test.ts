@@ -61,6 +61,7 @@ const adminOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   caller.resident.invite({ flatId: "x", email: "x@test.local" }),
   caller.resident.list({ status: "ALL", limit: 20 }),
   caller.resident.deactivate({ userId: "x" }),
+  caller.resident.detail({ userId: "x" }),
   caller.resident.importPreview({
     fileName: "residents.csv",
     fileBase64: Buffer.from("Name,Email,Tower,Flat Number\n", "utf8").toString("base64"),

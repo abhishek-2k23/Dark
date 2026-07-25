@@ -9,8 +9,8 @@ pnpm test          # all packages via turbo
 pnpm check-types   # tsc --noEmit across the workspace
 ```
 
-Current suite: **169 tests** — `@repo/auth` (10), `@repo/cloudinary` (7),
-`@repo/services` (142 across 15 files), `@repo/trpc` (10).
+Current suite: **360 tests** — `@repo/auth` (10), `@repo/cloudinary` (8),
+`@repo/services` (327 across 24 files), `@repo/trpc` (15 across 2 files).
 
 ## Runner
 
