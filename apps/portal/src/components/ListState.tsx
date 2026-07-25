@@ -43,7 +43,14 @@ const SKELETONS: Record<Exclude<LoadingVariant, "spinner">, () => React.JSX.Elem
       ))}
     </View>
   ),
-  /** Home dashboards: greeting header, quick-action tiles, banner, rows. */
+  /**
+   * Home dashboards: greeting header with its two action circles, the
+   * quick-action grid, then a card and a couple of rows.
+   *
+   * The tile grid mirrors the real one — three per row, two rows, each tile
+   * centred in a one-third cell — so the shimmer sits where the tiles will and
+   * nothing shifts sideways when the data lands.
+   */
   dashboard: () => (
     <View className="gap-5">
       <View className="flex-row items-center gap-3">
@@ -52,10 +59,12 @@ const SKELETONS: Record<Exclude<LoadingVariant, "spinner">, () => React.JSX.Elem
           <Skeleton className="h-3 w-1/3" />
           <Skeleton className="h-4 w-1/2" />
         </View>
+        <Skeleton radius={20} style={{ width: 40, height: 40 }} />
+        <Skeleton radius={20} style={{ width: 40, height: 40 }} />
       </View>
-      <View className="flex-row justify-between">
-        {Array.from({ length: 4 }, (_, i) => (
-          <View key={i} className="items-center gap-2">
+      <View className="flex-row flex-wrap" style={{ rowGap: 28 }}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <View key={i} className="w-1/3 items-center gap-2">
             <Skeleton radius={16} style={{ width: 64, height: 64 }} />
             <Skeleton className="h-2.5 w-14" />
           </View>

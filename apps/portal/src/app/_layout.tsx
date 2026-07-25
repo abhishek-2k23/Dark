@@ -12,11 +12,16 @@ import {
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import {
+  DarkTheme,
+  DefaultTheme,
+  Stack,
+  ThemeProvider as NavThemeProvider,
+} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -47,21 +52,46 @@ function ThemedStatusBar() {
 /**
  * Themed navigator: paints the native window and every stack scene with the
  * theme background so route transitions never flash white.
+ *
+ * The navigation ThemeProvider is the part that matters for tab switches.
+ * React Navigation paints its own container with its theme's `background`, and
+ * its default theme is white — invisible while a scene covers it, but the tab
+ * navigator's scenes are deliberately transparent (so one background serves the
+ * whole app), which left that white showing for the frame between one tab
+ * detaching and the next attaching. Handing it the app's own background means
+ * there is no white anywhere in the stack to flash through.
  */
 function ThemedStack() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
 
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(colors.background);
   }, [colors.background]);
 
+  const navTheme = useMemo(() => {
+    const base = scheme === "dark" ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.content,
+        border: colors.border,
+        primary: colors.primary,
+      },
+    };
+  }, [scheme, colors]);
+
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-      }}
-    />
+    <NavThemeProvider value={navTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
+    </NavThemeProvider>
   );
 }
 

@@ -3,17 +3,22 @@ import { Tabs } from "expo-router";
 import { useTranslation } from "react-i18next";
 
 import { GlassTabBar } from "@/components/navigation/GlassTabBar";
+import { useTheme } from "@/theme";
 
 /** Admin bottom tabs: Home · Manage · Community · Profile. */
 export default function AdminTabs() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
 
   return (
     <Tabs
       tabBar={(props) => <GlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        sceneStyle: { backgroundColor: "transparent" },
+        // Opaque, not transparent: a see-through scene shows whatever the
+        // navigator is painting underneath, which is one more surface that
+        // has to be the right colour on every frame of a tab switch.
+        sceneStyle: { backgroundColor: colors.background },
       }}
     >
       <Tabs.Screen

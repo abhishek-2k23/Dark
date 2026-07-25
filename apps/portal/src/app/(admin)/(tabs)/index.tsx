@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, View } from "react-native";
 
+import { Loading } from "@/components/ListState";
 import { SectionHeader } from "@/components/SectionHeader";
 import { SosButton } from "@/components/SosButton";
 import {
@@ -117,6 +118,24 @@ export default function AdminDashboard() {
   const recent = tickets.data?.items.slice(0, 5) ?? [];
   const unreadCount = unread.data?.unreadCount ?? 0;
   const { colors: themeColors } = useTheme();
+
+  // Tabs mount lazily, so the very first visit renders with nothing in cache.
+  // The four KPI queries are batched into one request and land together, so
+  // gating on them avoids a row of zeroes resolving into real numbers.
+  const firstLoad =
+    me.isLoading ||
+    visitors.isLoading ||
+    openTickets.isLoading ||
+    polls.isLoading ||
+    overdue.isLoading;
+
+  if (firstLoad) {
+    return (
+      <Screen scroll contentClassName="gap-6 py-3 pb-8">
+        <Loading variant="dashboard" />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll contentClassName="gap-6 py-3 pb-8">

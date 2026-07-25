@@ -1,5 +1,6 @@
 import { Accelerometer } from "expo-sensors";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AppState, type AppStateStatus } from "react-native";
 
 /**
  * Fires `onShake` when the device is shaken hard and repeatedly.
@@ -42,8 +43,26 @@ export function useShakeDetector(
     onShakeRef.current = onShake;
   }, [onShake]);
 
+  /**
+   * The sensor only runs while the app is on screen.
+   *
+   * Sampling at 10Hz costs the same whether or not anyone is looking, and a
+   * backgrounded phone is the case where a shake cannot be a deliberate panic
+   * gesture anyway — it is in a pocket, a bag, or on a bike. Leaving the
+   * subscription open there was a standing battery drain buying nothing.
+   */
+  const [foreground, setForeground] = useState(
+    () => AppState.currentState === "active",
+  );
   useEffect(() => {
-    if (!enabled) return;
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) =>
+      setForeground(state === "active"),
+    );
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!enabled || !foreground) return;
 
     let spikes: number[] = [];
     let mutedUntil = 0;
@@ -71,5 +90,5 @@ export function useShakeDetector(
     });
 
     return () => sub.remove();
-  }, [enabled]);
+  }, [enabled, foreground]);
 }

@@ -1,6 +1,5 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef } from "react";
 import {
-  AccessibilityInfo,
   Animated,
   Easing,
   StyleSheet,
@@ -17,6 +16,7 @@ import Reanimated, {
 } from "react-native-reanimated";
 import Svg, { Defs, Path, RadialGradient, Stop } from "react-native-svg";
 
+import { useAnimationsActive } from "@/hooks/useAnimationsActive";
 import { useTheme } from "@/theme";
 
 const AnimatedPath = Reanimated.createAnimatedComponent(Path);
@@ -256,26 +256,6 @@ function buildBlobPath(
   }
   return `${d}Z`;
 }
-function useReduceMotion(): boolean {
-  const [reduce, setReduce] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (active) setReduce(enabled);
-    });
-    const sub = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      setReduce,
-    );
-    return () => {
-      active = false;
-      sub.remove();
-    };
-  }, []);
-
-  return reduce;
-}
 function useOscillator(durationMs: number, paused: boolean) {
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -446,7 +426,9 @@ export const AuroraBackground = memo(function AuroraBackground({
 }: AuroraBackgroundProps) {
   const { colors, scheme } = useTheme();
   const { width: windowW, height: windowH } = useWindowDimensions();
-  const paused = useReduceMotion();
+  // Backgrounded, buried under another route, or Reduce Motion — in all three
+  // the blobs freeze where they are rather than burning frames unseen.
+  const paused = !useAnimationsActive();
   const width = boundsW ?? windowW;
   const height = boundsH ?? windowH;
 

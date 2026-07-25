@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, View } from "react-native";
 
+import { Loading } from "@/components/ListState";
 import { NeedsAttention } from "@/components/NeedsAttention";
 import { SosButton } from "@/components/SosButton";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -121,6 +122,17 @@ export default function ResidentDashboard() {
   const duesKey = unpaidBookings.map((b) => b.id).sort().join(",");
   const showVisitorBanner = firstPending && firstPending.id !== dismissedVisitorId;
   const showDuesCard = unpaidBookings.length > 0 && duesKey !== dismissedDuesKey;
+
+  // Tabs mount lazily, so the very first visit renders with nothing in cache.
+  // `isLoading` is true only for that first fetch — a later refetch keeps the
+  // real screen on show rather than dropping back to a shimmer.
+  if (me.isLoading || pending.isLoading) {
+    return (
+      <Screen scroll contentClassName="gap-6 py-3">
+        <Loading variant="dashboard" />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll contentClassName="gap-6 py-3">

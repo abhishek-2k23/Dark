@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
+import { Loading } from "@/components/ListState";
 import { NeedsAttention } from "@/components/NeedsAttention";
 import { SosButton } from "@/components/SosButton";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -230,6 +231,16 @@ export default function GuardDashboard() {
 
   const gate = me.data?.guardProfile?.gateAssigned;
   const open = (id: string) => () => router.push(`/(guard)/visitors/${id}`);
+
+  // Tabs mount lazily, so the very first visit renders with nothing in cache.
+  // The stat row would otherwise count up from three zeroes.
+  if (me.isLoading || today.isLoading) {
+    return (
+      <Screen scroll contentClassName="gap-6 py-3 pb-8">
+        <Loading variant="dashboard" />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll contentClassName="gap-6 py-3 pb-8">
