@@ -25,9 +25,32 @@ gate, the resident on their phone, and the committee running the place.
 
 <br />
 
+### [**⬇️ Download the Android APK**](https://drive.google.com/file/d/1VzHX6vyNyrn8oMjrNQg2rruJ76uYpptM/view?usp=drive_link)
+
+**[🌐 Live API](https://dark-9k8o.onrender.com/health)** · **[📖 API docs](https://dark-9k8o.onrender.com/docs)** · **[📄 OpenAPI spec](https://dark-9k8o.onrender.com/openapi.json)**
+
 **[Architecture](architecture.md)** · **[Security](security.md)** · **[Demo logins](credentials.md)**
 
 </div>
+
+---
+
+## Try it in two minutes
+
+1. **[Download the APK](https://drive.google.com/file/d/1VzHX6vyNyrn8oMjrNQg2rruJ76uYpptM/view?usp=drive_link)** and install it (Android will ask you to allow installs from this source).
+2. Open the app and log in — **no setup, no local server**. It points at the live
+   API by default and the demo societies are already seeded:
+
+   ```
+   admin@greenmeadows.test   ·   password123
+   ```
+3. Log out and back in as `guard@greenmeadows.test` or `ravi@example.test` to see
+   the same society from the other two sides.
+
+> [!NOTE]
+> The API runs on Render's free tier, so the **first request after an idle period
+> takes 30–60 seconds** to wake the container. If the first login seems to hang,
+> it is cold-starting — try once more. Every request after that is fast.
 
 ---
 
@@ -601,15 +624,191 @@ rewritten to `10.0.2.2` automatically.
 
 # The API
 
-| Surface | Path | For |
+**Base URL — `https://dark-9k8o.onrender.com`**
+
+| Surface | URL | For |
 |---|---|---|
+| **REST** | `/api/v1/*` | Plain JSON — **98 paths · 116 operations** |
+| **Interactive docs** | [`/docs`](https://dark-9k8o.onrender.com/docs) | Scalar UI — browse and call every endpoint |
+| **OpenAPI spec** | [`/openapi.json`](https://dark-9k8o.onrender.com/openapi.json) | Machine-readable, OpenAPI 3.0 |
+| **Health** | [`/health`](https://dark-9k8o.onrender.com/health) | Liveness probe |
 | **tRPC** | `/trpc/*` | The mobile app — typed transport, superjson |
-| **REST** | `/api/v1/*` | Everyone else — plain JSON, **98 paths · 116 operations** |
-| **Docs** | `/docs` | Interactive Scalar UI, backed by `/openapi.json` |
+
+Try it from a terminal — log in and call a protected route:
+
+```sh
+API=https://dark-9k8o.onrender.com
+
+TOKEN=$(curl -s -X POST "$API/api/v1/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"identifier":"admin@greenmeadows.test","password":"password123"}' \
+  | jq -r .session.accessToken)
+
+curl -s "$API/api/v1/residents?status=ALL&limit=5" -H "Authorization: Bearer $TOKEN" | jq
+```
 
 Committed spec: [`docs/openapi.json`](docs/openapi.json).
 [Postman collection](docs/postman-collection.json) — import it, set `baseUrl`,
 run **Auth → Log in**, and the token is captured automatically.
+
+## Route reference
+
+All 116 operations, grouped by tag. Paths are relative to `/api/v1`
+(except `/health`).
+
+<details>
+<summary><b>🔐 Auth</b> — 12 operations</summary>
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/auth/signup` | Sign up with email and password (OTP-verified) |
+| `POST` | `/auth/login` | Log in with email/phone and password |
+| `POST` | `/auth/google` | Log in with a Google ID token |
+| `POST` | `/auth/register-society` | Register a new society and its first admin |
+| `POST` | `/auth/email-otp/verify` | Confirm an email-verification OTP |
+| `POST` | `/auth/email-otp/resend` | Re-send an email-verification OTP |
+| `POST` | `/auth/password-reset/request` | Request a password reset email |
+| `POST` | `/auth/password-reset/confirm` | Set a new password using a reset token |
+| `POST` | `/auth/refresh` | Rotate a refresh token for a new token pair |
+| `POST` | `/auth/logout` | Log out (revoke one refresh token) |
+| `POST` | `/auth/logout-all` | Log out everywhere (revoke all refresh tokens) |
+| `GET` | `/auth/me` | Get the current authenticated user |
+
+</details>
+
+<details>
+<summary><b>🏢 Society, residents and staff</b> — 22 operations</summary>
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` · `PATCH` | `/society` | Get / update the admin's society |
+| `GET` · `POST` | `/towers` | List / create towers |
+| `PATCH` | `/towers/{towerId}` | Rename a tower |
+| `GET` · `POST` | `/flats` | List / create flats |
+| `PATCH` | `/flats/{flatId}` | Update a flat |
+| `GET` | `/residents` | List the society's residents |
+| `GET` | `/residents/{userId}` | Everything about one resident |
+| `POST` | `/residents/invite` | Invite a resident to a flat |
+| `PATCH` | `/residents/{userId}/contact` | Fill in a missing email or phone |
+| `POST` | `/residents/{userId}/deactivate` | Deactivate a resident |
+| `POST` | `/residents/{userId}/reactivate` | Reactivate a resident |
+| `POST` | `/residents/import/preview` | Dry-run a bulk import |
+| `POST` | `/residents/import` | Commit a bulk import |
+| `GET` · `POST` | `/staff` | List / create guard and admin accounts |
+| `POST` · `GET` | `/join-requests` | Submit / list join requests |
+| `GET` | `/join-requests/mine` | The caller's most recent request |
+| `POST` | `/join-requests/decide` | Approve or reject a request |
+
+</details>
+
+<details>
+<summary><b>🚪 Visitors and guest passes</b> — 14 operations</summary>
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/visitors/register` | Register a visitor at the gate |
+| `GET` | `/visitors` | Visitor history (role-aware scope) |
+| `GET` | `/visitors/pending` | The caller's pending approvals |
+| `GET` | `/visitors/{visitorId}` | One visitor request |
+| `POST` | `/visitors/{visitorId}/approve` | Approve a pending visitor |
+| `POST` | `/visitors/{visitorId}/deny` | Deny a pending visitor |
+| `POST` | `/visitors/{visitorId}/entry` | Mark physical entry |
+| `POST` | `/visitors/{visitorId}/exit` | Mark exit |
+| `POST` · `GET` | `/pre-approvals` | Create / list guest passes |
+| `GET` | `/pre-approvals/gate` | Expected guests at the gate |
+| `POST` | `/pre-approvals/verify` | Verify a guest's QR or code |
+| `POST` | `/pre-approvals/{id}/cancel` | Cancel an upcoming pass |
+| `GET` | `/gate/flats` | Search flats at the gate |
+
+</details>
+
+<details>
+<summary><b>💰 Dues, payments and service bills</b> — 15 operations</summary>
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/dues` | List dues (role-aware scope) |
+| `POST` | `/dues/generate` | Generate the month's dues for every flat |
+| `GET` | `/payments` | The caller's payment history |
+| `GET` | `/payments/options` | Which rails are usable for a target |
+| `GET` | `/payments/upi-intent` | UPI deep link / QR payload |
+| `POST` | `/payments/upi` | Report a peer-to-peer UPI payment |
+| `POST` | `/payments/offline` | Submit a receipt for an offline payment |
+| `GET` | `/payments/pending` | Manual payments awaiting verification |
+| `POST` | `/payments/decide` | Verify or reject a manual payment |
+| `POST` | `/payments/initiate` | Start a gateway payment |
+| `POST` | `/payments/webhook` | Gateway webhook (signature-verified) |
+| `POST` | `/payments/service/reverse` | Reverse a self-attested service payment |
+| `GET` · `POST` | `/service-bills` | List / raise a service bill |
+| `DELETE` | `/service-bills/{billId}` | Delete a bill raised in error |
+
+</details>
+
+<details>
+<summary><b>🧾 Helpdesk, notices, polls and amenities</b> — 22 operations</summary>
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` · `GET` | `/tickets` | Raise / list complaints |
+| `GET` | `/tickets/{ticketId}` | A ticket with its comments |
+| `POST` | `/tickets/{ticketId}/comments` | Comment on a ticket |
+| `POST` | `/tickets/{ticketId}/status` | Change status |
+| `POST` | `/tickets/{ticketId}/assign` | Assign to staff |
+| `POST` · `GET` | `/notices` | Publish / list notices |
+| `PATCH` · `DELETE` | `/notices/{noticeId}` | Update / delete a notice |
+| `POST` · `GET` | `/polls` | Create / list polls |
+| `POST` | `/polls/{pollId}/vote` | Vote in a poll |
+| `GET` | `/polls/{pollId}/results` | Aggregated results |
+| `POST` · `GET` | `/amenities` | Create / list amenities |
+| `PATCH` · `DELETE` | `/amenities/{amenityId}` | Update / delete an amenity |
+| `POST` | `/amenity-bookings` | Book a slot |
+| `GET` | `/amenity-bookings/mine` | The caller's bookings |
+| `GET` | `/amenity-bookings/calendar` | Admin booking calendar |
+| `POST` | `/amenity-bookings/{bookingId}/cancel` | Cancel a booking |
+
+</details>
+
+<details>
+<summary><b>🚨 Emergency, notifications and directory</b> — 13 operations</summary>
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/emergencies/raise` | Raise a society-wide alarm |
+| `GET` | `/emergencies/active` | Live alarms in the society |
+| `POST` | `/emergencies/{id}/resolve` | Sound the all-clear |
+| `GET` | `/emergencies` | Alarm history |
+| `GET` | `/notifications` | The caller's inbox |
+| `POST` | `/notifications/{id}/read` | Mark one as read |
+| `POST` | `/notifications/read-all` | Mark all as read |
+| `POST` | `/push-tokens/register` | Register an Expo push token |
+| `POST` | `/push-tokens/unregister` | Remove a push token |
+| `POST` · `GET` | `/service-providers` | Add / list the directory |
+| `PATCH` · `DELETE` | `/service-providers/{id}` | Update / remove a provider |
+
+</details>
+
+<details>
+<summary><b>👤 Profile, uploads, billing and account</b> — 18 operations</summary>
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` · `PATCH` | `/profile/me` | Get / update the caller's profile |
+| `POST` | `/family-members` | Add a family member |
+| `PATCH` · `DELETE` | `/family-members/{id}` | Update / remove |
+| `POST` | `/vehicles` | Register a vehicle |
+| `PATCH` · `DELETE` | `/vehicles/{id}` | Update / remove |
+| `POST` | `/uploads/signature` | Signature for a direct Cloudinary upload |
+| `GET` | `/plans` | List subscription plans |
+| `GET` | `/subscription` | Current subscription |
+| `POST` | `/subscription/checkout` | Start a plan purchase (Razorpay) |
+| `POST` | `/subscription/verify` | Confirm a completed checkout |
+| `GET` | `/subscription/payments` | Subscription payment history |
+| `POST` | `/subscription/cancel` | Cancel at period end |
+| `POST` | `/account/deletion/request` | Request deletion (emails a code) |
+| `POST` | `/account/deletion/confirm` | Confirm deletion with the code |
+| `GET` | `/health` | Liveness probe *(no `/v1` prefix)* |
+
+</details>
 
 ```sh
 pnpm openapi:generate   # regenerate after changing a route
