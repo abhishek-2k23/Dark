@@ -176,7 +176,7 @@ export default function AdminVisitorLog() {
     } catch (err) {
       showToast(
         err instanceof SharingUnavailableError || err instanceof DownloadUnavailableError
-          ? t("admin.import.sharingUnavailable")
+          ? t("downloads.unavailable")
           : t("admin.visitorLog.exportFailed"),
         "error",
       );

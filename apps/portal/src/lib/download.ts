@@ -19,10 +19,12 @@ import { safeFileName } from "./share";
  * The two platforms disagree about what "download" even means, so this papers
  * over the difference rather than pretending it isn't there:
  *
- * **Android** has a user-visible filesystem. The first download asks once for a
- * folder via the Storage Access Framework; the grant is persisted, so every
- * later download writes straight there with no prompt. Files land somewhere the
- * user can actually find them in Files/Downloads.
+ * **Android** has a user-visible filesystem, but since Android 10 an app can
+ * only write outside its sandbox through MediaStore or the Storage Access
+ * Framework — there is no way to drop a file straight into /Download. So the
+ * first download opens the SAF picker *already sitting in the phone's Downloads
+ * folder*, making it a single "Use this folder" tap; the grant is then
+ * persisted and every later download writes straight there with no prompt.
  *
  * **iOS** sandboxes apps and has no shared Downloads folder. The nearest true
  * equivalent is the app's own Documents directory, which the Files app exposes
@@ -64,7 +66,17 @@ export class DownloadUnavailableError extends Error {
 const SAF = FileSystem.StorageAccessFramework;
 
 /**
- * The folder the user picked, asking once and remembering the answer.
+ * The phone's own Downloads folder, as the SAF picker's starting point.
+ *
+ * Passing this means the one-time prompt opens *in* Downloads rather than at
+ * the storage root, so the user confirms the obvious answer instead of
+ * navigating to it. It is only a hint — the picker still lets them choose
+ * elsewhere, and some OEM file pickers ignore it entirely.
+ */
+const DOWNLOADS_HINT = SAF.getUriForDirectoryInRoot("Download");
+
+/**
+ * The folder to write into, asking once and remembering the answer.
  *
  * A stored grant can go stale — the folder gets deleted, or the OS revokes
  * permission after an uninstall/restore. Rather than fail the download, a stale
@@ -81,7 +93,7 @@ async function androidDirectory(): Promise<string | null> {
     }
   }
 
-  const permission = await SAF.requestDirectoryPermissionsAsync();
+  const permission = await SAF.requestDirectoryPermissionsAsync(DOWNLOADS_HINT);
   if (!permission.granted) return null;
   await AsyncStorage.setItem(SAF_DIRECTORY_KEY, permission.directoryUri);
   return permission.directoryUri;
