@@ -47,6 +47,11 @@
     "viewPhoto": "फ़ोटो देखें",
     "uploadFailed": "अपलोड नहीं हुआ: {{reason}}"
   },
+  "downloads": {
+    "saved": "आपके फ़ोन में सेव हो गई।",
+    "completeTitle": "फ़ाइल सेव हो गई",
+    "completeBody": "{{file}} — खोलने के लिए टैप करें।"
+  },
   "tabs": {
     "home": "होम",
     "visitors": "विज़िटर",
@@ -461,7 +466,8 @@
       "colStatus": "स्टेटस",
       "colEntry": "अंदर",
       "colExit": "बाहर",
-      "colVehicle": "गाड़ी"
+      "colVehicle": "गाड़ी",
+      "shareA11y": "विज़िटर लॉग PDF शेयर करें"
     },
     "import": {
       "short": "इम्पोर्ट",
@@ -473,6 +479,7 @@
       "columnsHint": "आम हेडिंग भी चल जाती हैं (Block, Wing, Unit No., Mobile…)। .xlsx और .csv फ़ाइलें, 1000 रो तक।",
       "downloadTemplate": "खाली टेम्पलेट लें",
       "templateTitle": "निवासी इम्पोर्ट टेम्पलेट",
+      "templateShareA11y": "खाली टेम्पलेट शेयर करें",
       "templateFailed": "टेम्पलेट फ़ाइल नहीं बन पाई।",
       "sharingUnavailable": "इस डिवाइस पर शेयर करना काम नहीं करता।",
       "fileLabel": "शीट",
@@ -558,6 +565,51 @@
     "floor": "मंज़िल",
     "flatAdded": "फ्लैट जोड़ दिया।",
     "flatMissing": "फ्लैट नंबर और मंज़िल डालें।",
+    "residentDetail": {
+      "title": "निवासी",
+      "info": "जानकारी",
+      "notJoined": "साइन अप नहीं किया",
+      "outstanding": "बाकी रकम",
+      "totalPaid": "अब तक जमा",
+      "openComplaints": "खुली शिकायतें",
+      "flatScoped": "इस फ्लैट के सभी लोगों में साझा।"
+    },
+    "residentReport": {
+      "title": "रिपोर्ट डाउनलोड करें",
+      "hint": "जो चाहिए वो चुनें, फिर सेव करें या शेयर करें।",
+      "pickOne": "कम से कम एक हिस्सा चुनें।",
+      "failed": "रिपोर्ट नहीं बन पाई।",
+      "downloadPdf": "PDF",
+      "downloadCsv": "शीट",
+      "shareA11y": "{{format}} रिपोर्ट शेयर करें",
+      "footer": "{{society}} के लिए Prangan से बनाया गया। इसमें लोगों की निजी जानकारी है — ज़रूरत हो तभी शेयर करें।",
+      "field": "जानकारी",
+      "value": "ब्यौरा",
+      "flatType": "फ्लैट टाइप",
+      "joined": "कब जुड़े",
+      "movedIn": "कब आए",
+      "type": "टाइप",
+      "raisedOn": "कब दर्ज की",
+      "amenity": "सुविधा",
+      "slot": "समय",
+      "amount": "रकम",
+      "period": "महीना",
+      "dueDate": "आखिरी तारीख",
+      "paidOn": "तारीख",
+      "paidFor": "किसलिए",
+      "method": "तरीका",
+      "reference": "रेफरेंस",
+      "sections": {
+        "profile": "जानकारी",
+        "family": "परिवार",
+        "vehicles": "गाड़ियाँ",
+        "visitors": "विज़िटर",
+        "tickets": "शिकायतें",
+        "bookings": "बुकिंग",
+        "dues": "बकाया",
+        "payments": "भुगतान"
+      }
+    },
     "residentDeactivated": "निवासी को बंद कर दिया।",
     "residentReactivated": "निवासी को फिर चालू कर दिया।",
     "inactive": "बंद",

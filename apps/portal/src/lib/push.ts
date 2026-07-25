@@ -20,10 +20,30 @@ const ANDROID_CHANNEL_ID = "default";
 /** Separate channel so the panic alarm can be loud without the rest being loud. */
 const ANDROID_EMERGENCY_CHANNEL_ID = "emergency";
 
+/** Its own channel so a file-saved notice can't be silenced with the rest. */
+export const ANDROID_DOWNLOAD_CHANNEL_ID = "downloads";
+
+/** Marks a locally-raised "your file is ready" notification. */
+export const DOWNLOAD_NOTIFICATION_KIND = "download";
+
 /** Push types that must interrupt regardless of what the user is doing. */
 function isEmergency(data: unknown): boolean {
   const type = (data as { type?: unknown } | null)?.type;
   return typeof type === "string" && type.startsWith("EMERGENCY");
+}
+
+/**
+ * A completed download, raised locally by `lib/download.ts`.
+ *
+ * These deliberately break the foreground-suppression rule below. Every other
+ * notification is a server push about something happening elsewhere, which a
+ * toast conveys better while the user is looking at the app. A download is the
+ * opposite: the user asked for it seconds ago, it is what every OS shows a
+ * notification for, and the notification is the handle they tap to open the
+ * file afterwards. Suppressing it would read as the download having failed.
+ */
+function isDownload(data: unknown): boolean {
+  return (data as { kind?: unknown } | null)?.kind === DOWNLOAD_NOTIFICATION_KIND;
 }
 
 /** The permission fields we read, kept local because the modules-core stub erases them. */
@@ -50,12 +70,17 @@ interface Perm {
 // app is exactly who can respond fastest.
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    const urgent = isEmergency(notification.request.content.data);
+    const { data } = notification.request.content;
+    const urgent = isEmergency(data);
+    const download = isDownload(data);
     return {
-      shouldShowBanner: urgent,
+      shouldShowBanner: urgent || download,
       shouldShowList: true,
+      // A download chimes at most once and is user-initiated; the alarm is the
+      // only thing allowed to be loud.
       shouldPlaySound: urgent,
-      shouldSetBadge: true,
+      // Saved files are not an inbox item, so they must not bump the badge.
+      shouldSetBadge: !download,
     };
   },
 });
@@ -98,6 +123,34 @@ async function ensureAndroidChannel(): Promise<void> {
     vibrationPattern: [0, 400, 200, 400],
     bypassDnd: true,
   });
+  // Silent by design: a saved file should appear in the shade, not chime.
+  await Notifications.setNotificationChannelAsync(ANDROID_DOWNLOAD_CHANNEL_ID, {
+    name: "Downloads",
+    importance: Notifications.AndroidImportance.DEFAULT,
+    sound: null,
+    vibrationPattern: [0],
+    lightColor: "#2563EB",
+  });
+}
+
+/**
+ * Ensure notification permission, asking once if it has not been decided.
+ * Android 13+ requires it even for purely local notifications.
+ *
+ * Returns false rather than throwing when refused — a denied permission must
+ * never fail the download that triggered it.
+ */
+export async function ensureNotificationPermission(): Promise<boolean> {
+  try {
+    await ensureAndroidChannel();
+    const existing = (await Notifications.getPermissionsAsync()) as unknown as Perm;
+    if (existing.granted) return true;
+    if (!existing.canAskAgain) return false;
+    const requested = (await Notifications.requestPermissionsAsync()) as unknown as Perm;
+    return requested.granted;
+  } catch {
+    return false;
+  }
 }
 
 /**

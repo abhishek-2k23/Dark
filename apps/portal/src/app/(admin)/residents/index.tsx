@@ -11,6 +11,7 @@ import {
   Badge,
   Button,
   Card,
+  Icon,
   Input,
   Screen,
   SwipeTabs,
@@ -18,107 +19,78 @@ import {
   type SegmentOption,
 } from "@/components/ui";
 import { trpc } from "@/lib/trpc";
-import { useUIStore } from "@/stores/uiStore";
-import { confirmAction } from "@/utils/confirm";
 
 type Status = "ALL" | "ACTIVE" | "INACTIVE";
 
-function ResidentCard({
+interface ResidentCardData {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  avatarUrl: string | null;
+  isActive: boolean;
+  flatNumber: string;
+  towerName: string;
+  isPrimaryResident: boolean;
+}
+
+/**
+ * One resident as a grid tile: photo on top, then name, contact, flat and
+ * status. Sized to sit two-up, so everything is centred and clipped to one line
+ * — a long name must not make one tile taller than the one beside it.
+ */
+function ResidentTile({
   resident,
+  onPress,
 }: {
-  resident: {
-    id: string;
-    name: string;
-    email: string | null;
-    phone: string | null;
-    avatarUrl: string | null;
-    isActive: boolean;
-    flatNumber: string;
-    towerName: string;
-    isPrimaryResident: boolean;
-  };
+  resident: ResidentCardData;
+  onPress: () => void;
 }) {
   const { t } = useTranslation();
-  const showToast = useUIStore((s) => s.showToast);
-  const utils = trpc.useUtils();
-
-  const onSettled = () => void utils.resident.list.invalidate();
-  const deactivate = trpc.resident.deactivate.useMutation({
-    onSuccess: () => {
-      showToast(t("admin.residentDeactivated"), "info");
-      onSettled();
-    },
-    onError: (e) => showToast(e.message, "error"),
-  });
-  const reactivate = trpc.resident.reactivate.useMutation({
-    onSuccess: () => {
-      showToast(t("admin.residentReactivated"), "success");
-      onSettled();
-    },
-    onError: (e) => showToast(e.message, "error"),
-  });
-  const busy = deactivate.isPending || reactivate.isPending;
 
   return (
-    <Card className="gap-3">
-      <View className="flex-row items-center gap-3">
-        <Avatar uri={resident.avatarUrl} name={resident.name} size={44} />
-        <View className="flex-1 gap-0.5">
-          <View className="flex-row items-center gap-2">
-            <Text variant="title" numberOfLines={1} className="shrink">
-              {resident.name}
-            </Text>
-            {resident.isPrimaryResident && (
-              <Badge label={t("common.primary")} tone="primary" size="sm" />
-            )}
-          </View>
-          <Text variant="caption" color="secondary" numberOfLines={1}>
-            {t("guard.flatLine", {
-              tower: resident.towerName,
-              flat: resident.flatNumber,
-            })}{" "}
-            · {resident.email ?? resident.phone ?? ""}
-          </Text>
-        </View>
-        <Badge
-          label={resident.isActive ? t("status.active") : t("admin.inactive")}
-          tone={resident.isActive ? "success" : "neutral"}
-          size="sm"
-          uppercase
-        />
+    <Card
+      onPress={onPress}
+      variant="elevated"
+      className="flex-1 items-center gap-2 px-3 py-4"
+    >
+      <Avatar
+        uri={resident.avatarUrl}
+        name={resident.name}
+        size={64}
+        ring={resident.isPrimaryResident}
+      />
+
+      <View className="w-full items-center gap-0.5">
+        <Text variant="title" numberOfLines={1} align="center">
+          {resident.name}
+        </Text>
+        <Text variant="caption" color="secondary" numberOfLines={1} align="center">
+          {resident.email ?? resident.phone ?? "—"}
+        </Text>
       </View>
-      {resident.isActive ? (
-        <Button
-          label={t("admin.deactivate")}
-          variant="dangerSoft"
-          size="sm"
-          loading={busy}
-          onPress={() =>
-            confirmAction({
-              title: t("admin.deactivateConfirmTitle"),
-              message: t("admin.deactivateConfirmMessage"),
-              confirmLabel: t("admin.deactivate"),
-              cancelLabel: t("common.cancel"),
-              onConfirm: () => deactivate.mutate({ userId: resident.id }),
-            })
-          }
-        />
-      ) : (
-        <Button
-          label={t("admin.reactivate")}
-          variant="secondary"
-          size="sm"
-          loading={busy}
-          onPress={() => reactivate.mutate({ userId: resident.id })}
-        />
-      )}
+
+      <View className="flex-row items-center gap-1">
+        <Icon name="business-outline" size={13} color="secondary" />
+        <Text variant="caption" color="secondary" numberOfLines={1}>
+          {t("guard.flatLine", { tower: resident.towerName, flat: resident.flatNumber })}
+        </Text>
+      </View>
+
+      <Badge
+        label={resident.isActive ? t("status.active") : t("admin.inactive")}
+        tone={resident.isActive ? "success" : "neutral"}
+        size="sm"
+        uppercase
+      />
     </Card>
   );
 }
 
 /** Residents for one status filter (sharing the screen's search term). */
-function ResidentList({ status, search }: { status: Status; search: string }) {
+function ResidentGrid({ status, search }: { status: Status; search: string }) {
   const { t } = useTranslation();
+  const router = useRouter();
 
   const q = trpc.resident.list.useInfiniteQuery(
     { status, search: search.trim() || undefined, limit: 20 },
@@ -131,10 +103,31 @@ function ResidentList({ status, search }: { status: Status; search: string }) {
   if (items.length === 0)
     return <EmptyState icon="people-outline" title={t("admin.noResidents")} />;
 
+  // Chunked into pairs rather than using FlatList numColumns: these pages
+  // already live inside a scrolling TabPage, and nesting a virtualised list in
+  // a ScrollView is the classic RN warning.
+  const rows: ResidentCardData[][] = [];
+  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+
   return (
     <>
-      {items.map((r) => (
-        <ResidentCard key={r.id} resident={r} />
+      {rows.map((row) => (
+        <View key={row[0]!.id} className="flex-row gap-3">
+          {row.map((resident) => (
+            <ResidentTile
+              key={resident.id}
+              resident={resident}
+              onPress={() =>
+                router.push({
+                  pathname: "/(admin)/residents/[userId]",
+                  params: { userId: resident.id },
+                })
+              }
+            />
+          ))}
+          {/* Keeps a lone trailing tile at half width instead of stretching. */}
+          {row.length === 1 && <View className="flex-1" />}
+        </View>
       ))}
       {q.hasNextPage && (
         <Button
@@ -202,13 +195,13 @@ export default function ResidentsList() {
         options={options}
       >
         <TabPage>
-          <ResidentList status="ALL" search={search} />
+          <ResidentGrid status="ALL" search={search} />
         </TabPage>
         <TabPage>
-          <ResidentList status="ACTIVE" search={search} />
+          <ResidentGrid status="ACTIVE" search={search} />
         </TabPage>
         <TabPage>
-          <ResidentList status="INACTIVE" search={search} />
+          <ResidentGrid status="INACTIVE" search={search} />
         </TabPage>
       </SwipeTabs>
     </Screen>

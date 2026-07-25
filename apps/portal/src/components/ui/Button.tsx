@@ -145,9 +145,14 @@ export function Button({
       ) : (
         leftIcon && <Icon name={leftIcon} size={s.icon} color={v.fg} />
       )}
-      <Text variant={s.text} color={v.fg} numberOfLines={1} className="shrink">
-        {label}
-      </Text>
+      {/* An icon-only button passes an empty label (with accessibilityLabel
+          carrying the meaning); rendering the Text anyway would leave a stray
+          gap beside the icon. */}
+      {label !== "" && (
+        <Text variant={s.text} color={v.fg} numberOfLines={1} className="shrink">
+          {label}
+        </Text>
+      )}
       {!loading && rightIcon && (
         <Icon name={rightIcon} size={s.icon} color={v.fg} />
       )}

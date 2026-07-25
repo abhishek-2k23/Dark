@@ -2,6 +2,8 @@ import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 
+import { openDownloadedFile } from "@/lib/download";
+import { DOWNLOAD_NOTIFICATION_KIND } from "@/lib/push";
 import { trpc } from "@/lib/trpc";
 import { useAuthStore } from "@/stores/authStore";
 import { useUIStore } from "@/stores/uiStore";
@@ -63,12 +65,24 @@ export function NotificationsListener() {
   };
 
   const routeTo = (response: Notifications.NotificationResponse) => {
-    const currentRole = roleRef.current;
-    if (!currentRole) return; // signed out — nowhere to route
     const data = (response.notification.request.content.data ?? {}) as Record<
       string,
       unknown
     >;
+
+    // A saved file isn't a destination in the app: tapping it opens the file
+    // itself, which is what the notification is for. Checked before the
+    // signed-out guard, since a download is local and role-independent.
+    if (data.kind === DOWNLOAD_NOTIFICATION_KIND) {
+      const uri = typeof data.uri === "string" ? data.uri : "";
+      const mimeType = typeof data.mimeType === "string" ? data.mimeType : "*/*";
+      // No handler installed for this type is a normal outcome, not an error.
+      if (uri) void openDownloadedFile(uri, mimeType).catch(() => {});
+      return;
+    }
+
+    const currentRole = roleRef.current;
+    if (!currentRole) return; // signed out — nowhere to route
     const type = typeof data.type === "string" ? data.type : "";
     // The inbox is now (or soon) stale — the tapped push is at least read-worthy.
     invalidateFor(type);
@@ -93,6 +107,9 @@ export function NotificationsListener() {
         // (see push.ts), so a toast would double up, and the red banner the
         // invalidation above reveals is the louder signal anyway.
         if (type.startsWith("EMERGENCY")) return;
+        // Downloads keep their OS banner too (see push.ts), so a toast would
+        // announce the same saved file twice.
+        if (data.kind === DOWNLOAD_NOTIFICATION_KIND) return;
         const message = title || body;
         if (message) useUIStore.getState().showToast(message, "info");
       },

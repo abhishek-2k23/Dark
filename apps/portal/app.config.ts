@@ -57,6 +57,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "credpay",
         "upi",
       ],
+      /**
+       * iOS has no shared Downloads folder, so these two keys are what make a
+       * "download" mean anything here: together they surface the app's own
+       * Documents directory in the Files app as "On My iPhone → Prangan".
+       * `lib/download.ts` writes there, which is why the file is findable
+       * afterwards instead of being sealed inside the sandbox.
+       *
+       * Both are build-time Info.plist entries — they cannot ship over OTA.
+       */
+      UIFileSharingEnabled: true,
+      LSSupportsOpeningDocumentsInPlace: true,
     },
   },
   android: {

@@ -1,6 +1,5 @@
-import * as Print from "expo-print";
-
-import { safeFileName, shareFile } from "./share";
+import { PDF_MIME, PDF_UTI, renderPdfBase64, type ExportFile } from "./exportFile";
+import { safeFileName } from "./share";
 
 /**
  * Visitor log → PDF, rendered on-device.
@@ -179,16 +178,19 @@ function buildHtml(options: VisitorLogPdfOptions): string {
 }
 
 /**
- * Render the log to a PDF and hand it to the share sheet. Throws
- * `SharingUnavailableError` if the platform has no share sheet.
+ * Render the log to a PDF. The caller decides whether it gets saved or shared —
+ * see `download.ts` and `share.ts`.
  */
-export async function exportVisitorLogPdf(options: VisitorLogPdfOptions): Promise<void> {
-  const { uri } = await Print.printToFileAsync({ html: buildHtml(options) });
-  await shareFile(uri, {
-    mimeType: "application/pdf",
-    dialogTitle: options.title,
-    UTI: "com.adobe.pdf",
-  });
+export async function buildVisitorLogPdf(
+  options: VisitorLogPdfOptions,
+): Promise<ExportFile> {
+  return {
+    fileName: options.fileName,
+    mimeType: PDF_MIME,
+    uti: PDF_UTI,
+    encoding: "base64",
+    contents: await renderPdfBase64(buildHtml(options)),
+  };
 }
 
 /** `visitor-log-this-month-2026-07-25.pdf` — stable, sortable, safe on any OS. */

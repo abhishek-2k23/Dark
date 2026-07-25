@@ -7,10 +7,11 @@ import { StackHeader } from "@/components/StackHeader";
 import { TabPage } from "@/components/TabPage";
 import { VisitorRow } from "@/components/VisitorRow";
 import { Button, Screen, SwipeTabs, Text, type SegmentOption } from "@/components/ui";
-import { SharingUnavailableError } from "@/lib/share";
+import { downloadFile, DownloadUnavailableError } from "@/lib/download";
+import { shareExportFile, SharingUnavailableError } from "@/lib/share";
 import { trpc } from "@/lib/trpc";
 import {
-  exportVisitorLogPdf,
+  buildVisitorLogPdf,
   visitorLogFileName,
   type VisitorLogPdfRow,
 } from "@/lib/visitorLogPdf";
@@ -74,7 +75,7 @@ export default function AdminVisitorLog() {
   const utils = trpc.useUtils();
 
   const [period, setPeriod] = useState<Period>("MONTH");
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<null | "download" | "share">(null);
 
   const society = trpc.society.get.useQuery();
 
@@ -123,8 +124,8 @@ export default function AdminVisitorLog() {
     return rows.slice(0, EXPORT_MAX_ROWS);
   }
 
-  async function exportPdf() {
-    setExporting(true);
+  async function exportPdf(mode: "download" | "share") {
+    setExporting(mode);
     try {
       const rows = await fetchAllRows();
       if (rows.length === 0) {
@@ -132,7 +133,7 @@ export default function AdminVisitorLog() {
         return;
       }
 
-      await exportVisitorLogPdf({
+      const file = await buildVisitorLogPdf({
         fileName: visitorLogFileName(PERIOD_SLUG[period]),
         title: t("admin.visitorLog.pdfTitle"),
         societyName: society.data?.name ?? t("app.name"),
@@ -158,18 +159,29 @@ export default function AdminVisitorLog() {
         formatTime: (iso) => formatTime(iso),
       });
 
+      if (mode === "share") {
+        await shareExportFile(file, t("admin.visitorLog.pdfTitle"));
+      } else {
+        const result = await downloadFile(file, {
+          title: t("downloads.completeTitle"),
+          body: t("downloads.completeBody", { file: file.fileName }),
+        });
+        // Backing out of the Android folder picker is a choice, not a failure.
+        if (!result.cancelled) showToast(t("downloads.saved"), "success");
+      }
+
       if (rows.length === EXPORT_MAX_ROWS) {
         showToast(t("admin.visitorLog.truncated", { count: EXPORT_MAX_ROWS }), "info");
       }
     } catch (err) {
       showToast(
-        err instanceof SharingUnavailableError
+        err instanceof SharingUnavailableError || err instanceof DownloadUnavailableError
           ? t("admin.import.sharingUnavailable")
           : t("admin.visitorLog.exportFailed"),
         "error",
       );
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   }
 
@@ -179,14 +191,27 @@ export default function AdminVisitorLog() {
         <StackHeader
           title={t("admin.visitorLog.title")}
           right={
-            <Button
-              label={t("admin.visitorLog.export")}
-              variant="secondary"
-              size="sm"
-              leftIcon="document-text-outline"
-              loading={exporting}
-              onPress={exportPdf}
-            />
+            <View className="flex-row gap-2">
+              <Button
+                label={t("admin.visitorLog.export")}
+                variant="secondary"
+                size="sm"
+                leftIcon="download-outline"
+                loading={exporting === "download"}
+                disabled={exporting !== null}
+                onPress={() => void exportPdf("download")}
+              />
+              <Button
+                label=""
+                variant="outline"
+                size="sm"
+                leftIcon="share-social-outline"
+                accessibilityLabel={t("admin.visitorLog.shareA11y")}
+                loading={exporting === "share"}
+                disabled={exporting !== null}
+                onPress={() => void exportPdf("share")}
+              />
+            </View>
           }
         />
         <Text variant="body" color="secondary">

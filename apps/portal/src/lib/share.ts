@@ -1,6 +1,8 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 
+import type { ExportFile } from "./exportFile";
+
 /**
  * Handing a generated file to the OS share sheet — "download or share" on
  * mobile is the same gesture, since the sheet already offers Save to Files,
@@ -31,36 +33,28 @@ export function safeFileName(name: string): string {
   );
 }
 
-export async function shareFile(
-  uri: string,
-  options: { mimeType: string; dialogTitle: string; UTI?: string },
+/**
+ * Write a generated file into the cache directory and open the share sheet.
+ *
+ * Cache rather than documents on purpose: a shared copy is throwaway, and the
+ * OS may reclaim it once the user has sent it wherever they wanted. Files the
+ * user asked to *keep* go through `download.ts` instead, which writes somewhere
+ * permanent and visible.
+ */
+export async function shareExportFile(
+  file: ExportFile,
+  dialogTitle: string,
 ): Promise<void> {
   if (!(await Sharing.isAvailableAsync())) throw new SharingUnavailableError();
-  await Sharing.shareAsync(uri, options);
-}
 
-/**
- * Write text into the cache directory and open the share sheet on it.
- *
- * Cache rather than documents on purpose: these are throwaway exports, and the
- * OS is free to reclaim them once the user has saved the copy they wanted.
- */
-export async function writeAndShareText(params: {
-  fileName: string;
-  contents: string;
-  mimeType: string;
-  dialogTitle: string;
-  UTI?: string;
-}): Promise<void> {
-  if (!(await Sharing.isAvailableAsync())) throw new SharingUnavailableError();
-
-  const uri = `${FileSystem.cacheDirectory}${safeFileName(params.fileName)}`;
-  await FileSystem.writeAsStringAsync(uri, params.contents, {
-    encoding: FileSystem.EncodingType.UTF8,
+  const uri = `${FileSystem.cacheDirectory}${safeFileName(file.fileName)}`;
+  await FileSystem.writeAsStringAsync(uri, file.contents, {
+    encoding:
+      file.encoding === "base64" ? FileSystem.EncodingType.Base64 : FileSystem.EncodingType.UTF8,
   });
   await Sharing.shareAsync(uri, {
-    mimeType: params.mimeType,
-    dialogTitle: params.dialogTitle,
-    UTI: params.UTI,
+    mimeType: file.mimeType,
+    dialogTitle,
+    UTI: file.uti,
   });
 }

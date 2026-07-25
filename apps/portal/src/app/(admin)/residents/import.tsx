@@ -10,7 +10,9 @@ import { Pressable, View } from "react-native";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StackHeader } from "@/components/StackHeader";
 import { Badge, Button, Card, FieldLabel, Screen, Switch, Text } from "@/components/ui";
-import { SharingUnavailableError, writeAndShareText } from "@/lib/share";
+import { downloadFile, DownloadUnavailableError } from "@/lib/download";
+import { CSV_MIME, CSV_UTI, type ExportFile } from "@/lib/exportFile";
+import { shareExportFile, SharingUnavailableError } from "@/lib/share";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 import { confirmAction } from "@/utils/confirm";
@@ -131,7 +133,7 @@ export default function ImportResidents() {
   const [createMissingFlats, setCreateMissingFlats] = useState(true);
   const [defaultFlatType, setDefaultFlatType] = useState<FlatType>("TWO_BHK");
   const [preview, setPreview] = useState<ImportPreview | null>(null);
-  const [sharing, setSharing] = useState(false);
+  const [sharing, setSharing] = useState<null | "download" | "share">(null);
 
   // Any change to the file or the options invalidates a preview the admin is
   // looking at — never let them commit against a stale report.
@@ -180,25 +182,35 @@ export default function ImportResidents() {
     }
   }
 
-  async function downloadTemplate() {
-    setSharing(true);
+  async function getTemplate(mode: "download" | "share") {
+    setSharing(mode);
+    const file: ExportFile = {
+      fileName: "prangan-residents-template.csv",
+      mimeType: CSV_MIME,
+      uti: CSV_UTI,
+      encoding: "utf8",
+      contents: TEMPLATE_CSV,
+    };
     try {
-      await writeAndShareText({
-        fileName: "prangan-residents-template.csv",
-        contents: TEMPLATE_CSV,
-        mimeType: "text/csv",
-        dialogTitle: t("admin.import.templateTitle"),
-        UTI: "public.comma-separated-values-text",
-      });
+      if (mode === "share") {
+        await shareExportFile(file, t("admin.import.templateTitle"));
+      } else {
+        const result = await downloadFile(file, {
+          title: t("downloads.completeTitle"),
+          body: t("downloads.completeBody", { file: file.fileName }),
+        });
+        // Backing out of the Android folder picker is a choice, not a failure.
+        if (!result.cancelled) showToast(t("downloads.saved"), "success");
+      }
     } catch (err) {
       showToast(
-        err instanceof SharingUnavailableError
+        err instanceof SharingUnavailableError || err instanceof DownloadUnavailableError
           ? t("admin.import.sharingUnavailable")
           : t("admin.import.templateFailed"),
         "error",
       );
     } finally {
-      setSharing(false);
+      setSharing(null);
     }
   }
 
@@ -257,14 +269,28 @@ export default function ImportResidents() {
         <Text variant="caption" color="tertiary">
           {t("admin.import.columnsHint")}
         </Text>
-        <Button
-          label={t("admin.import.downloadTemplate")}
-          variant="outline"
-          size="sm"
-          leftIcon="download-outline"
-          loading={sharing}
-          onPress={downloadTemplate}
-        />
+        <View className="flex-row items-center gap-2">
+          <Button
+            className="flex-1"
+            label={t("admin.import.downloadTemplate")}
+            variant="outline"
+            size="sm"
+            leftIcon="download-outline"
+            loading={sharing === "download"}
+            disabled={sharing !== null}
+            onPress={() => void getTemplate("download")}
+          />
+          <Button
+            label=""
+            variant="outline"
+            size="sm"
+            leftIcon="share-social-outline"
+            accessibilityLabel={t("admin.import.templateShareA11y")}
+            loading={sharing === "share"}
+            disabled={sharing !== null}
+            onPress={() => void getTemplate("share")}
+          />
+        </View>
       </Card>
 
       {/* File */}
