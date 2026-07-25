@@ -209,11 +209,23 @@ async function issueEmailOtp(
   });
   if (user.email) {
     const ttlMinutes = Math.round(OTP_TTL_SECONDS / 60);
-    if (purpose === EmailOtpPurpose.ACCOUNT_DELETION) {
-      await sendAccountDeletionOtpEmail({ to: user.email, code, ttlMinutes });
-    } else {
-      await sendOtpEmail({ to: user.email, code, ttlMinutes });
-    }
+    const to = user.email;
+    const delivery =
+      purpose === EmailOtpPurpose.ACCOUNT_DELETION
+        ? sendAccountDeletionOtpEmail({ to, code, ttlMinutes })
+        : sendOtpEmail({ to, code, ttlMinutes });
+
+    // Deliberately NOT awaited. The code is already committed above, so nothing
+    // about the caller's response depends on SMTP having finished — and awaiting
+    // it meant the user's login sat open for as long as the send took. Measured
+    // against the deployed API: 2m02s to a recipient domain that would not
+    // accept mail, with the client simply hanging on a valid login.
+    //
+    // A failed send must not fail the request either: the account is in exactly
+    // the right state, and the user can resend. It is logged instead.
+    void delivery.catch((err) => {
+      logger.error("Failed to email OTP", { email: to, purpose, err });
+    });
   }
   return code;
 }
