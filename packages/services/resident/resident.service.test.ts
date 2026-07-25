@@ -163,11 +163,24 @@ describe("invite → signup auto-link (happy path)", () => {
     expect(created?.role).toBe("RESIDENT");
     expect(created?.residentProfile?.flatId).toBe(flatId);
     expect(created?.societyId).toBe(societyId);
+    // The first resident into an empty flat owns it. Without this the flat
+    // never counts as occupied and every "already taken" rule silently passes.
+    expect(created?.residentProfile?.isPrimaryResident).toBe(true);
 
     const invite = await prisma.pendingResidentInvite.findFirst({
       where: { email: inviteeEmail },
     });
     expect(invite?.status).toBe("CLAIMED");
+  });
+
+  it("refuses to invite anyone else into that flat once it is claimed", async () => {
+    await expectTRPCError(
+      residentService.inviteResident(admin, {
+        flatId,
+        email: `second-${runId}@test.local`,
+      }),
+      "CONFLICT",
+    );
   });
 });
 
@@ -256,6 +269,94 @@ describe("resident.deactivate / reactivate", () => {
       residentService.setResidentActive(otherAdmin, {
         userId: resident!.id,
         isActive: false,
+      }),
+      "NOT_FOUND",
+    );
+  });
+});
+
+describe("resident.updateContact", () => {
+  /** A contactless resident, the shape a bulk import leaves behind. */
+  async function makeBlankResident(label: string) {
+    return prisma.user.create({
+      data: {
+        name: `Blank ${label}`,
+        role: "RESIDENT",
+        societyId,
+        importedAt: new Date(),
+        residentProfile: { create: { flatId } },
+      },
+    });
+  }
+
+  it("fills in a missing email and phone", async () => {
+    const resident = await makeBlankResident(`fill-${runId}`);
+    const email = `filled-${runId}@test.local`;
+
+    const updated = await residentService.updateResidentContact(admin, {
+      userId: resident.id,
+      email,
+      phone: "9800000001",
+    });
+
+    expect(updated.email).toBe(email);
+    expect(updated.phone).toBe("9800000001");
+
+    // An admin typing an address is not proof of ownership, so the OTP gate
+    // must survive it.
+    const row = await prisma.user.findUniqueOrThrow({ where: { id: resident.id } });
+    expect(row.emailVerified).toBe(false);
+  });
+
+  it("lowercases the email so signup can match it", async () => {
+    const resident = await makeBlankResident(`case-${runId}`);
+    const updated = await residentService.updateResidentContact(admin, {
+      userId: resident.id,
+      email: `  MiXeD-${runId}@Test.Local `,
+    });
+    expect(updated.email).toBe(`mixed-${runId}@test.local`);
+  });
+
+  it("rejects an empty payload", async () => {
+    const resident = await makeBlankResident(`empty-${runId}`);
+    await expectTRPCError(
+      residentService.updateResidentContact(admin, { userId: resident.id }),
+      "BAD_REQUEST",
+    );
+  });
+
+  /**
+   * The fill-only rule. Overwriting an existing email would give any admin a
+   * password-reset path into a resident's account.
+   */
+  it("refuses to overwrite a contact that is already set", async () => {
+    const resident = await prisma.user.findUniqueOrThrow({ where: { email: inviteeEmail } });
+    await expectTRPCError(
+      residentService.updateResidentContact(admin, {
+        userId: resident.id,
+        email: `hijack-${runId}@test.local`,
+      }),
+      "CONFLICT",
+    );
+  });
+
+  it("refuses a contact that belongs to another account", async () => {
+    const resident = await makeBlankResident(`clash-${runId}`);
+    await expectTRPCError(
+      residentService.updateResidentContact(admin, {
+        userId: resident.id,
+        email: inviteeEmail,
+      }),
+      "CONFLICT",
+    );
+  });
+
+  it("cannot touch a resident of another society", async () => {
+    const resident = await makeBlankResident(`cross-${runId}`);
+    await expectTRPCError(
+      residentService.updateResidentContact(otherAdmin, {
+        userId: resident.id,
+        email: `cross-${runId}@test.local`,
       }),
       "NOT_FOUND",
     );

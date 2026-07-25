@@ -583,14 +583,19 @@ async function analyse(actor: User, input: ImportInput): Promise<Analysis> {
       flatNumber: true,
       tower: { select: { name: true } },
       _count: { select: { residents: true } },
+      // Existence check, not a list: one row is enough to know it is taken.
+      residents: { where: { isPrimaryResident: true }, select: { id: true }, take: 1 },
     },
   });
   const existingFlatIds = new Map<string, string>();
   const residentCountByFlatKey = new Map<string, number>();
+  /** Flats that already have an owner, so no sheet row may be allotted one. */
+  const occupiedFlatKeys = new Set<string>();
   for (const flat of existingFlats) {
     const key = makeFlatKey(canon(flat.tower.name), flat.flatNumber);
     existingFlatIds.set(key, flat.id);
     residentCountByFlatKey.set(key, flat._count.residents);
+    if (flat.residents.length > 0) occupiedFlatKeys.add(key);
   }
 
   // --- pass 2: cross-row and cross-table resolution ----------------------
@@ -651,7 +656,19 @@ async function analyse(actor: User, input: ImportInput): Promise<Analysis> {
       flatKey = makeFlatKey(towerKey, row.flatNumber);
       const flatExists = existingFlatIds.has(flatKey) || flatsToCreate.has(flatKey);
 
-      if (!flatExists) {
+      // A flat that already has an owner is not available, whether it was taken
+      // before this file or by an earlier row in it. Flagged as an error rather
+      // than skipped so the admin sees a line to fix — a sheet allotting an
+      // occupied flat is usually a stale register, not a duplicate run.
+      if (occupiedFlatKeys.has(flatKey)) {
+        issues.push(
+          issue(
+            "FLAT_OCCUPIED",
+            `Flat ${row.flatNumber} in tower ${row.towerName} already has a resident`,
+          ),
+        );
+        status = "ERROR";
+      } else if (!flatExists) {
         if (!input.createMissingFlats) {
           issues.push(
             issue(
@@ -685,9 +702,11 @@ async function analyse(actor: User, input: ImportInput): Promise<Analysis> {
           ),
         );
       }
-      const residentCount = residentCountByFlatKey.get(flatKey) ?? 0;
-      isPrimaryResident = residentCount === 0;
-      residentCountByFlatKey.set(flatKey, residentCount + 1);
+      // A row only gets this far if its flat was free, so this resident owns it
+      // — and the flat is now taken for every later row in the same sheet.
+      isPrimaryResident = true;
+      occupiedFlatKeys.add(flatKey);
+      residentCountByFlatKey.set(flatKey, (residentCountByFlatKey.get(flatKey) ?? 0) + 1);
 
       if (row.email) seenEmail.set(row.email, row.rowNumber);
       if (row.phone) seenPhone.set(row.phone, row.rowNumber);

@@ -8,8 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { SectionHeader } from "@/components/SectionHeader";
-import { StackHeader } from "@/components/StackHeader";
-import { Badge, Button, Card, FieldLabel, Screen, Switch, Text } from "@/components/ui";
+import { Badge, Button, Card, FieldLabel, Switch, Text } from "@/components/ui";
 import { downloadFile, DownloadUnavailableError } from "@/lib/download";
 import { CSV_MIME, CSV_UTI, type ExportFile } from "@/lib/exportFile";
 import { shareExportFile, SharingUnavailableError } from "@/lib/share";
@@ -123,7 +122,7 @@ function RowIssues({ row }: { row: ImportRow }) {
   );
 }
 
-export default function ImportResidents() {
+export function BulkImport() {
   const { t } = useTranslation();
   const router = useRouter();
   const showToast = useUIStore((s) => s.showToast);
@@ -205,7 +204,7 @@ export default function ImportResidents() {
     } catch (err) {
       showToast(
         err instanceof SharingUnavailableError || err instanceof DownloadUnavailableError
-          ? t("admin.import.sharingUnavailable")
+          ? t("downloads.unavailable")
           : t("admin.import.templateFailed"),
         "error",
       );
@@ -250,9 +249,7 @@ export default function ImportResidents() {
   const issueRows = preview?.rows.filter((row) => row.issues.length > 0) ?? [];
 
   return (
-    <Screen scroll contentClassName="gap-5 pb-10">
-      <StackHeader title={t("admin.import.title")} />
-
+    <View className="gap-5 pb-8">
       <Text variant="body" color="secondary">
         {t("admin.import.intro")}
       </Text>
@@ -453,6 +450,6 @@ export default function ImportResidents() {
           )}
         </View>
       )}
-    </Screen>
+    </View>
   );
 }

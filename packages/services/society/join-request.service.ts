@@ -5,6 +5,7 @@ import {
   notifyUsers,
   societyAdminUserIds,
 } from "../notification/notification.service";
+import { shouldBePrimaryResident } from "../resident/occupancy";
 
 /**
  * Society join requests — the resident-initiated counterpart to the admin's
@@ -279,12 +280,19 @@ export async function decideJoinRequest(
     throw new TRPCError({ code: "NOT_FOUND", message: "Flat not found" });
   }
 
+  // Resolved before the transaction because this is the array form, which takes
+  // prepared operations rather than a callback. The window is harmless: two
+  // admins approving into the same empty flat at once would both read "empty",
+  // and the worst case is two primaries — which the occupied check then keeps
+  // anyone else out of.
+  const isPrimaryResident = await shouldBePrimaryResident(prisma, flat.id);
+
   await prisma.$transaction([
     prisma.user.update({
       where: { id: request.user.id },
       data: {
         societyId: actor.societyId,
-        residentProfile: { create: { flatId: flat.id } },
+        residentProfile: { create: { flatId: flat.id, isPrimaryResident } },
       },
     }),
     prisma.societyJoinRequest.update({

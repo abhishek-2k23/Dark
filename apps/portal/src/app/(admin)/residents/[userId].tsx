@@ -3,35 +3,63 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
+import { ExportSheet } from "@/components/ExportSheet";
 import { ErrorState, Loading } from "@/components/ListState";
+import { ResidentContactSheet } from "@/components/ResidentContactSheet";
 import { SectionHeader } from "@/components/SectionHeader";
 import { StackHeader } from "@/components/StackHeader";
-import { Avatar, Badge, Button, Card, Divider, Icon, Screen, Text } from "@/components/ui";
-import { downloadFile, DownloadUnavailableError } from "@/lib/download";
-import type { ExportFile } from "@/lib/exportFile";
+import { Avatar, Badge, Button, Card, Icon, IconButton, Screen, Text } from "@/components/ui";
 import {
   buildResidentReportCsv,
   buildResidentReportPdf,
   REPORT_SECTIONS,
-  type ReportSection,
-  type ResidentDetail,
 } from "@/lib/residentReport";
-import { SharingUnavailableError, shareExportFile } from "@/lib/share";
 import { trpc } from "@/lib/trpc";
 import { useUIStore } from "@/stores/uiStore";
 import { confirmAction } from "@/utils/confirm";
 import { formatDate, formatDateTime, formatMoney } from "@/utils/format";
 
-/** A label/value line inside an info card. */
-function Field({ label, value }: { label: string; value: string }) {
+/**
+ * A label/value line inside an info card. When the value is missing and `onAdd`
+ * is given, the blank becomes the way to fill it in rather than a dead dash.
+ */
+function Field({
+  label,
+  value,
+  onAdd,
+}: {
+  label: string;
+  value: string | null;
+  onAdd?: () => void;
+}) {
+  const { t } = useTranslation();
+
   return (
-    <View className="flex-row items-start justify-between gap-4">
+    <View className="flex-row items-center justify-between gap-4">
       <Text variant="bodySmall" color="secondary" className="shrink-0">
         {label}
       </Text>
-      <Text variant="bodySmall" align="right" className="flex-1">
-        {value}
-      </Text>
+      {value ? (
+        <Text variant="bodySmall" align="right" className="flex-1">
+          {value}
+        </Text>
+      ) : onAdd ? (
+        <Pressable
+          onPress={onAdd}
+          hitSlop={8}
+          accessibilityRole="button"
+          className="flex-row items-center gap-1 active:opacity-70"
+        >
+          <Icon name="add-circle-outline" size={15} color="primary" />
+          <Text variant="bodySmall" color="primary">
+            {t("common.add")}
+          </Text>
+        </Pressable>
+      ) : (
+        <Text variant="bodySmall" align="right" className="flex-1">
+          —
+        </Text>
+      )}
     </View>
   );
 }
@@ -110,30 +138,6 @@ function Row({
   );
 }
 
-function Chip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1.5 active:opacity-80 ${
-        active ? "border-primary bg-primary-soft" : "border-border bg-surface"
-      }`}
-    >
-      {active && <Icon name="checkmark" size={13} color="primary" />}
-      <Text variant="caption" color={active ? "primary" : "secondary"}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 const DUE_TONE = { PAID: "success", OVERDUE: "danger", PENDING: "warning" } as const;
 const TICKET_TONE = {
   OPEN: "warning",
@@ -148,121 +152,15 @@ const VISITOR_TONE = {
   EXPIRED: "neutral",
 } as const;
 
-/** The export card: pick sections, then download or share in either format. */
-function ExportCard({ detail, societyName }: { detail: ResidentDetail; societyName: string }) {
-  const { t } = useTranslation();
-  const showToast = useUIStore((s) => s.showToast);
-
-  const [selected, setSelected] = useState<ReportSection[]>(REPORT_SECTIONS);
-  const [busy, setBusy] = useState<null | "pdf" | "csv" | "share-pdf" | "share-csv">(null);
-
-  const allSelected = selected.length === REPORT_SECTIONS.length;
-
-  const toggle = (section: ReportSection) =>
-    setSelected((current) =>
-      current.includes(section)
-        ? current.filter((s) => s !== section)
-        : REPORT_SECTIONS.filter((s) => current.includes(s) || s === section),
-    );
-
-  async function build(format: "pdf" | "csv"): Promise<ExportFile> {
-    const params = { detail, sections: selected, societyName, t };
-    return format === "pdf"
-      ? buildResidentReportPdf(params)
-      : buildResidentReportCsv(params);
-  }
-
-  async function run(format: "pdf" | "csv", mode: "download" | "share") {
-    if (selected.length === 0) {
-      showToast(t("admin.residentReport.pickOne"), "info");
-      return;
-    }
-    setBusy(mode === "download" ? format : (`share-${format}` as const));
-    try {
-      const file = await build(format);
-      if (mode === "share") {
-        await shareExportFile(file, t("admin.residentReport.title"));
-      } else {
-        const result = await downloadFile(file, {
-          title: t("downloads.completeTitle"),
-          body: t("downloads.completeBody", { file: file.fileName }),
-        });
-        // Backing out of the Android folder picker is a choice, not a failure.
-        if (!result.cancelled) showToast(t("downloads.saved"), "success");
-      }
-    } catch (err) {
-      showToast(
-        err instanceof SharingUnavailableError || err instanceof DownloadUnavailableError
-          ? t("admin.import.sharingUnavailable")
-          : t("admin.residentReport.failed"),
-        "error",
-      );
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  return (
-    <Card className="gap-3">
-      <Text variant="subtitle">{t("admin.residentReport.title")}</Text>
-      <Text variant="caption" color="secondary">
-        {t("admin.residentReport.hint")}
-      </Text>
-
-      <View className="flex-row flex-wrap gap-2">
-        <Chip
-          label={t("visitors.all")}
-          active={allSelected}
-          onPress={() => setSelected(allSelected ? [] : REPORT_SECTIONS)}
-        />
-        {REPORT_SECTIONS.map((section) => (
-          <Chip
-            key={section}
-            label={t(`admin.residentReport.sections.${section}`)}
-            active={selected.includes(section)}
-            onPress={() => toggle(section)}
-          />
-        ))}
-      </View>
-
-      <Divider />
-
-      {(["pdf", "csv"] as const).map((format) => (
-        <View key={format} className="flex-row items-center gap-2">
-          <Button
-            className="flex-1"
-            label={t(`admin.residentReport.download${format === "pdf" ? "Pdf" : "Csv"}`)}
-            leftIcon="download-outline"
-            size="sm"
-            variant={format === "pdf" ? "primary" : "secondary"}
-            loading={busy === format}
-            disabled={busy !== null}
-            onPress={() => void run(format, "download")}
-          />
-          <Button
-            label=""
-            leftIcon="share-social-outline"
-            size="sm"
-            variant="outline"
-            accessibilityLabel={t("admin.residentReport.shareA11y", {
-              format: format.toUpperCase(),
-            })}
-            loading={busy === `share-${format}`}
-            disabled={busy !== null}
-            onPress={() => void run(format, "share")}
-          />
-        </View>
-      ))}
-    </Card>
-  );
-}
-
 export default function ResidentDetailScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const showToast = useUIStore((s) => s.showToast);
   const utils = trpc.useUtils();
+
+  const [exportOpen, setExportOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const detailQuery = trpc.resident.detail.useQuery({ userId }, { enabled: !!userId });
   const society = trpc.society.get.useQuery();
@@ -312,7 +210,16 @@ export default function ResidentDetailScreen() {
 
   return (
     <Screen scroll contentClassName="gap-5 pb-10">
-      <StackHeader title={t("admin.residentDetail.title")} />
+      <StackHeader
+        title={t("admin.residentDetail.title")}
+        right={
+          <IconButton
+            name="download-outline"
+            accessibilityLabel={t("admin.residentReport.title")}
+            onPress={() => setExportOpen(true)}
+          />
+        }
+      />
 
       {/* Identity */}
       <View className="items-center gap-2">
@@ -366,8 +273,16 @@ export default function ResidentDetailScreen() {
       {/* Info */}
       <Card className="gap-2">
         <Text variant="subtitle">{t("admin.residentDetail.info")}</Text>
-        <Field label={t("signup.email")} value={profile.email ?? "—"} />
-        <Field label={t("signup.phone")} value={profile.phone ?? "—"} />
+        <Field
+          label={t("signup.email")}
+          value={profile.email}
+          onAdd={() => setContactOpen(true)}
+        />
+        <Field
+          label={t("signup.phone")}
+          value={profile.phone}
+          onAdd={() => setContactOpen(true)}
+        />
         <Field label={t("admin.floor")} value={String(profile.floor)} />
         <Field
           label={t("admin.residentReport.flatType")}
@@ -531,8 +446,6 @@ export default function ResidentDetailScreen() {
         ))}
       </ListSection>
 
-      <ExportCard detail={detail} societyName={society.data?.name ?? t("app.name")} />
-
       {/* Account actions */}
       {profile.isActive ? (
         <Button
@@ -557,6 +470,35 @@ export default function ResidentDetailScreen() {
           onPress={() => reactivate.mutate({ userId: profile.id })}
         />
       )}
+
+      <ResidentContactSheet
+        visible={contactOpen}
+        onClose={() => setContactOpen(false)}
+        userId={profile.id}
+        missingEmail={!profile.email}
+        missingPhone={!profile.phone}
+      />
+
+      <ExportSheet
+        visible={exportOpen}
+        onClose={() => setExportOpen(false)}
+        title={t("admin.residentReport.title")}
+        subtitle={t("admin.residentReport.hint")}
+        sections={REPORT_SECTIONS}
+        sectionLabel={(section) => t(`admin.residentReport.sections.${section}`)}
+        shareTitle={t("admin.residentReport.title")}
+        build={({ format, sections }) => {
+          const params = {
+            detail,
+            sections,
+            societyName: society.data?.name ?? t("app.name"),
+            t,
+          };
+          return format === "pdf"
+            ? buildResidentReportPdf(params)
+            : Promise.resolve(buildResidentReportCsv(params));
+        }}
+      />
     </Screen>
   );
 }

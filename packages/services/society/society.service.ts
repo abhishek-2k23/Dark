@@ -169,11 +169,18 @@ export interface FlatInfo {
   floor: number;
   type: FlatType;
   residentCount: number;
+  /**
+   * The flat already has a primary resident, so it is not available to be
+   * allotted again. Drives the greyed-out flats in the admin pickers.
+   */
+  isOccupied: boolean;
 }
 
 const flatInclude = {
   tower: { select: { name: true } },
   _count: { select: { residents: true } },
+  // Existence check, not a list: one row is enough to know it is taken.
+  residents: { where: { isPrimaryResident: true }, select: { id: true }, take: 1 },
 } as const;
 
 function toFlatInfo(flat: {
@@ -184,6 +191,7 @@ function toFlatInfo(flat: {
   type: FlatType;
   tower: { name: string };
   _count: { residents: number };
+  residents: { id: string }[];
 }): FlatInfo {
   return {
     id: flat.id,
@@ -193,6 +201,7 @@ function toFlatInfo(flat: {
     floor: flat.floor,
     type: flat.type,
     residentCount: flat._count.residents,
+    isOccupied: flat.residents.length > 0,
   };
 }
 

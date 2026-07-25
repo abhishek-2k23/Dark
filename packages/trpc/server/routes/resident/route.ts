@@ -70,6 +70,18 @@ const ActiveStateModel = z.object({
   isActive: z.boolean().describe("Account active state after the change"),
 });
 
+const ResidentContactInput = z.object({
+  userId: z.string().describe("User id of the resident"),
+  email: z.email().describe("Email to fill in, if the resident has none").optional(),
+  phone: phoneSchema.describe("10-digit phone to fill in, if the resident has none").optional(),
+});
+
+const ResidentContactModel = z.object({
+  id: z.string().describe("User id"),
+  email: z.string().nullable().describe("Email after the change"),
+  phone: z.string().nullable().describe("Phone after the change"),
+});
+
 // ---------------------------------------------------------------------------
 // Detail
 // ---------------------------------------------------------------------------
@@ -449,6 +461,28 @@ export const residentRouter = router({
     .input(ImportSheetInput)
     .output(ImportResultModel)
     .mutation(({ ctx, input }) => residentImportService.commitResidentImport(ctx.user, input)),
+
+  updateContact: subscribedAdminProcedure
+    .meta({
+      openapi: {
+        method: "PATCH",
+        path: path("{userId}/contact"),
+        tags: ["Society"],
+        summary: "Fill in a resident's missing email or phone",
+        description:
+          "Sets an email and/or phone on a resident who does not have one — chiefly a " +
+          "bulk-imported resident, who cannot claim their account until an email exists. " +
+          "This is fill-only: a contact that is already set can be changed by the resident " +
+          "alone, never by an admin. The email is stored lowercased and stays unverified, so " +
+          "the OTP gate still applies when the resident signs up. Errors: 400 if neither field " +
+          "is given, 403 if not an admin, 404 if the user is not a resident of the admin's " +
+          "society, 409 if the field is already set or the value belongs to another account.",
+        protect: true,
+      },
+    })
+    .input(ResidentContactInput)
+    .output(ResidentContactModel)
+    .mutation(({ ctx, input }) => residentService.updateResidentContact(ctx.user, input)),
 
   deactivate: subscribedAdminProcedure
     .meta({

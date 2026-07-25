@@ -309,7 +309,12 @@ describe("previewResidentImport — row validation", () => {
     expect(preview.towersToCreate).toHaveLength(0);
   });
 
-  it("counts each new tower and flat once, however many residents share them", async () => {
+  /**
+   * A flat takes one resident. The second row aiming at the same flat is
+   * rejected rather than added as a flatmate — including when both rows are in
+   * the same sheet, where nothing is in the database to compare against yet.
+   */
+  it("counts a new tower once and refuses a second resident for the same flat", async () => {
     const preview = await importService.previewResidentImport(
       admin,
       input([
@@ -320,7 +325,10 @@ describe("previewResidentImport — row validation", () => {
       ]),
     );
 
-    expect(preview.readyCount).toBe(3);
+    expect(preview.readyCount).toBe(2);
+    expect(codes(rowFor(preview, 3))).toContain("FLAT_OCCUPIED");
+    // The tower is still counted once across both of its flats, and the
+    // rejected row adds no flat of its own.
     expect(preview.towersToCreate).toEqual([`Shared ${runId}`]);
     expect(preview.flatsToCreate).toBe(2);
   });
@@ -358,8 +366,9 @@ describe("commitResidentImport", () => {
 
     const result = await importService.commitResidentImport(admin, sheet);
 
-    expect(result.importedCount).toBe(3);
-    expect(result.errorCount).toBe(0);
+    // Sita is refused: Ravi took A-304 earlier in the same sheet.
+    expect(result.importedCount).toBe(2);
+    expect(result.errorCount).toBe(1);
     expect(result.towersCreated).toBe(1);
     expect(result.flatsCreated).toBe(1);
 
@@ -382,13 +391,10 @@ describe("commitResidentImport", () => {
     expect(ravi!.residentProfile!.flat.floor).toBe(3);
     expect(ravi!.residentProfile!.flat.type).toBe("TWO_BHK");
 
-    // First resident of a brand-new flat is primary; the second is not.
+    // The resident of a brand-new flat owns it, and the row that tried to join
+    // that flat created no account at all.
     expect(ravi!.residentProfile!.isPrimaryResident).toBe(true);
-    const sita = await prisma.user.findUnique({
-      where: { email: email("sita") },
-      include: { residentProfile: true },
-    });
-    expect(sita!.residentProfile!.isPrimaryResident).toBe(false);
+    expect(await prisma.user.findUnique({ where: { email: email("sita") } })).toBeNull();
 
     // The pre-existing flat already had no residents, so this one is primary,
     // and no duplicate flat was created for it.
@@ -398,12 +404,16 @@ describe("commitResidentImport", () => {
     });
     expect(oldFlat!.residentProfile!.flatId).toBe(existingFlatId);
 
-    // Re-running the identical file imports nothing rather than duplicating.
+    // Re-running the identical file imports nothing rather than duplicating:
+    // the two that landed are skipped, and Sita's row fails on the flat Ravi
+    // now owns for real.
     await expectTRPCError(importService.commitResidentImport(admin, sheet), "BAD_REQUEST");
     const preview = await importService.previewResidentImport(admin, sheet);
-    expect(preview.skippedCount).toBe(3);
+    expect(preview.skippedCount).toBe(2);
+    expect(preview.errorCount).toBe(1);
     expect(preview.readyCount).toBe(0);
     expect(codes(rowFor(preview, 2))).toContain("ALREADY_IMPORTED");
+    expect(codes(rowFor(preview, 3))).toContain("FLAT_OCCUPIED");
 
     expect(await prisma.user.count({ where: { email: email("ravi") } })).toBe(1);
   });
@@ -428,10 +438,15 @@ describe("commitResidentImport", () => {
 
   it("closes out a pending invite that the import has superseded", async () => {
     const invitedEmail = email("invited");
+    // Its own empty flat: the shared fixture flat has an owner by now, and an
+    // occupied flat would reject the row before the invite could be claimed.
+    const freeFlat = await prisma.flat.create({
+      data: { towerId: existingTowerId, flatNumber: "909", floor: 9, type: "TWO_BHK" },
+    });
     const invite = await prisma.pendingResidentInvite.create({
       data: {
         societyId,
-        flatId: existingFlatId,
+        flatId: freeFlat.id,
         email: invitedEmail,
         invitedByAdminId: admin.id,
       },
@@ -439,7 +454,7 @@ describe("commitResidentImport", () => {
 
     await importService.commitResidentImport(
       admin,
-      input([HEADER, ["Invited Person", invitedEmail, phone(95), `Existing Tower ${runId}`, "101"]]),
+      input([HEADER, ["Invited Person", invitedEmail, phone(95), `Existing Tower ${runId}`, "909"]]),
     );
 
     const after = await prisma.pendingResidentInvite.findUnique({ where: { id: invite.id } });

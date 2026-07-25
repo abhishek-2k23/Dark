@@ -25,6 +25,8 @@ import {
   isMailerConfigured,
 } from "@repo/mailer";
 
+import { shouldBePrimaryResident } from "../resident/occupancy";
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -97,13 +99,14 @@ async function claimPendingInvite(user: User): Promise<User> {
   if (!invite) return user;
 
   return prisma.$transaction(async (tx) => {
+    const isPrimaryResident = await shouldBePrimaryResident(tx, invite.flatId);
     const updated = await tx.user.update({
       where: { id: user.id },
       // No residentProfile can exist yet: it's created with the flat below, and
       // only ever alongside a societyId.
       data: {
         societyId: invite.societyId,
-        residentProfile: { create: { flatId: invite.flatId } },
+        residentProfile: { create: { flatId: invite.flatId, isPrimaryResident } },
       },
     });
     await tx.pendingResidentInvite.update({
@@ -338,6 +341,7 @@ export async function signup(input: {
   // flat only comes with the invite/approval.
   const user = invite
     ? await prisma.$transaction(async (tx) => {
+        const isPrimaryResident = await shouldBePrimaryResident(tx, invite.flatId);
         const created = await tx.user.create({
           data: {
             name,
@@ -345,7 +349,7 @@ export async function signup(input: {
             passwordHash,
             role: "RESIDENT",
             societyId: invite.societyId,
-            residentProfile: { create: { flatId: invite.flatId } },
+            residentProfile: { create: { flatId: invite.flatId, isPrimaryResident } },
           },
         });
         await tx.pendingResidentInvite.update({
@@ -685,6 +689,7 @@ export async function googleLogin(input: {
   }
 
   const user = await prisma.$transaction(async (tx) => {
+    const isPrimaryResident = await shouldBePrimaryResident(tx, invite.flatId);
     const created = await tx.user.create({
       data: {
         name: payload.name ?? payload.email!,
@@ -694,7 +699,7 @@ export async function googleLogin(input: {
         avatarUrl: payload.picture,
         role: "RESIDENT",
         societyId: invite.societyId,
-        residentProfile: { create: { flatId: invite.flatId } },
+        residentProfile: { create: { flatId: invite.flatId, isPrimaryResident } },
       },
     });
     await tx.pendingResidentInvite.update({

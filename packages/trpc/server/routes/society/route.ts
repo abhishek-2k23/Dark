@@ -59,6 +59,12 @@ const FlatModel = z
     floor: z.number().describe("Floor the flat is on"),
     type: FlatTypeEnum,
     residentCount: z.number().describe("Number of residents linked to the flat"),
+    isOccupied: z
+      .boolean()
+      .describe(
+        "The flat already has a primary resident and cannot be allotted again — " +
+          "admin pickers grey these out and resident.invite rejects them",
+      ),
   })
   .describe("A flat within a tower");
 

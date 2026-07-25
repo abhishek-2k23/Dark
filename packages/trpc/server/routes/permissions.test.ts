@@ -62,6 +62,7 @@ const adminOnlyCalls = (caller: ReturnType<typeof callerFor>) => [
   caller.resident.list({ status: "ALL", limit: 20 }),
   caller.resident.deactivate({ userId: "x" }),
   caller.resident.detail({ userId: "x" }),
+  caller.resident.updateContact({ userId: "x", email: "x@test.local" }),
   caller.resident.importPreview({
     fileName: "residents.csv",
     fileBase64: Buffer.from("Name,Email,Tower,Flat Number\n", "utf8").toString("base64"),

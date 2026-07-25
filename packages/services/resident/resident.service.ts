@@ -1,6 +1,8 @@
 import { TRPCError } from "@trpc/server";
 import { prisma, type User, type InviteStatus } from "@repo/database";
 
+import { isFlatOccupied } from "./occupancy";
+
 /**
  * Admin-side resident management: invites, listing, activation. All functions
  * take the acting admin as `actor` and scope to `actor.societyId` (role
@@ -45,6 +47,15 @@ export async function inviteResident(
   });
   if (!flat) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Flat not found" });
+  }
+
+  // The picker greys these out, but a flat can be taken between the screen
+  // loading and the invite being sent — and the endpoint is reachable directly.
+  if (await isFlatOccupied(flat.id)) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `Flat '${flat.flatNumber}' already has a resident`,
+    });
   }
 
   const identifierOr: Array<{ email: string } | { phone: string }> = [];
@@ -162,6 +173,81 @@ export async function listResidents(
     };
   });
   return { items, nextCursor: hasMore ? items[items.length - 1]!.id : null };
+}
+
+/**
+ * Fill in a resident's missing email or phone.
+ *
+ * Deliberately **fill-only**: an admin may supply a contact the record does not
+ * have, but may never overwrite one it already has. Letting an admin rewrite a
+ * resident's email would hand them a password-reset path into that account, and
+ * the need this serves is entirely about blanks — a bulk-imported row with no
+ * email cannot be claimed at all, because signup matches on email.
+ *
+ * The email is lowercased and stripped of whitespace to match `import.service`,
+ * so the address stored here is the one signup will compare against when the
+ * resident finally claims the account.
+ */
+export async function updateResidentContact(
+  actor: User,
+  input: { userId: string; email?: string; phone?: string },
+): Promise<{ id: string; email: string | null; phone: string | null }> {
+  const societyId = actorSocietyId(actor);
+
+  const email = input.email?.toLowerCase().replace(/\s+/g, "") || undefined;
+  const phone = input.phone?.trim() || undefined;
+
+  if (!email && !phone) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Provide an email or a phone number",
+    });
+  }
+
+  const target = await prisma.user.findFirst({
+    where: { id: input.userId, role: "RESIDENT", societyId },
+  });
+  if (!target) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Resident not found" });
+  }
+
+  if (email && target.email) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "This resident already has an email. It can only be changed by the resident.",
+    });
+  }
+  if (phone && target.phone) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "This resident already has a phone. It can only be changed by the resident.",
+    });
+  }
+
+  // Both columns are unique app-wide, so a clash is a real conflict rather than
+  // a scoping question — checked up front to return a readable error instead of
+  // a raw P2002.
+  const identifierOr: Array<{ email: string } | { phone: string }> = [];
+  if (email) identifierOr.push({ email });
+  if (phone) identifierOr.push({ phone });
+  const clash = await prisma.user.findFirst({
+    where: { OR: identifierOr, NOT: { id: target.id } },
+  });
+  if (clash) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "Another account already uses this email or phone",
+    });
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: target.id },
+    // `emailVerified` is deliberately left alone: an admin typing an address is
+    // not proof the resident owns it, so the OTP gate still applies at signup.
+    data: { ...(email ? { email } : {}), ...(phone ? { phone } : {}) },
+  });
+
+  return { id: updated.id, email: updated.email, phone: updated.phone };
 }
 
 /**
