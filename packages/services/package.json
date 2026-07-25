@@ -22,6 +22,7 @@
     "@repo/logger": "workspace:*",
     "@repo/mailer": "workspace:*",
     "@trpc/server": "^11.8.1",
+    "exceljs": "^4.4.0",
     "expo-server-sdk": "^6.1.0",
     "google-auth-library": "^10.5.0",
     "zod": "^4.3.5"
