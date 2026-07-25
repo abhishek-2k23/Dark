@@ -92,6 +92,7 @@ erDiagram
         Role role
         string societyId FK
         boolean isActive
+        datetime importedAt "set on a bulk-imported resident until claimed"
         string emergencyContactName "nullable"
         string emergencyContactPhone "nullable"
     }
@@ -310,7 +311,18 @@ erDiagram
 ## Key constraints enforced in the service layer (not the DB)
 
 - `User`: at least one of `email` / `phone` must be set at signup.
+- `User.importedAt`: marks a resident created by an admin's bulk spreadsheet
+  import (`residentImportService`) who has not claimed the account yet. Such a
+  row has **no credential at all** — `passwordHash` and `googleId` are both null
+  — so it cannot be logged into; it exists so the migrated register is visible
+  in the resident list and directory. Signup (or Google sign-in) on a matching
+  email sets the credential and nulls this field, which is how `auth.service`
+  tells a claimable import from a real account it must reject as a duplicate.
+  Rows imported with only a phone cannot be claimed, because signup is
+  email-only.
 - `PendingResidentInvite`: at least one of `email` / `phone` must be set.
+  An import that supersedes a pending invite closes it out as `CLAIMED`, since
+  signup would otherwise find the new `User` row first and leave it dangling.
 - `PollVote`: one vote per poll per resident when `Poll.allowMultiple = false`
   (the DB only prevents duplicate votes for the same option).
 - `AmenityBooking`: slot-overlap prevention against existing bookings.
