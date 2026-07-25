@@ -1,17 +1,13 @@
 import type { ExpoConfig, ConfigContext } from "expo/config";
 
-const API_URL =
-  process.env.EXPO_PUBLIC_API_URL ?? "https://dark-9k8o.onrender.com";
-const WEB_URL =
-  process.env.EXPO_PUBLIC_WEB_URL ?? "https://prangan.iamabhishek01.dev";
-const EAS_PROJECT_ID = "7096d5b3-fd1d-415d-90a8-f3a03e4b46ce";
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://dark-9k8o.onrender.com";
+const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL ?? "https://prangan.iamabhishek01.dev";
+// const EAS_PROJECT_ID = "7096d5b3-fd1d-415d-90a8-f3a03e4b46ce";
+const EAS_PROJECT_ID = "7fa13a5c-f901-41a1-a4ba-14969e87f98f";
 
-const GOOGLE_WEB_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || undefined;
-const GOOGLE_IOS_CLIENT_ID =
-  process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined;
-const GOOGLE_IOS_URL_SCHEME =
-  process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME || undefined;
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || undefined;
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || undefined;
+const GOOGLE_IOS_URL_SCHEME = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME || undefined;
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -77,9 +73,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           enableShrinkResourcesInReleaseBuilds: true,
           // Reflection-heavy libraries can be stripped by R8 without keep
           // rules; add them here as crashes surface in release testing.
-          extraProguardRules: [
-            "-keep class com.prangan.app.** { *; }",
-          ].join("\n"),
+          extraProguardRules: ["-keep class com.prangan.app.** { *; }"].join("\n"),
         },
         ios: {
           // Required by @react-native-firebase on iOS (its pods are static
@@ -131,8 +125,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-local-authentication",
       {
-        faceIDPermission:
-          "Prangan uses Face ID to lock the app so only you can open it.",
+        faceIDPermission: "Prangan uses Face ID to lock the app so only you can open it.",
       },
     ],
     [
@@ -140,6 +133,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         icon: "./assets/images/android-icon-monochrome.png",
         color: "#2563EB",
+      },
+    ],
+    // Native share sheet: exporting the visitor log as a PDF and handing the
+    // admin a blank import template. Config plugin adds the iOS entitlement.
+    "expo-sharing",
+    [
+      "expo-document-picker",
+      {
+        // The bulk resident import reads a spreadsheet the admin picked. Only
+        // needed on iOS, where reaching iCloud Drive is a separate capability.
+        iCloudContainerEnvironment: "Production",
       },
     ],
     ...(GOOGLE_IOS_URL_SCHEME
