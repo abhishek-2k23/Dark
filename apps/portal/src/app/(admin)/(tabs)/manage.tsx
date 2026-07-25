@@ -71,6 +71,13 @@ const ENTRIES: Entry[] = [
     href: "/(admin)/payments/verify",
   },
   {
+    icon: "walk-outline",
+    hue: hueFor("visitors"),
+    titleKey: "admin.visitorLog.title",
+    bodyKey: "admin.visitorLog.body",
+    href: "/(admin)/visitors",
+  },
+  {
     icon: "bar-chart-outline",
     hue: hueFor("reports"),
     titleKey: "admin.reports",
