@@ -16,6 +16,18 @@ const envSchema = z.object({
   AUTH_RATE_LIMIT_WINDOW_MIN: z.coerce.number().int().positive().default(50),
   /** Minutes before an unanswered PENDING visitor request auto-EXPIREs. */
   VISITOR_PENDING_TTL_MIN: z.coerce.number().int().positive().default(50),
+  /**
+   * Minutes between keep-alive self-pings. Render's free tier spins an instance
+   * down after 15 minutes with no inbound request, so this must stay comfortably
+   * under 15. Set to 0 to disable (e.g. on a paid instance, which never idles).
+   */
+  KEEP_ALIVE_INTERVAL_MIN: z.coerce.number().int().nonnegative().default(10),
+  /**
+   * URL the keep-alive ping hits. Defaults to `${BASE_URL}/health`. It must be
+   * the service's PUBLIC url — a request to localhost never reaches Render's
+   * router and so does not count as activity.
+   */
+  KEEP_ALIVE_URL: z.string().url().optional(),
 });
 
 function createEnv(env: NodeJS.ProcessEnv) {

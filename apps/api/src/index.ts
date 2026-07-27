@@ -64,6 +64,38 @@ function startExpirySweep() {
   setInterval(sweep, EXPIRY_SWEEP_INTERVAL_MS);
 }
 
+function startKeepAlive() {
+  if (env.NODE_ENV !== "prod" || env.KEEP_ALIVE_INTERVAL_MIN === 0) return;
+
+  const target = env.KEEP_ALIVE_URL ?? `${env.BASE_URL.replace(/\/+$/, "")}/health`;
+  const { hostname } = new URL(target);
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1") {
+    logger.warn("Keep-alive disabled: target is loopback", { target });
+    return;
+  }
+
+  const intervalMs = env.KEEP_ALIVE_INTERVAL_MIN * 60 * 1000;
+  const ping = async () => {
+    try {
+      // Bounded so a hung connection can never overlap the next tick.
+      const res = await fetch(target, {
+        method: "GET",
+        headers: { "User-Agent": "prangan-keepalive" },
+        signal: AbortSignal.timeout(30_000),
+      });
+      logger.debug("Keep-alive ping", { target, status: res.status });
+    } catch (err) {
+      // Never fatal: a failed ping costs a cold start, not correctness.
+      logger.warn("Keep-alive ping failed", { target, err });
+    }
+  };
+
+  logger.info(`Keep-alive pinging ${target} every ${env.KEEP_ALIVE_INTERVAL_MIN}m`);
+  const timer = setInterval(ping, intervalMs);
+  // Don't hold the event loop open on shutdown.
+  timer.unref();
+}
+
 async function init() {
   try {
     const server = http.createServer(expressApplication);
@@ -71,6 +103,7 @@ async function init() {
     server.listen(PORT, () => {
       logger.info(`http server is running on PORT ${PORT}`);
       startExpirySweep();
+      startKeepAlive();
     });
   } catch (err) {
     logger.error(`Error creating http server`, { err });
