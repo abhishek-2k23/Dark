@@ -9,6 +9,8 @@
     "@expo/ui": "~56.0.23",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-firebase/app": "^26.0.0",
+    "@react-native-firebase/app-check": "^26.0.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
     "@repo/trpc": "workspace:^",
     "@tanstack/react-query": "^5.62.0",
@@ -56,7 +58,6 @@
     "react-native-gesture-handler": "~2.31.1",
     "react-native-pager-view": "8.0.1",
     "react-native-qrcode-svg": "^6.3.21",
-    "react-native-razorpay": "^3.0.0",
     "react-native-reanimated": "4.3.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.26.2",
@@ -84,15 +85,5 @@
     "lint": "expo lint",
     "check-types": "tsc --noEmit"
   },
-  "private": true,
-  "expo": {
-    "doctor": {
-      "reactNativeDirectoryCheck": {
-        "exclude": [
-          "react-native-razorpay"
-        ],
-        "listUnknownPackages": true
-      }
-    }
-  }
+  "private": true
 }

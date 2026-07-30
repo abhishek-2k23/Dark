@@ -9,8 +9,6 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
-import RazorpayCheckout, { type RazorpayError } from "react-native-razorpay";
-
 import { EmptyState, ErrorState, Loading } from "@/components/ListState";
 import { StackHeader } from "@/components/StackHeader";
 import {
@@ -32,12 +30,23 @@ import { toErrorMessage } from "@/utils/errors";
 import { formatDate, formatDateTime, formatMoney } from "@/utils/format";
 
 /**
- * The society's own subscription to Portl. Admin-only — residents never see
+ * The society's own subscription to Prangan. Admin-only — residents never see
  * billing, and are never affected when it lapses.
  *
- * Deliberately reachable at every subscription status, including EXPIRED: this
- * is the screen that lets an admin fix an expired subscription, so gating it
- * would trap the customer we are trying to bill.
+ * Deliberately reachable at every subscription status, including EXPIRED: an
+ * admin whose subscription has lapsed still needs to see what happened and what
+ * it costs, so gating it would leave them with an unexplained wall of 403s.
+ *
+ * **Read-only by design — do not add a purchase flow here.** Google Play's
+ * Payments policy lists "cloud software and services" and "app functionality"
+ * among the purchases that must go through Google Play's billing system, which
+ * a Razorpay checkout inside the app is not. The same policy's anti-steering
+ * rule also rules out a button or link pointing at an external checkout, so the
+ * screen states plainly that plans are not changed in the app and stops there.
+ * Purchasing lives on the web app, reached on its own rather than from here.
+ *
+ * Cancelling stays: ending a subscription is not a purchase, and taking it away
+ * would be worse for the user than the policy requires.
  */
 
 /** Screen's own horizontal padding (px-5), which the carousel undoes. */
@@ -224,67 +233,6 @@ export default function Billing() {
     { getNextPageParam: (last) => last.nextCursor ?? undefined },
   );
 
-  const me = trpc.profile.me.useQuery();
-
-  const verify = trpc.subscription.verify.useMutation({
-    onSuccess: () => {
-      showToast(t("billing.paidToast"), "success");
-      void utils.subscription.get.invalidate();
-      void utils.subscription.history.invalidate();
-      void utils.plan.list.invalidate();
-    },
-    onError: (e) => showToast(toErrorMessage(e, t), "error"),
-  });
-
-  const checkout = trpc.subscription.checkout.useMutation({
-    onSuccess: async (session) => {
-      try {
-        const result = await RazorpayCheckout.open({
-          key: session.keyId,
-          order_id: session.orderId,
-          // Razorpay speaks integer paise; the server sends rupees.
-          amount: Math.round(session.amount * 100),
-          currency: session.currency,
-          name: "Portl",
-          description: session.planName,
-          prefill: {
-            email: me.data?.email ?? undefined,
-            contact: me.data?.phone ?? undefined,
-            name: me.data?.name ?? undefined,
-          },
-          theme: { color: "#2563EB" },
-        });
-
-        // The callback is signed with a secret only the server holds, so this
-        // confirms the payment immediately instead of waiting on the webhook.
-        // It is a fast path, not the source of truth: if the app dies here the
-        // webhook still settles it.
-        verify.mutate({
-          orderId: result.razorpay_order_id,
-          paymentId: result.razorpay_payment_id,
-          signature: result.razorpay_signature,
-        });
-      } catch (err) {
-        const e = err as RazorpayError;
-        // Razorpay reports a user closing the sheet as an error. Treat it as
-        // what it is — a cancellation — rather than alarming them with a
-        // failure toast for something they chose to do.
-        const cancelled =
-          String(e?.code) === "0" ||
-          /cancel/i.test(e?.description ?? "") ||
-          /cancel/i.test(e?.error?.reason ?? "");
-        showToast(
-          cancelled ? t("billing.checkoutCancelled") : (e?.description ?? t("billing.checkoutFailed")),
-          cancelled ? "info" : "error",
-        );
-        // The order stays INITIATED and is simply never captured; the next
-        // attempt creates a fresh one.
-        void utils.subscription.history.invalidate();
-      }
-    },
-    onError: (e) => showToast(toErrorMessage(e, t), "error"),
-  });
-
   const cancel = trpc.subscription.cancel.useMutation({
     onSuccess: () => {
       showToast(t("billing.cancelledToast"), "info");
@@ -423,6 +371,12 @@ export default function Billing() {
         <Text variant="label" color="secondary" className="px-1">
           {t("billing.plans")}
         </Text>
+        {/* Says what this list is, since the cards have no button. Worded as a
+            statement of fact with no destination: naming a website or a payment
+            method here is the steering Play's Payments policy forbids. */}
+        <Text variant="caption" color="tertiary" className="px-1">
+          {t("billing.manageElsewhere")}
+        </Text>
         {/* Peeking carousel: the next card is deliberately part-visible so the
             row reads as scrollable without needing an affordance. snapToInterval
             keeps each card landing flush against the left gutter. */}
@@ -456,23 +410,11 @@ export default function Billing() {
               featured={
                 plans.data?.some((x) => x.isCurrent) ? p.isCurrent : i === 1
               }
-              ctaLabel={
-                p.isCurrent && status === "ACTIVE"
-                  ? t("billing.renew")
-                  : p.isCurrent
-                    ? t("billing.reactivate")
-                    : t("billing.choosePlan")
-              }
               intervalLabel={
                 p.intervalMonths === 12 ? t("billing.year") : t("billing.month")
               }
               currentLabel={t("billing.current")}
               featuredLabel={t("billing.popular")}
-              loading={
-                (checkout.isPending && checkout.variables?.planId === p.id) ||
-                verify.isPending
-              }
-              onPress={() => checkout.mutate({ planId: p.id })}
             />
           ))}
         </ScrollView>

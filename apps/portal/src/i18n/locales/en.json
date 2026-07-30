@@ -989,9 +989,7 @@
     "daysRemaining": "{{count}} days remaining",
     "plans": "Plans",
     "current": "Current",
-    "choosePlan": "Choose plan",
-    "renew": "Renew",
-    "reactivate": "Reactivate",
+    "manageElsewhere": "Plans can't be changed in the app. Contact Prangan support to start, switch or renew a subscription.",
     "history": "Payment history",
     "noPayments": "No payments yet",
     "noPaymentsBody": "Charges for your subscription will appear here.",
@@ -1004,9 +1002,9 @@
     "cancelConfirm": "You'll keep full access until {{date}} — the period you've already paid for. Nothing is refunded and nothing is cut short.",
     "cancelledToast": "Subscription cancelled — access continues to the end of the paid period",
     "graceTitle": "Payment overdue",
-    "graceBody": "Your plan has ended but everything still works until {{date}}. Renew before then to avoid interruption.",
+    "graceBody": "Your plan has ended but everything still works until {{date}}. Contact Prangan support before then to avoid interruption.",
     "expiredTitle": "Subscription expired",
-    "expiredBody": "Admin changes are paused until you renew. Residents and guards are unaffected, and all your data is safe.",
+    "expiredBody": "Admin changes are paused until the subscription is renewed. Residents and guards are unaffected, and all your data is safe.",
     "status": {
       "NONE": "None",
       "TRIALING": "Trial",
@@ -1022,9 +1020,6 @@
       "PENDING_VERIFICATION": "Pending",
       "REJECTED": "Rejected"
     },
-    "paidToast": "Payment successful — your plan is active",
-    "checkoutCancelled": "Payment cancelled",
-    "checkoutFailed": "Payment could not be completed",
     "month": "mo",
     "year": "yr",
     "popular": "Popular"
