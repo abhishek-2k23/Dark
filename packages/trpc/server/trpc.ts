@@ -56,13 +56,23 @@ const APP_CHECK_EXEMPT_PATHS = new Set([
  * out instead of locking them out. `unconfigured` never blocks — that is our
  * misconfiguration, not the caller's.
  */
-const appCheckGuard = tRPCContext.middleware(({ ctx, path, next }) => {
-  const { status, reason } = ctx.appCheck;
+/** One-shot, so a working integration announces itself without per-request spam. */
+let sawAttestedCall = false;
 
+const appCheckGuard = tRPCContext.middleware(({ ctx, path, next }) => {
+  const { status, reason, appId } = ctx.appCheck;
+
+  // Logged whether or not enforcement is on: in monitor mode these two lines
+  // ARE the monitoring. `missing` is the number that has to fall to zero before
+  // APP_CHECK_ENFORCE can be flipped, and gating it on enforcement (as this
+  // originally did) made that impossible to observe.
   if (status === "invalid") {
     console.warn(`[app-check] invalid token on ${path}: ${reason}`);
-  } else if (status === "missing" && isAppCheckEnforced()) {
+  } else if (status === "missing") {
     console.warn(`[app-check] unattested call to ${path}`);
+  } else if (status === "valid" && !sawAttestedCall) {
+    sawAttestedCall = true;
+    console.info(`[app-check] first attested call (app ${appId}) — verification is working`);
   }
 
   if (
