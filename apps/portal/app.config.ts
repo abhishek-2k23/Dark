@@ -78,6 +78,25 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: "#050508",
     },
     predictiveBackGestureEnabled: false,
+    /**
+     * Permissions a clean prebuild would otherwise ship that the app has no
+     * feature for. Both show up on the Play listing and in the runtime
+     * permission review, and an unjustifiable permission is a rejection under
+     * Play's Permissions policy ("request only what is needed for currently
+     * implemented functionality").
+     *
+     * - RECORD_AUDIO: added unconditionally by expo-image-picker's plugin.
+     *   expo-camera already opts out via `recordAudioAndroid: false`, but that
+     *   only declines to add it — it does not remove image-picker's copy. We
+     *   never record audio: the camera is stills only (complaint photos, gate
+     *   pass scanning).
+     * - SYSTEM_ALERT_WINDOW: comes from the bare-workflow manifest template for
+     *   the dev menu overlay. Nothing in the app draws over other apps.
+     */
+    blockedPermissions: [
+      "android.permission.RECORD_AUDIO",
+      "android.permission.SYSTEM_ALERT_WINDOW",
+    ],
   },
   web: {
     output: "static",
@@ -85,9 +104,24 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
+    /**
+     * Firebase App Check — Play Integrity on Android, App Attest on iOS. The
+     * native side is what mints the attestation token that `src/lib/appCheck.ts`
+     * attaches to every API call. Reuses the same google-services.json the
+     * notification icon config already relies on.
+     *
+     * An iOS release additionally needs `ios.googleServicesFile`
+     * (GoogleService-Info.plist) — without it FirebaseApp cannot configure and
+     * the app will not launch. Android-only for now, which is what is being
+     * submitted.
+     */
+    "@react-native-firebase/app",
+    "@react-native-firebase/app-check",
     [
       "expo-build-properties",
       {
+        // React Native Firebase requires static frameworks on iOS.
+        ios: { useFrameworks: "static" },
         android: {
           // R8/ProGuard: shrink + obfuscate the release build. Only affects
           // `assembleRelease` — debug/dev-client builds are never minified, so
@@ -125,6 +159,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "Prangan uses your photos so you can set a profile picture and attach images to complaints.",
         cameraPermission:
           "Prangan uses your camera so you can photograph an issue when raising a complaint.",
+        // Stills only — declining this is what stops the plugin adding
+        // RECORD_AUDIO (see `android.blockedPermissions`) and the matching iOS
+        // microphone purpose string for a feature the app does not have.
+        microphonePermission: false,
       },
     ],
     [
