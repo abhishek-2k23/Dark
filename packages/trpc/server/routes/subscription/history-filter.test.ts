@@ -24,6 +24,13 @@ let societyId: string;
 let planId: string;
 let subscriptionId: string;
 
+/**
+ * `unconfigured` = no FIREBASE_PROJECT_NUMBER, so `appCheckGuard` lets the call
+ * through. This suite is about the history filter, not attestation.
+ */
+const callerForAdmin = () =>
+  createCaller({ prisma, user: admin, appCheck: { status: "unconfigured" } });
+
 beforeAll(async () => {
   const society = await prisma.society.create({
     data: {
@@ -97,7 +104,7 @@ afterAll(async () => {
 
 describe("subscription.history status filter, through the router", () => {
   it("returns every outcome when unfiltered", async () => {
-    const caller = createCaller({ prisma, user: admin });
+    const caller = callerForAdmin();
     const res = await caller.subscription.history({ limit: 50 });
     expect(new Set(res.items.map((p) => p.status))).toEqual(
       new Set(["INITIATED", "SUCCESS", "FAILED"]),
@@ -107,7 +114,7 @@ describe("subscription.history status filter, through the router", () => {
   it.each(["INITIATED", "SUCCESS", "FAILED"] as const)(
     "returns only %s when filtered to it",
     async (status) => {
-      const caller = createCaller({ prisma, user: admin });
+      const caller = callerForAdmin();
       const res = await caller.subscription.history({ limit: 50, status });
       expect(res.items.length).toBe(1);
       expect(res.items.map((p) => p.status)).toEqual([status]);
@@ -126,7 +133,7 @@ describe("subscription.history status filter, through the router", () => {
       },
     });
 
-    const caller = createCaller({ prisma, user: admin });
+    const caller = callerForAdmin();
     const first = await caller.subscription.history({ limit: 1, status: "FAILED" });
     expect(first.items.map((p) => p.status)).toEqual(["FAILED"]);
     expect(first.nextCursor).not.toBeNull();

@@ -2,7 +2,7 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import { OpenApiMeta } from "trpc-to-openapi";
 import superjson from "superjson";
 import { ZodError } from "zod";
-import { hasMinPermission } from "@repo/auth";
+import { hasMinPermission, isAppCheckEnforced } from "@repo/auth";
 import { subscriptionService } from "@repo/services";
 import type { Role } from "@repo/database";
 
@@ -40,7 +40,62 @@ export const tRPCContext = initTRPC
 
 export const router = tRPCContext.router;
 
-export const publicProcedure = tRPCContext.procedure;
+/**
+ * Procedures reachable by callers that cannot produce a Play Integrity / App
+ * Attest verdict, and so are never blocked by `appCheckGuard`.
+ *
+ * These are exactly the endpoints the Next.js web app calls
+ * (`apps/web/lib/api.ts`): a browser has no Play install to attest, and Play
+ * requires the account-deletion route to stay reachable from the web. Both are
+ * already public, rate-limited and no-enumeration by design, so leaving them
+ * open costs nothing that attestation was protecting.
+ *
+ * Anything added here is a hole in attestation — keep the list short and keep
+ * the reason next to the entry.
+ */
+const APP_CHECK_EXEMPT_PATHS = new Set([
+  "account.requestDeletion",
+  "account.confirmDeletion",
+]);
+
+/**
+ * Rejects callers with no valid attestation once `APP_CHECK_ENFORCE=true`.
+ *
+ * Deliberately silent in monitor mode (the default): it records the verdict on
+ * every request so the logs can answer "has attested traffic replaced the old
+ * installs yet?" before enforcement is switched on. Flipping the flag first
+ * would lock out every user still on a build that predates App Check.
+ *
+ * `unconfigured` never blocks — a missing FIREBASE_PROJECT_NUMBER is our
+ * misconfiguration, not the caller's, and failing every request over it would
+ * turn a deploy slip into an outage.
+ */
+const appCheckGuard = tRPCContext.middleware(({ ctx, path, next }) => {
+  const { status, reason } = ctx.appCheck;
+
+  if (status === "invalid") {
+    console.warn(`[app-check] invalid token on ${path}: ${reason}`);
+  } else if (status === "missing" && isAppCheckEnforced()) {
+    console.warn(`[app-check] unattested call to ${path}`);
+  }
+
+  if (
+    isAppCheckEnforced() &&
+    !APP_CHECK_EXEMPT_PATHS.has(path) &&
+    (status === "missing" || status === "invalid")
+  ) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      // Says what is wrong without naming the header, so the message is no help
+      // to someone probing for what to forge.
+      message: "This app build can no longer talk to the server. Please update Prangan.",
+    });
+  }
+
+  return next();
+});
+
+export const publicProcedure = tRPCContext.procedure.use(appCheckGuard);
 
 const isAuthed = tRPCContext.middleware(({ ctx, next }) => {
   if (!ctx.user) {
@@ -95,8 +150,12 @@ export const subscribedAdminProcedure = adminProcedure.use(
       if (!writable) {
         throw new TRPCError({
           code: "FORBIDDEN",
+          // No "renew here" instruction: the mobile app cannot sell a
+          // subscription (Google Play Payments policy — see
+          // apps/portal/src/app/(admin)/billing.tsx), so pointing at a screen
+          // with no purchase button would just be wrong.
           message:
-            "Your society's subscription has expired. Renew from Profile → Billing to make changes again. Residents are unaffected and your data is safe.",
+            "Your society's subscription has expired. Contact Prangan support to renew and make changes again. Residents are unaffected and your data is safe.",
         });
       }
     }
