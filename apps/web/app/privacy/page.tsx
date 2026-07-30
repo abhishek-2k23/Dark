@@ -9,17 +9,9 @@ export const metadata: Metadata = {
 };
 
 /**
- * This page has to agree with two other things, or it is worse than useless:
- * the Play Console Data safety form, and what the code actually does. The
- * sections below are written from the schema and the upload/notification/payment
- * code paths rather than from a template — see docs/play-release-checklist.md
- * for the mapping.
- *
- * Two disclosures matter more than the rest and are easy to miss:
- *  - Visitor and guest records are personal data about people who are not users
- *    and never agreed to anything. Residents and guards enter it on their behalf.
- *  - Photos leave the device to Cloudinary, and push tokens to Google/Expo. Both
- *    are third-party processors and have to be named.
+ * Must agree with the Play Data safety form and with what the code actually does
+ * — written from the schema and the upload/notification/payment paths, not a
+ * template. See docs/play-release-checklist.md for the mapping.
  */
 export default function PrivacyPage() {
   return (

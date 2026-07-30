@@ -37,9 +37,7 @@ function fakeUser(role: Role): User {
 }
 
 function callerFor(user: User | null) {
-  // `unconfigured` = no FIREBASE_PROJECT_NUMBER, so `appCheckGuard` lets every
-  // caller through. These tests are about role gating; attestation has its own
-  // suite in app-check.test.ts.
+  // `unconfigured` = no FIREBASE_PROJECT_NUMBER, so the guard lets everyone through.
   return createCaller({ prisma, user, appCheck: { status: "unconfigured" } });
 }
 

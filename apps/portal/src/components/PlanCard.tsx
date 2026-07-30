@@ -38,12 +38,9 @@ export interface PlanCardProps {
   currentLabel: string;
   featuredLabel: string;
   /**
-   * Omit both to render the card without a button.
-   *
-   * The mobile app does exactly that: Play's Payments policy does not allow it
-   * to sell a subscription outside Google Play billing, so its plan cards are
-   * a price list rather than a buy flow (see `(admin)/billing.tsx`). The prop
-   * is kept because the web app renders the same card *with* a CTA.
+   * Omit both to render the card without a button — the mobile app cannot sell a
+   * subscription (Play Payments policy), so its cards are a price list. Kept
+   * because the web app renders the same card with a CTA.
    */
   ctaLabel?: string;
   onPress?: () => void;

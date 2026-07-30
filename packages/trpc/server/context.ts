@@ -12,12 +12,8 @@ interface ContextRequest {
  * Shared context for both the tRPC adapter and the trpc-to-openapi REST
  * middleware. Parses the `Authorization: Bearer <accessToken>` header and
  * attaches the active user (or null for anonymous callers), plus the result of
- * verifying the caller's App Check / Play Integrity token.
- *
- * Attestation is resolved here rather than inside a middleware so both surfaces
- * see it and so it can be logged even on procedures that do not require it.
- * Whether an unattested caller is actually turned away is `appCheckGuard`'s
- * decision — see `trpc.ts`.
+ * verifying the caller's App Check / Play Integrity token. Whether an unattested
+ * caller is turned away is `appCheckGuard`'s decision — see `trpc.ts`.
  */
 export async function createContext({ req }: { req: ContextRequest }) {
   let user: User | null = null;
@@ -31,8 +27,7 @@ export async function createContext({ req }: { req: ContextRequest }) {
     }
   }
 
-  // Node lowercases header names. A repeated header arrives as an array, in
-  // which case there is no single token to trust.
+  // A repeated header arrives as an array — no single token to trust.
   const raw = req.headers["x-firebase-appcheck"];
   const appCheck: AppCheckResult = Array.isArray(raw)
     ? { status: "invalid", reason: "duplicate x-firebase-appcheck header" }

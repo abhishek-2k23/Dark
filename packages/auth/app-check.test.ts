@@ -8,13 +8,10 @@ import {
 } from "./app-check";
 
 /**
- * These tests stand in for Google: a local RSA key pair signs tokens and a
- * stubbed `fetch` serves its public half from the JWKS URL, so the real
- * audience/issuer/expiry/allowlist checks run against tokens we control.
- *
- * The point is that a *plausible* token is not enough — the wrong project, the
- * wrong app, or an expired one has to come back `invalid`. Without that, the
- * client-side attestation is theatre.
+ * Stands in for Google: a local RSA key pair signs tokens and a stubbed `fetch`
+ * serves its public half from the JWKS URL, so the real audience/issuer/expiry/
+ * allowlist checks run against tokens we control. A *plausible* token must not
+ * be enough, or the client-side attestation is theatre.
  */
 
 const PROJECT = "1009774242772";
@@ -29,13 +26,10 @@ let publicJwk: JWK;
 const realFetch = globalThis.fetch;
 
 /**
- * One key pair for the whole file, on purpose. `jose`'s remote key set is
- * cached (by design — it is one fetch per process, not per token), and the
- * module holds that cache for the file's lifetime. Re-keying per test would
- * therefore make every token fail on signature, which the negative tests would
- * happily accept: they would pass even if the audience, issuer and expiry
- * checks were all missing. A stable key pair keeps each test failing for the
- * reason it names.
+ * One key pair for the whole file, on purpose: `jose` caches the remote key set,
+ * so re-keying per test would make every token fail on signature — and the
+ * negative tests would then pass even with the audience, issuer and expiry checks
+ * missing. A stable pair keeps each test failing for the reason it names.
  */
 beforeAll(async () => {
   const { privateKey: priv, publicKey } = await generateKeyPair("RS256");
@@ -98,8 +92,7 @@ describe("verifyAppCheckToken", () => {
 
   it("does not attempt verification when no project number is configured", async () => {
     delete process.env.FIREBASE_PROJECT_NUMBER;
-    // Deliberately a real token: `unconfigured` must win over any inspection of
-    // it, because a missing project number is our problem, not the caller's.
+    // A real token, deliberately: `unconfigured` must win over inspecting it.
     expect(await verifyAppCheckToken(await mint())).toEqual({ status: "unconfigured" });
     expect(isAppCheckConfigured()).toBe(false);
   });
@@ -125,8 +118,7 @@ describe("verifyAppCheckToken", () => {
 
   it("rejects a token signed by a key that is not Google's", async () => {
     const { privateKey: rogue } = await generateKeyPair("RS256");
-    // Claims the published `kid`, so verification resolves the real public key
-    // and the forgery fails on signature rather than on an unknown key.
+    // Claims the published `kid`, so it fails on signature, not an unknown key.
     const token = await new SignJWT({})
       .setProtectedHeader({ alg: "RS256", kid: "test-key", typ: "JWT" })
       .setIssuer(ISSUER)

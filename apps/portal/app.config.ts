@@ -40,15 +40,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: "com.prangan.app",
     supportsTablet: true,
     infoPlist: {
-      /**
-       * iOS refuses to report an app as installed unless its scheme is
-       * declared here. Razorpay's checkout uses this to decide which UPI apps
-       * to offer — without it the UPI option looks broken on iOS even when the
-       * user has the app, and they are pushed to card instead.
-       *
-       * Only affects the subscription checkout; resident UPI payments use
-       * their own intent link from UpiPaySheet.
-       */
+      // iOS reports an app as installed only if its scheme is declared here, so
+      // without these `UpiPaySheet`'s intent links look broken.
       LSApplicationQueriesSchemes: [
         "tez", // Google Pay
         "phonepe",
@@ -79,19 +72,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     predictiveBackGestureEnabled: false,
     /**
-     * Permissions a clean prebuild would otherwise ship that the app has no
-     * feature for. Both show up on the Play listing and in the runtime
-     * permission review, and an unjustifiable permission is a rejection under
-     * Play's Permissions policy ("request only what is needed for currently
-     * implemented functionality").
-     *
-     * - RECORD_AUDIO: added unconditionally by expo-image-picker's plugin.
-     *   expo-camera already opts out via `recordAudioAndroid: false`, but that
-     *   only declines to add it — it does not remove image-picker's copy. We
-     *   never record audio: the camera is stills only (complaint photos, gate
-     *   pass scanning).
-     * - SYSTEM_ALERT_WINDOW: comes from the bare-workflow manifest template for
-     *   the dev menu overlay. Nothing in the app draws over other apps.
+     * Permissions a clean prebuild ships that the app has no feature for, and
+     * which Play's Permissions policy would flag. RECORD_AUDIO comes from
+     * expo-image-picker's plugin (expo-camera's `recordAudioAndroid: false`
+     * declines to add it but does not remove that copy); SYSTEM_ALERT_WINDOW
+     * from the bare-workflow manifest template.
      */
     blockedPermissions: [
       "android.permission.RECORD_AUDIO",
@@ -104,17 +89,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     "expo-router",
-    /**
-     * Firebase App Check — Play Integrity on Android, App Attest on iOS. The
-     * native side is what mints the attestation token that `src/lib/appCheck.ts`
-     * attaches to every API call. Reuses the same google-services.json the
-     * notification icon config already relies on.
-     *
-     * An iOS release additionally needs `ios.googleServicesFile`
-     * (GoogleService-Info.plist) — without it FirebaseApp cannot configure and
-     * the app will not launch. Android-only for now, which is what is being
-     * submitted.
-     */
+    // Firebase App Check — the native side behind `src/lib/appCheck.ts`. An iOS
+    // release also needs `ios.googleServicesFile` or FirebaseApp cannot configure.
     "@react-native-firebase/app",
     "@react-native-firebase/app-check",
     [
@@ -140,7 +116,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         backgroundColor: "#050508",
         image: "./assets/images/splash-icon.png",
-        // 76 was Expo's stock value for its own small mark. The Portl logo is
+        // 76 was Expo's stock value for its own small mark. The Prangan logo is
         // a 1024px square that reads as a house arch — at 76 it was a speck.
         imageWidth: 200,
         dark: {
@@ -159,9 +135,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "Prangan uses your photos so you can set a profile picture and attach images to complaints.",
         cameraPermission:
           "Prangan uses your camera so you can photograph an issue when raising a complaint.",
-        // Stills only — declining this is what stops the plugin adding
-        // RECORD_AUDIO (see `android.blockedPermissions`) and the matching iOS
-        // microphone purpose string for a feature the app does not have.
+        // Stills only — stops the plugin adding RECORD_AUDIO and the iOS
+        // microphone purpose string.
         microphonePermission: false,
       },
     ],

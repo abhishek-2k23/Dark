@@ -132,10 +132,8 @@ export default function RootLayout() {
 
   // Restore any persisted session as soon as the app starts.
   useEffect(() => {
-    // Before the first request, not lazily on it: activation is synchronous but
-    // minting the first Play Integrity verdict is not, and `hydrate()` below is
-    // already an API call. Starting here means the token is usually in hand by
-    // the time anything past the launch gate asks for one.
+    // Before `hydrate()`, which is itself an API call: minting the first Play
+    // Integrity verdict is slow, so start it now rather than on first use.
     activateAppCheck();
     void useAuthStore.getState().hydrate();
     // Probe the sensor and load the app-lock preference; this decides whether

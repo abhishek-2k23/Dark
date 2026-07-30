@@ -1,37 +1,15 @@
 import { Platform } from "react-native";
 
 /**
- * Play Integrity (Android) / App Attest (iOS) via Firebase App Check.
- *
- * What this buys us: every request the app makes can carry a short-lived token
- * that Google itself signed, attesting that the caller is a genuine, unmodified
- * install of `com.prangan.app` from Play running on a real device. The API
- * verifies that token (`packages/auth/app-check.ts`), so a scraped bearer token
- * replayed from curl or a repackaged APK is distinguishable from the real app.
- *
- * The whole module is deliberately fail-soft. It is loaded lazily through
- * `require` rather than a top-level import because `@react-native-firebase/*`
- * throws at module scope when its native side is missing — which is the case in
- * Expo Go and in any build made before these packages were added. A static
- * import would take the entire app down on launch there; this way the app just
- * runs without attestation, and the server (in monitor mode) records that.
- *
- * Provider choice: `debug` in development, because a locally-built or
- * sideloaded app has no Play install to attest and `playIntegrity` would return
- * nothing but errors. The debug token is printed to the native log on first
- * launch and has to be pasted into Firebase console → App Check → Apps →
- * Manage debug tokens before a dev build gets a valid verdict.
+ * Play Integrity (Android) / App Attest (iOS) via Firebase App Check. Attaches a
+ * Google-signed token to every API call so a replayed bearer token is
+ * distinguishable from the real app. Fail-soft throughout.
  */
 
 type AppCheckModule = typeof import("@react-native-firebase/app-check");
 type AppCheckInstance = ReturnType<AppCheckModule["initializeAppCheck"]>;
 
-/**
- * How long a request is willing to wait for a token. Play Integrity round-trips
- * to Google on a cold token and can take seconds; a request must never sit on
- * that. Missing the header is a soft failure by design — it costs the request
- * its attestation, not its result.
- */
+/** A cold Play Integrity round-trip must never hold up a request. */
 const TOKEN_TIMEOUT_MS = 2_500;
 
 let module: AppCheckModule | null = null;
@@ -39,6 +17,9 @@ let instance: AppCheckInstance | null = null;
 /** Set once the native module or activation proves absent, so we stop retrying. */
 let unavailable = false;
 
+// Lazy `require`: `@react-native-firebase/*` throws at module scope where its
+// native side is missing (Expo Go, any build predating these packages), and a
+// static import would take the app down on launch there.
 function load(): AppCheckModule | null {
   if (module) return module;
   if (unavailable) return null;
@@ -54,12 +35,9 @@ function load(): AppCheckModule | null {
 }
 
 /**
- * Starts attestation. Safe to call more than once, and safe to call on a build
- * that has no Firebase native module.
- *
- * Called once on launch (root `_layout`) rather than lazily on the first
- * request, so the first token is already being minted while the user is still
- * looking at the login screen.
+ * Starts attestation. Idempotent, and safe on a build with no Firebase native
+ * module. Called once on launch so the first token is minted while the user is
+ * still on the login screen.
  */
 export function activateAppCheck(): void {
   if (instance || unavailable) return;
@@ -70,22 +48,21 @@ export function activateAppCheck(): void {
   try {
     const provider = new mod.ReactNativeFirebaseAppCheckProvider();
     provider.configure({
+      // `debug` in dev: a locally built app has no Play install to attest. The
+      // token is printed to the native log and must be registered in Firebase
+      // console → App Check → Manage debug tokens.
       android: { provider: __DEV__ ? "debug" : "playIntegrity" },
-      // App Attest needs iOS 14+; the fallback keeps older devices attesting
-      // through DeviceCheck instead of failing outright.
+      // App Attest needs iOS 14+; the fallback keeps older devices attesting.
       apple: { provider: __DEV__ ? "debug" : "appAttestWithDeviceCheckFallback" },
       isTokenAutoRefreshEnabled: true,
     });
 
     instance = mod.initializeAppCheck(undefined, {
       provider,
-      // Keeps a valid token in hand so `getAppCheckToken` is a cache read
-      // rather than a network round-trip on all but the first call.
       isTokenAutoRefreshEnabled: true,
     });
 
-    // Warm the cache. Failure here is expected and uninteresting on a dev build
-    // whose debug token nobody registered yet.
+    // Warm the cache so later calls are a cache read, not a network round-trip.
     void getAppCheckToken();
   } catch (err) {
     unavailable = true;
@@ -93,10 +70,7 @@ export function activateAppCheck(): void {
   }
 }
 
-/**
- * The current attestation token, or `null` if this build/device cannot produce
- * one within {@link TOKEN_TIMEOUT_MS}. Never throws.
- */
+/** The current token, or `null` if this build/device cannot produce one. Never throws. */
 export async function getAppCheckToken(): Promise<string | null> {
   if (!instance || unavailable) return null;
   const mod = load();
@@ -115,12 +89,8 @@ export async function getAppCheckToken(): Promise<string | null> {
 }
 
 /**
- * The header the API reads. Empty when there is no token, so callers can spread
- * it unconditionally.
- *
- * Web is excluded on purpose: the Next.js app is served from a browser origin
- * with no Play Integrity or App Attest equivalent configured, and sending a
- * header the server would reject buys nothing.
+ * Empty when there is no token, so callers can spread it unconditionally. Web is
+ * excluded: a browser has no Play Integrity or App Attest equivalent here.
  */
 export async function appCheckHeaders(): Promise<Record<string, string>> {
   if (Platform.OS === "web") return {};

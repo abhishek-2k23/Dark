@@ -24,10 +24,7 @@ let societyId: string;
 let planId: string;
 let subscriptionId: string;
 
-/**
- * `unconfigured` = no FIREBASE_PROJECT_NUMBER, so `appCheckGuard` lets the call
- * through. This suite is about the history filter, not attestation.
- */
+/** `unconfigured` = no FIREBASE_PROJECT_NUMBER, so the guard lets the call through. */
 const callerForAdmin = () =>
   createCaller({ prisma, user: admin, appCheck: { status: "unconfigured" } });
 

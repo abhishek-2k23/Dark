@@ -1,33 +1,20 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 
 /**
- * Verification of Firebase App Check tokens — the server half of Play Integrity
- * (`apps/portal/src/lib/appCheck.ts` is the client half).
+ * Verifies Firebase App Check tokens — the server half of Play Integrity
+ * (`apps/portal/src/lib/appCheck.ts` is the client half). A bearer token proves
+ * *who* is calling; this proves *what* is. An unverified token is just a header
+ * an attacker can also send.
  *
- * A bearer token proves *who* is calling. It says nothing about *what* is
- * calling, and it is the thing most easily lifted out of a device: pull it from
- * a rooted phone or a proxied session and every endpoint that user can reach is
- * scriptable. An App Check token is a short-lived JWT that Google signs only
- * after Play Integrity confirms the caller is an unmodified `com.prangan.app`
- * installed by Play on a device that passes its device checks. Verifying it here
- * is what makes the client-side attestation mean anything — an unverified token
- * is just a header an attacker can also send.
- *
- * Why plain JWKS verification rather than `firebase-admin`: this is a public-key
- * signature check against a published key set. `appCheck().verifyToken()` does
- * the same thing behind a dependency that also wants service-account
- * credentials deployed, which is a secret to leak and rotate for no gain here.
+ * Plain JWKS rather than `firebase-admin`: this is a public-key signature check,
+ * and the SDK would want service-account credentials deployed for no gain.
  */
 
 /** Google's published App Check signing keys. */
 const JWKS_URL = "https://firebaseappcheck.googleapis.com/v1/jwks";
 
-/**
- * Fetched once and cached by `jose`, which also handles re-fetching on an
- * unknown `kid` (key rotation) with its own cooldown. Created lazily so merely
- * importing this module never touches the network — tests and the seed script
- * import `@repo/auth` too.
- */
+// Created lazily so importing this module never touches the network; `jose`
+// caches the key set and re-fetches on an unknown `kid`.
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
 function keySet() {
@@ -40,30 +27,23 @@ function projectNumber(): string | null {
   return process.env.FIREBASE_PROJECT_NUMBER ?? null;
 }
 
-/**
- * Whether attestation is even checkable. Without the project number there is
- * nothing to validate the audience against, so tokens are neither trusted nor
- * blamed — the result is `unconfigured`.
- */
+/** Without a project number there is no audience to validate against. */
 export function isAppCheckConfigured(): boolean {
   return projectNumber() !== null;
 }
 
 /**
- * Hard-fail mode. Off by default: turning it on rejects every caller that
- * cannot attest, which includes older installs still on a build without the
- * Firebase native module. Run in monitor mode until the logs show attested
- * traffic has replaced them.
+ * Hard-fail mode. Off by default — turning it on rejects every install that
+ * cannot attest, including old builds. Run in monitor mode until the logs show
+ * attested traffic has replaced them.
  */
 export function isAppCheckEnforced(): boolean {
   return process.env.APP_CHECK_ENFORCE === "true" && isAppCheckConfigured();
 }
 
 /**
- * Firebase app IDs allowed to call us, comma-separated
- * (`1:1009774242772:android:bfc5…`). Optional: when unset, any app in the
- * project passes. Set it and a token minted for some other app registered in
- * the same Firebase project stops being accepted.
+ * Comma-separated Firebase app IDs allowed to call us. Unset = any app in the
+ * project passes.
  */
 function allowedAppIds(): string[] | null {
   const raw = process.env.APP_CHECK_ALLOWED_APP_IDS;
@@ -90,10 +70,7 @@ export interface AppCheckResult {
   reason?: string;
 }
 
-/**
- * Verifies an App Check token. Never throws; every failure mode comes back as
- * an `invalid` result with a reason.
- */
+/** Never throws; every failure comes back as an `invalid` result with a reason. */
 export async function verifyAppCheckToken(
   token: string | undefined | null,
 ): Promise<AppCheckResult> {
@@ -103,9 +80,8 @@ export async function verifyAppCheckToken(
 
   let payload: JWTPayload;
   try {
-    // App Check tokens are RS256 with `aud` carrying BOTH `projects/<number>`
-    // and `projects/<id>`; jose treats a string audience as "must be present in
-    // the aud array", which is exactly the check Google documents.
+    // `aud` carries both `projects/<number>` and `projects/<id>`; jose treats a
+    // string audience as "must be present in the aud array".
     ({ payload } = await jwtVerify(token, keySet(), {
       issuer: `https://firebaseappcheck.googleapis.com/${project}`,
       audience: `projects/${project}`,

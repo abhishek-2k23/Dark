@@ -17,10 +17,8 @@ import { TRPC_URL } from "./env";
 export const trpc = createTRPCReact<ServerRouter>();
 
 /**
- * Per-request headers: the bearer token that says *who* is calling, and the App
- * Check token that says *what* is calling. `appCheckHeaders` resolves to `{}`
- * rather than rejecting when attestation is unavailable, so a build without the
- * Firebase native module still sends a perfectly good request.
+ * The bearer token says *who* is calling, the App Check token *what*.
+ * `appCheckHeaders` resolves to `{}` when attestation is unavailable.
  */
 async function requestHeaders(): Promise<Record<string, string>> {
   const token = getAccessToken();

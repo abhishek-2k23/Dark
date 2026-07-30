@@ -30,23 +30,14 @@ import { toErrorMessage } from "@/utils/errors";
 import { formatDate, formatDateTime, formatMoney } from "@/utils/format";
 
 /**
- * The society's own subscription to Prangan. Admin-only — residents never see
- * billing, and are never affected when it lapses.
+ * The society's own subscription to Prangan. Admin-only, and reachable at every
+ * status including EXPIRED — gating it would leave a lapsed admin facing an
+ * unexplained wall of 403s.
  *
- * Deliberately reachable at every subscription status, including EXPIRED: an
- * admin whose subscription has lapsed still needs to see what happened and what
- * it costs, so gating it would leave them with an unexplained wall of 403s.
- *
- * **Read-only by design — do not add a purchase flow here.** Google Play's
- * Payments policy lists "cloud software and services" and "app functionality"
- * among the purchases that must go through Google Play's billing system, which
- * a Razorpay checkout inside the app is not. The same policy's anti-steering
- * rule also rules out a button or link pointing at an external checkout, so the
- * screen states plainly that plans are not changed in the app and stops there.
- * Purchasing lives on the web app, reached on its own rather than from here.
- *
- * Cancelling stays: ending a subscription is not a purchase, and taking it away
- * would be worse for the user than the policy requires.
+ * **Read-only by design — do not add a purchase flow here.** Play's Payments
+ * policy requires Google Play billing for "cloud software and services", and its
+ * anti-steering rule rules out linking to an external checkout too. Cancelling
+ * stays: ending a subscription is not a purchase.
  */
 
 /** Screen's own horizontal padding (px-5), which the carousel undoes. */
@@ -371,9 +362,8 @@ export default function Billing() {
         <Text variant="label" color="secondary" className="px-1">
           {t("billing.plans")}
         </Text>
-        {/* Says what this list is, since the cards have no button. Worded as a
-            statement of fact with no destination: naming a website or a payment
-            method here is the steering Play's Payments policy forbids. */}
+        {/* No destination, deliberately — naming a site or payment method here
+            is the steering Play's Payments policy forbids. */}
         <Text variant="caption" color="tertiary" className="px-1">
           {t("billing.manageElsewhere")}
         </Text>

@@ -7,13 +7,9 @@ import { tRPCContext } from "../trpc";
 import type { AppCheckResult } from "@repo/auth";
 
 /**
- * Router-level checks that `appCheckGuard` turns unattested callers away only
- * when enforcement is on — and that it never turns away the two endpoints the
- * web app depends on.
- *
- * No database needed: the guard sits on `publicProcedure`, so it runs before any
- * resolver. The exemption test is written as "did not fail *for this reason*"
- * precisely so it does not need one either.
+ * `appCheckGuard` must turn unattested callers away only when enforcement is on,
+ * and never turn away the two endpoints the web app depends on. No database
+ * needed — the guard sits on `publicProcedure` and runs before any resolver.
  */
 
 const createCaller = tRPCContext.createCallerFactory(serverRouter);
@@ -67,7 +63,7 @@ afterEach(() => {
 
 describe("appCheckGuard in monitor mode (the default)", () => {
   it("lets an unattested caller through", async () => {
-    // Fails on the role check, which is proof it got past the guard.
+    // Fails on the role check, which proves it got past the guard.
     const message = await failureMessage(
       caller({ status: "missing" }, fakeUser("RESIDENT")).society.get(),
     );
@@ -88,7 +84,7 @@ describe("appCheckGuard with APP_CHECK_ENFORCE=true", () => {
   });
 
   it("rejects a caller with no token, before any role check", async () => {
-    // An ADMIN would otherwise be allowed here — the guard is what stops it.
+    // An ADMIN would otherwise be allowed here.
     const promise = caller({ status: "missing" }, fakeUser("ADMIN")).society.get();
     await expect(promise).rejects.toThrow(BLOCKED);
     await expect(promise).rejects.toBeInstanceOf(TRPCError);
@@ -116,7 +112,6 @@ describe("appCheckGuard with APP_CHECK_ENFORCE=true", () => {
   });
 
   it("keeps the web app's account-deletion endpoints reachable", async () => {
-    // Play requires this route to work from a browser, which cannot attest.
     // Whatever it fails on (no DB here), it must not be the guard.
     const message = await failureMessage(
       caller({ status: "missing" }).account.requestDeletion({ email: "nobody@test.local" }),
