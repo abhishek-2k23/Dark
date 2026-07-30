@@ -9,16 +9,25 @@ import {
 import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 
+import { appCheckHeaders } from "./appCheck";
 import { getAccessToken, runTokenRefresh } from "./authToken";
 import { TRPC_URL } from "./env";
 
 /** Typed tRPC hooks (`trpc.auth.login.useMutation()`, etc.). */
 export const trpc = createTRPCReact<ServerRouter>();
 
-/** Bearer header from the current in-memory access token. */
-async function authHeaders(): Promise<Record<string, string>> {
+/**
+ * Per-request headers: the bearer token that says *who* is calling, and the App
+ * Check token that says *what* is calling. `appCheckHeaders` resolves to `{}`
+ * rather than rejecting when attestation is unavailable, so a build without the
+ * Firebase native module still sends a perfectly good request.
+ */
+async function requestHeaders(): Promise<Record<string, string>> {
   const token = getAccessToken();
-  return token ? { authorization: `Bearer ${token}` } : {};
+  return {
+    ...(token ? { authorization: `Bearer ${token}` } : {}),
+    ...(await appCheckHeaders()),
+  };
 }
 
 /**
@@ -83,13 +92,13 @@ function trpcLinks(): TRPCLink<ServerRouter>[] {
         url: TRPC_URL,
         transformer: superjson,
         fetch: authFetch,
-        headers: authHeaders,
+        headers: requestHeaders,
       }),
       false: httpBatchLink({
         url: TRPC_URL,
         transformer: superjson,
         fetch: authFetch,
-        headers: authHeaders,
+        headers: requestHeaders,
       }),
     }),
   ];

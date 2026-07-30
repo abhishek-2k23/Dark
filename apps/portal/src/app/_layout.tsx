@@ -33,6 +33,7 @@ import { EmergencyHost } from "@/components/EmergencyHost";
 import { DialogHost } from "@/components/DialogHost";
 import { ToastHost } from "@/components/ToastHost";
 import { LanguageProvider } from "@/i18n/LanguageProvider";
+import { activateAppCheck } from "@/lib/appCheck";
 import { useOTAUpdates } from "@/lib/useOTAUpdates";
 import { TRPCProvider } from "@/providers/TRPCProvider";
 import { useAuthStore } from "@/stores/authStore";
@@ -131,6 +132,11 @@ export default function RootLayout() {
 
   // Restore any persisted session as soon as the app starts.
   useEffect(() => {
+    // Before the first request, not lazily on it: activation is synchronous but
+    // minting the first Play Integrity verdict is not, and `hydrate()` below is
+    // already an API call. Starting here means the token is usually in hand by
+    // the time anything past the launch gate asks for one.
+    activateAppCheck();
     void useAuthStore.getState().hydrate();
     // Probe the sensor and load the app-lock preference; this decides whether
     // the very first paint is veiled by the BiometricGate.
