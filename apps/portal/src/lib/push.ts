@@ -114,7 +114,7 @@ async function ensureAndroidChannel(): Promise<void> {
   });
   // MAX importance + vibration so a panic alarm produces a heads-up notification
   // even over other apps. Kept as its own channel because Android channel
-  // settings are user-editable per channel: someone silencing routine Portl
+  // settings are user-editable per channel: someone silencing routine Prangan
   // notifications must not silence the alarm along with them.
   await Notifications.setNotificationChannelAsync(ANDROID_EMERGENCY_CHANNEL_ID, {
     name: "Emergency alarms",
