@@ -25,7 +25,7 @@ gate, the resident on their phone, and the committee running the place.
 
 <br />
 
-### [**⬇️ Download the Android APK**](https://drive.google.com/file/d/1VzHX6vyNyrn8oMjrNQg2rruJ76uYpptM/view?usp=drive_link)
+### [**⬇️ Download the Android APK**](https://play.google.com/store/apps/details?id=com.prangan.app)
 
 **[🌐 Live API](https://dark-9k8o.onrender.com/health)** · **[📖 API docs](https://dark-9k8o.onrender.com/docs)** · **[📄 OpenAPI spec](https://dark-9k8o.onrender.com/openapi.json)**
 
@@ -37,7 +37,7 @@ gate, the resident on their phone, and the committee running the place.
 
 ## Try it in two minutes
 
-1. **[Download the APK](https://drive.google.com/file/d/1VzHX6vyNyrn8oMjrNQg2rruJ76uYpptM/view?usp=drive_link)** and install it (Android will ask you to allow installs from this source).
+1. **[Download the APK](https://play.google.com/store/apps/details?id=com.prangan.app)** and install it.
 2. Open the app and log in — **no setup, no local server**. It points at the live
    API by default and the demo societies are already seeded:
 
